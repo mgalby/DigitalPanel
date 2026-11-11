@@ -357,11 +357,11 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp
 
 /* ---------- dati di esempio ---------- */
 var CURSYM={EUR:'€',USD:'$',CHF:'CHF',JPY:'¥',HKD:'HK$',GBP:'£'};
-var XNAME={BIT:'Milano',NASDAQ:'Nasdaq',NYSE:'NYSE',XETRA:'Xetra',EURONEXT:'Euronext',BME:'Madrid',LONDON:'Londra',SIX:'SIX Zurigo',HK:'Hong Kong',TSE:'Tokyo',YF:'Altro'};
-var XCUR={BIT:'EUR',NASDAQ:'USD',NYSE:'USD',XETRA:'EUR',EURONEXT:'EUR',BME:'EUR',LONDON:'USD',SIX:'CHF',HK:'HKD',TSE:'JPY',YF:''};
+var XNAME={BIT:'Milano',NASDAQ:'Nasdaq',NYSE:'NYSE',XETRA:'Xetra',EURONEXT:'Amsterdam',PAR:'Parigi',BME:'Madrid',LONDON:'Londra',SIX:'SIX Zurigo',HK:'Hong Kong',TSE:'Tokyo',YF:'Altro'};
+var XCUR={BIT:'EUR',NASDAQ:'USD',NYSE:'USD',XETRA:'EUR',EURONEXT:'EUR',PAR:'EUR',BME:'EUR',LONDON:'USD',SIX:'CHF',HK:'HKD',TSE:'JPY',YF:''};
 /* borse in ordine di apertura (ora italiana) e orari di contrattazione, semplificati */
-var XORDER=['TSE','HK','SIX','BIT','XETRA','EURONEXT','BME','LONDON','NYSE','NASDAQ'];
-var XHOURS={TSE:[1,0,7,30],HK:[2,30,9,0],SIX:[9,0,17,30],BIT:[9,0,17,30],XETRA:[9,0,17,30],EURONEXT:[9,0,17,30],BME:[9,0,17,30],LONDON:[9,0,17,30],NYSE:[15,30,22,0],NASDAQ:[15,30,22,0]};
+var XORDER=['TSE','HK','SIX','BIT','XETRA','EURONEXT','PAR','BME','LONDON','NYSE','NASDAQ'];
+var XHOURS={TSE:[1,0,7,30],HK:[2,30,9,0],SIX:[9,0,17,30],BIT:[9,0,17,30],XETRA:[9,0,17,30],EURONEXT:[9,0,17,30],PAR:[9,0,17,30],BME:[9,0,17,30],LONDON:[9,0,17,30],NYSE:[15,30,22,0],NASDAQ:[15,30,22,0]};
 function isOpen(x){var h=XHOURS[x];if(!h)return false;var d=new Date(),wd=d.getDay();if(wd===0||wd===6)return false;var m=d.getHours()*60+d.getMinutes();return m>=h[0]*60+h[1]&&m<h[2]*60+h[3]}
 function sortedTickers(L){
   if(S.order==='manual')return L.tickers.slice();
@@ -369,7 +369,7 @@ function sortedTickers(L){
 }
 function mkDot(x){return '<span class="mk'+(isOpen(x)?' on':'')+'"></span>'}
 /* ---------- dati reali: ponte Cloudflare -> Yahoo Finance ---------- */
-var XSUF={BIT:'.MI',NASDAQ:'',NYSE:'',XETRA:'.DE',EURONEXT:'.AS',BME:'.MC',LONDON:'.L',SIX:'.SW',HK:'.HK',TSE:'.T',YF:''};
+var XSUF={BIT:'.MI',NASDAQ:'',NYSE:'',XETRA:'.DE',EURONEXT:'.AS',PAR:'.PA',BME:'.MC',LONDON:'.L',SIX:'.SW',HK:'.HK',TSE:'.T',YF:''};
 function ysym(t){return t.y||(t.s+(XSUF[t.x]!=null?XSUF[t.x]:''))}
 var IDX=[{n:'FTSE MIB',y:'FTSEMIB.MI',x:'BIT'},{n:'S&P 500',y:'^GSPC',x:'NYSE'},{n:'Nasdaq 100',y:'^NDX',x:'NASDAQ'},{n:'Nikkei 225',y:'^N225',x:'TSE'}];
 var FXL=[{k:'EUR/USD',y:'EURUSD=X',dg:4},{k:'EUR/JPY',y:'EURJPY=X',dg:2},{k:'EUR/HKD',y:'EURHKD=X',dg:4},{k:'EUR/CHF',y:'EURCHF=X',dg:4}];
@@ -509,7 +509,7 @@ var D={
 /* ---------- impostazioni ---------- */
 var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','shows'],foto:['photowx','portfolioPh','morning']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
   lists:[
-    {id:'l1',name:'Sotto la lente',tickers:[{s:'GOOGL',x:'NASDAQ',n:"Alphabet",t:'AZN',cur:'USD'},{s:'AMZN',x:'NASDAQ',n:"Amazon",t:'AZN',cur:'USD'},{s:'AAPL',x:'NASDAQ',n:"Apple",t:'AZN',cur:'USD'},{s:'CRSR',x:'NASDAQ',n:"Corsair Gaming",t:'AZN',cur:'USD'},{s:'DPZ',x:'NASDAQ',n:"Domino's Pizza",t:'AZN',cur:'USD'},{s:'ENEL',x:'BIT',n:"Enel",t:'AZN',cur:'EUR'},{s:'META',x:'NASDAQ',n:"Meta Platforms",t:'AZN',cur:'USD'},{s:'DIS',x:'NYSE',n:"Walt Disney",t:'AZN',cur:'USD'},{s:'GLUX',x:'BIT',n:"Amundi Global Luxury",t:'ETF',cur:'EUR'},{s:'IB01',x:'LONDON',n:"iShares $ Treasury 0-1yr",t:'ETF',cur:'USD'},{s:'XX2D',x:'LONDON',n:"Xtrackers MSCI China A",t:'ETF',cur:'USD'},{s:'1211',x:'HK',n:"BYD",t:'AZN',cur:'HKD'},{s:'MTB',x:'BIT',n:"Amundi Euro Gov Bond 3-5Y",t:'ETF',cur:'EUR'},{s:'SXR8',x:'XETRA',n:"iShares Core S&P 500",t:'ETF',cur:'EUR'}]},
+    {id:'l1',name:'Sotto la lente',tickers:[{s:'GOOGL',x:'NASDAQ',n:"Alphabet",t:'AZN',cur:'USD'},{s:'AMZN',x:'NASDAQ',n:"Amazon",t:'AZN',cur:'USD'},{s:'AAPL',x:'NASDAQ',n:"Apple",t:'AZN',cur:'USD'},{s:'CRSR',x:'NASDAQ',n:"Corsair Gaming",t:'AZN',cur:'USD'},{s:'DPZ',x:'NASDAQ',n:"Domino's Pizza",t:'AZN',cur:'USD'},{s:'ENEL',x:'BIT',n:"Enel",t:'AZN',cur:'EUR'},{s:'META',x:'NASDAQ',n:"Meta Platforms",t:'AZN',cur:'USD'},{s:'DIS',x:'NYSE',n:"Walt Disney",t:'AZN',cur:'USD'},{s:'GLUX',x:'BIT',n:"Amundi Global Luxury",t:'ETF',cur:'EUR'},{s:'IB01',x:'LONDON',n:"iShares $ Treasury 0-1yr",t:'ETF',cur:'USD'},{s:'XX2D',x:'LONDON',n:"Xtrackers MSCI China A",t:'ETF',cur:'USD'},{s:'1211',x:'HK',n:"BYD",t:'AZN',cur:'HKD'},{s:'MTB',x:'PAR',n:"Amundi Euro Gov Bond 3-5Y",t:'ETF',cur:'EUR'},{s:'SXR8',x:'XETRA',n:"iShares Core S&P 500",t:'ETF',cur:'EUR'}]},
     {id:'l2',name:'Momentum',tickers:[{s:'2914',x:'TSE',n:"Japan Tobacco",t:'AZN',cur:'JPY'},{s:'ASML',x:'EURONEXT',n:"ASML Holding",t:'AZN',cur:'EUR'},{s:'ATI',x:'NYSE',n:"ATI Inc",t:'AZN',cur:'USD'},{s:'BAER',x:'SIX',n:"Julius Baer",t:'AZN',cur:'CHF'},{s:'DXCM',x:'NASDAQ',n:"Dexcom",t:'AZN',cur:'USD'},{s:'FTNT',x:'NASDAQ',n:"Fortinet",t:'AZN',cur:'USD'},{s:'MRK',x:'NYSE',n:"Merck & Co",t:'AZN',cur:'USD'},{s:'NUE',x:'NYSE',n:"Nucor",t:'AZN',cur:'USD'},{s:'REP',x:'BME',n:"Repsol",t:'AZN',cur:'EUR'},{s:'WST',x:'NYSE',n:"West Pharmaceutical",t:'AZN',cur:'USD'}]}
   ]};
 function clone(o){return JSON.parse(JSON.stringify(o))}
