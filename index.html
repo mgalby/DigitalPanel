@@ -650,7 +650,7 @@ function renderPage(){
   renderBar();
 }
 function renderBar(){
-  bar.innerHTML=PAGES.map(function(p,i){return '<button data-pg="'+i+'" class="'+(i===cur?'on':'')+'">'+(p.id==='sport'&&S.liveN>0?'<span class="lv"></span>':'')+p.t+'</button>'}).join('')+'<span class="sep"></span><button class="ic" id="bNight" aria-label="Modalità notte">☾</button><button class="ic" id="bSet" aria-label="Impostazioni">⚙︎</button>';
+  bar.innerHTML=PAGES.map(function(p,i){return '<button data-pg="'+i+'" class="'+(i===cur?'on':'')+'">'+(p.id==='sport'&&S.liveN>0?'<span class="lv"></span>':'')+p.t+'</button>'}).join('')+'<span class="sep"></span><button class="ic" id="bResume" aria-label="Riprendi la rotazione">▶</button><button class="ic" id="bNight" aria-label="Modalità notte">☾</button><button class="ic" id="bSet" aria-label="Impostazioni">⚙︎</button>';
 }
 /* sotto-pagine: avanzano tutte insieme ogni S.sub secondi */
 function maxSub(){var mx=1;visibleMods().forEach(function(id){if(M[id])mx=Math.max(mx,M[id].n())});return mx}
@@ -692,10 +692,11 @@ function schedule(){
 function touch(){
   if(!interactive){interactive=true;bar.classList.add('show');$('pause').classList.add('show');schedule()}
   clearTimeout(idleTimer);
-  idleTimer=setTimeout(function(){
-    interactive=false;bar.classList.remove('show');$('pause').classList.remove('show');
-    closeOv('detail');closeOv('settings');schedule();
-  },S.idle*1000);
+  idleTimer=setTimeout(endInteractive,S.idle*1000);
+}
+function endInteractive(){
+  clearTimeout(idleTimer);interactive=false;bar.classList.remove('show');$('pause').classList.remove('show');
+  closeOv('detail');closeOv('settings');schedule();
 }
 
 /* ---------- overlay ---------- */
@@ -890,6 +891,7 @@ stage.addEventListener('click',function(e){
   if(t.closest('.panel')){touch();return}
   if(t.closest('.ov')){closeOv('detail');closeOv('settings');touch();return}
   var b=t.closest('[data-pg]');if(b){go(+b.getAttribute('data-pg'));touch();return}
+  if(t.closest('#bResume')){endInteractive();return}
   if(t.closest('#bSet')){openSettings();touch();return}
   if(t.closest('#bNight')){setNight(true);return}
   var tile=t.closest('.tile[data-mod]');
