@@ -254,7 +254,7 @@ input[type=text]:focus,select:focus{outline:2px solid var(--accent);outline-offs
 .sim{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 @media (prefers-reduced-motion:reduce){#alert,#toast,#alert .ev-n span{transition:none}}
 html,body{margin:0}
-.r .k{flex:1;overflow:hidden}.r .k small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r .k{flex:1;overflow:hidden}.r .v{flex:none;max-width:55%;overflow:hidden;text-overflow:ellipsis}.r .k small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .net b.wait{background:var(--accent)} .net b.err{background:var(--down)}
 .demo-tag{color:var(--accent);opacity:.75;letter-spacing:.06em;text-transform:uppercase;font-size:9px;border:1px solid rgba(201,161,91,.4);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px}
 </style>
@@ -381,7 +381,7 @@ function fmtSigned(n,d){if(n==null||isNaN(n))return '—';return (n>0?'+':n<0?'�
 function okq(q){return !!(q&&!q.error&&q.price!=null)}
 function dgOf(q){if(q.currency==='JPY')return 0;return Math.abs(q.price)>=10000?0:2}
 function curSym(q,t){var c=(q&&q.currency)||(t&&XCUR[t.x])||'';return CURSYM[c]||c}
-function qerr(q){if(!q||!q.error)return '';return /not found|no data|delisted|non trovato/i.test(q.error)?'simbolo non trovato':q.error}
+function qerr(q){if(!q||!q.error)return '';var e=q.error;if(/not found|no data|delisted|non trovato/i.test(e))return 'simbolo non trovato';if(/subrequest|429|too many/i.test(e))return 'limite richieste';return e.length>24?e.slice(0,24)+'…':e}
 function nodata(){return '<div class="nolive"><span>'+(QS.err?'Dati non disponibili':'In attesa dei dati…')+'</span></div>'}
 function allTickers(){var seen={},o=[];S.lists.forEach(function(L){L.tickers.forEach(function(t){var y=ysym(t);if(!seen[y]){seen[y]=1;o.push(t)}})});return o}
 function moverList(){return allTickers().map(function(t){return {t:t,q:Q[ysym(t)]}}).filter(function(o){return okq(o.q)&&o.q.changePct!=null}).sort(function(a,b){return b.q.changePct-a.q.changePct})}
@@ -396,7 +396,7 @@ function getJSON(url){
 function refreshQuotes(){
   if(QS.loading)return;QS.loading=true;updateNet();
   var base=(S.api||DEF.api).replace(/\/+$/,'')+'/quotes?symbols=';
-  var parts=chunk(borsaSymbols(),50).filter(function(p){return p.length});
+  var parts=chunk(borsaSymbols(),12).filter(function(p){return p.length});
   Promise.all(parts.map(function(p){return getJSON(base+p.map(encodeURIComponent).join(','))})).then(function(res){
     res.forEach(function(d){(d.quotes||[]).forEach(function(q){Q[q.symbol]=q})});
     QS.at=new Date();QS.err=null;
