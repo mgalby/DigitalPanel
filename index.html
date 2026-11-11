@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pannello">
+<title>DigitalPanel – Test</title>
+<style>
+  :root { --bg:#0e1116; --panel:#161b22; --line:#2a313c; --txt:#e6edf3; --dim:#8b949e; --ok:#3fb950; --ko:#f85149; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--txt);
+    font-family:-apple-system, "Helvetica Neue", Arial, sans-serif; -webkit-text-size-adjust:100%; }
+  body { padding:24px; }
+  .clock { font-size:96px; font-weight:300; text-align:center; font-variant-numeric:tabular-nums; letter-spacing:2px; }
+  .date { text-align:center; color:var(--dim); font-size:22px; margin-bottom:24px; text-transform:capitalize; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card h2 { margin:0 0 8px; font-size:14px; color:var(--dim); font-weight:500; text-transform:uppercase; letter-spacing:1px; }
+  .row { display:flex; justify-content:space-between; font-size:17px; padding:4px 0; }
+  .ok { color:var(--ok); } .ko { color:var(--ko); }
+  .foot { margin-top:16px; color:var(--dim); font-size:13px; text-align:center; }
+</style>
+</head>
+<body>
+  <div class="clock" id="clock">--:--:--</div>
+  <div class="date" id="date"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Dispositivo</h2>
+      <div class="row"><span>Schermo (CSS px)</span><span id="scr"></span></div>
+      <div class="row"><span>Finestra</span><span id="win"></span></div>
+      <div class="row"><span>Densità pixel</span><span id="dpr"></span></div>
+      <div class="row"><span>Schermo intero (Home)</span><span id="standalone"></span></div>
+    </div>
+    <div class="card">
+      <h2>Funzioni necessarie</h2>
+      <div class="row"><span>Memoria locale</span><span id="t-storage"></span></div>
+      <div class="row"><span>Griglia CSS</span><span id="t-grid"></span></div>
+      <div class="row"><span>JavaScript moderno</span><span id="t-js"></span></div>
+      <div class="row"><span>Rete (fetch)</span><span id="t-fetch">…</span></div>
+    </div>
+  </div>
+
+  <div class="foot" id="ua"></div>
+
+<script>
+  function mark(id, ok, txt) {
+    var el = document.getElementById(id);
+    el.textContent = txt || (ok ? "OK" : "NO");
+    el.className = ok ? "ok" : "ko";
+  }
+
+  // Orologio
+  var fmtDate = new Intl.DateTimeFormat("it-IT", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  function tick() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    document.getElementById("clock").textContent = p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+    document.getElementById("date").textContent = fmtDate.format(d);
+  }
+  tick(); setInterval(tick, 1000);
+
+  // Dispositivo
+  function dims() {
+    document.getElementById("scr").textContent = screen.width + " × " + screen.height;
+    document.getElementById("win").textContent = window.innerWidth + " × " + window.innerHeight;
+  }
+  dims(); window.addEventListener("resize", dims);
+  document.getElementById("dpr").textContent = window.devicePixelRatio;
+  var standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+  mark("standalone", standalone, standalone ? "SÌ" : "no (normale in Safari)");
+  document.getElementById("standalone").className = standalone ? "ok" : "";
+
+  // Memoria locale
+  try {
+    localStorage.setItem("dp_test", "1");
+    mark("t-storage", localStorage.getItem("dp_test") === "1");
+    localStorage.removeItem("dp_test");
+  } catch (e) { mark("t-storage", false); }
+
+  // Griglia CSS
+  mark("t-grid", window.CSS && CSS.supports && CSS.supports("display", "grid"));
+
+  // JavaScript moderno (optional chaining, nullish, async/await)
+  try {
+    new Function("var o={a:{b:1}}; var x=o?.a?.b ?? 0; return (async()=>x)();");
+    mark("t-js", true);
+  } catch (e) { mark("t-js", false); }
+
+  // Rete: legge il README pubblico del repository
+  if (window.fetch) {
+    fetch("https://api.github.com/repos/mgalby/DigitalPanel", { cache: "no-store" })
+      .then(function (r) { mark("t-fetch", r.ok, r.ok ? "OK" : "HTTP " + r.status); })
+      .catch(function () { mark("t-fetch", false); });
+  } else { mark("t-fetch", false, "non supportato"); }
+
+  document.getElementById("ua").textContent = navigator.userAgent;
+</script>
+</body>
+</html>
