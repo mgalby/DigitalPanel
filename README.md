@@ -1,2 +1,2 @@
 # DigitalPanel
-Riuso IPAD come pannello digitale a uro 
+Riuso IPAD come pannello digitale a muro 
