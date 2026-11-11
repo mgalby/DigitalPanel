@@ -77,6 +77,7 @@ svg.spark{display:block}
 .r .v small{display:block;font-size:13px}
 .seg{display:flex;gap:6px;margin:-4px 0 6px}
 .seg span{font-size:11px;padding:2px 8px;border-radius:10px;color:var(--text-3);border:1px solid var(--line);white-space:nowrap}
+.seg span.segk{margin-left:auto;border:0;padding:2px 0;color:var(--text-2);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
 .seg span.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
 
 /* Trimestrali */
@@ -299,7 +300,7 @@ html,body{margin:0}
         <div class="sect">Liste titoli</div>
         <div class="set" style="margin-bottom:12px"><div class="fld"><label for="sOrder">Ordine dei titoli nel riquadro</label><select id="sOrder"><option value="market">Per borsa (in ordine di apertura), poi per ticker</option><option value="manual">Come inseriti nella lista</option></select></div></div>
         <div id="sLists"></div>
-        <div class="btns" style="margin-top:0;margin-bottom:24px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div>
+        <div class="btns" style="margin-top:0;margin-bottom:24px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
 
         <div class="sect">Aggiornamento dati</div>
         <div class="set">
@@ -384,7 +385,7 @@ function curSym(q,t){var c=(q&&q.currency)||(t&&XCUR[t.x])||'';return CURSYM[c]|
 function qerr(q){if(!q||!q.error)return '';var e=q.error;if(/not found|no data|delisted|non trovato/i.test(e))return 'simbolo non trovato';if(/subrequest|429|too many/i.test(e))return 'limite richieste';return e.length>24?e.slice(0,24)+'…':e}
 function nodata(){return '<div class="nolive"><span>'+(QS.err?'Dati non disponibili':'In attesa dei dati…')+'</span></div>'}
 function allTickers(){var seen={},o=[];S.lists.forEach(function(L){L.tickers.forEach(function(t){var y=ysym(t);if(!seen[y]){seen[y]=1;o.push(t)}})});return o}
-function moverList(){return allTickers().map(function(t){return {t:t,q:Q[ysym(t)]}}).filter(function(o){return okq(o.q)&&o.q.changePct!=null}).sort(function(a,b){return b.q.changePct-a.q.changePct})}
+function moverList(){return allTickers().filter(function(t){return t.t!=='ETF'}).map(function(t){return {t:t,q:Q[ysym(t)]}}).filter(function(o){return okq(o.q)&&o.q.changePct!=null}).sort(function(a,b){return b.q.changePct-a.q.changePct})}
 function borsaSymbols(){var s=[],seen={};function add(y){if(y&&!seen[y]){seen[y]=1;s.push(y)}}
   IDX.forEach(function(i){add(i.y)});FXL.forEach(function(f){add(f.y)});allTickers().forEach(function(t){add(ysym(t))});return s}
 function getJSON(url){
@@ -419,9 +420,9 @@ function scheduleQuotes(){clearTimeout(qTimer);var min=anyOpen()?FQB[S.fqB]:+S.f
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&(!QS.at||Date.now()-QS.at.getTime()>60000))refreshQuotes()});
 var D={
   earn:[
-    {g:2,k:'DXCM',d:'Gio 13 nov · dopo chiusura',e:'Data e stime di esempio'},
-    {g:6,k:'DIS',d:'Lun 17 nov · prima apertura',e:'Data e stime di esempio'},
-    {g:20,k:'CRSR',d:'Mar 1 dic · prima apertura',e:'Data stimata, non confermata'}
+    {g:2,k:'Titolo A',d:'Gio 13 nov · dopo chiusura',e:'Data e stime di esempio'},
+    {g:6,k:'Titolo B',d:'Lun 17 nov · prima apertura',e:'Data e stime di esempio'},
+    {g:20,k:'Titolo C',d:'Mar 1 dic · prima apertura',e:'Data stimata, non confermata'}
   ],
   mktnews:[
     {k:'BCE lascia i tassi invariati, focus sull’inflazione core',d:'Mercati · 1 ora fa'},
@@ -508,10 +509,7 @@ var D={
 
 /* ---------- impostazioni ---------- */
 var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','shows'],foto:['photowx','portfolioPh','morning']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
-  lists:[
-    {id:'l1',name:'Sotto la lente',tickers:[{s:'GOOGL',x:'NASDAQ',n:"Alphabet",t:'AZN',cur:'USD'},{s:'AMZN',x:'NASDAQ',n:"Amazon",t:'AZN',cur:'USD'},{s:'AAPL',x:'NASDAQ',n:"Apple",t:'AZN',cur:'USD'},{s:'CRSR',x:'NASDAQ',n:"Corsair Gaming",t:'AZN',cur:'USD'},{s:'DPZ',x:'NASDAQ',n:"Domino's Pizza",t:'AZN',cur:'USD'},{s:'ENEL',x:'BIT',n:"Enel",t:'AZN',cur:'EUR'},{s:'META',x:'NASDAQ',n:"Meta Platforms",t:'AZN',cur:'USD'},{s:'DIS',x:'NYSE',n:"Walt Disney",t:'AZN',cur:'USD'},{s:'GLUX',x:'BIT',n:"Amundi Global Luxury",t:'ETF',cur:'EUR'},{s:'IB01',x:'LONDON',n:"iShares $ Treasury 0-1yr",t:'ETF',cur:'USD'},{s:'XX2D',x:'LONDON',n:"Xtrackers MSCI China A",t:'ETF',cur:'USD'},{s:'1211',x:'HK',n:"BYD",t:'AZN',cur:'HKD'},{s:'MTB',x:'PAR',n:"Amundi Euro Gov Bond 3-5Y",t:'ETF',cur:'EUR'},{s:'SXR8',x:'XETRA',n:"iShares Core S&P 500",t:'ETF',cur:'EUR'}]},
-    {id:'l2',name:'Momentum',tickers:[{s:'2914',x:'TSE',n:"Japan Tobacco",t:'AZN',cur:'JPY'},{s:'ASML',x:'EURONEXT',n:"ASML Holding",t:'AZN',cur:'EUR'},{s:'ATI',x:'NYSE',n:"ATI Inc",t:'AZN',cur:'USD'},{s:'BAER',x:'SIX',n:"Julius Baer",t:'AZN',cur:'CHF'},{s:'DXCM',x:'NASDAQ',n:"Dexcom",t:'AZN',cur:'USD'},{s:'FTNT',x:'NASDAQ',n:"Fortinet",t:'AZN',cur:'USD'},{s:'MRK',x:'NYSE',n:"Merck & Co",t:'AZN',cur:'USD'},{s:'NUE',x:'NYSE',n:"Nucor",t:'AZN',cur:'USD'},{s:'REP',x:'BME',n:"Repsol",t:'AZN',cur:'EUR'},{s:'WST',x:'NYSE',n:"West Pharmaceutical",t:'AZN',cur:'USD'}]}
-  ]};
+  lists:[{id:'l1',name:'Lista 1',tickers:[]}]};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
 function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j)return Object.assign(clone(DEF),j)}catch(e){}return clone(DEF)}
@@ -520,7 +518,8 @@ function save(){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(S))}catch(e)
 /* ---------- moduli ----------
    ogni modulo: l (etichetta), s (nota), n() = numero sotto-pagine, c(i) = vista compatta della sotto-pagina i, d() = dettaglio */
 function liveList(){return D.liveAll.slice(0,S.liveN)}
-function portPages(){var p=[];S.lists.forEach(function(L){chunk(sortedTickers(L),5).forEach(function(ch){p.push({L:L,t:ch})})});return p}
+function isEtf(t){return t.t==='ETF'}
+function portPages(){var p=[];S.lists.forEach(function(L){var all=sortedTickers(L);[['Azioni',all.filter(function(t){return !isEtf(t)})],['ETF',all.filter(isEtf)]].forEach(function(g){if(g[1].length)chunk(g[1],5).forEach(function(ch){p.push({L:L,t:ch,k:g[0]})})})});return p}
 function rowTicker(t){var q=Q[ysym(t)],nm=t.n||(q&&q.name)||t.s;
   var left='<span class="k">'+esc(t.s)+(t.t==='ETF'?' <span class="etf">ETF</span>':'')+'<small>'+mkDot(t.x)+esc(XNAME[t.x]||t.x)+' · '+esc(nm)+'</small></span>',right;
   if(!q)right='<span class="v num mut">—<small>&nbsp;</small></span>';
@@ -540,10 +539,10 @@ var M={
   portfolio:{l:'Liste titoli',s:'',live:true,n:function(){return Math.max(1,portPages().length)},c:function(i){
       var P=portPages();if(!P.length)return '<div class="nolive"><span>Nessun titolo nelle liste</span></div>';
       var pg=P[i%P.length];
-      return '<div class="seg">'+S.lists.map(function(L){return '<span class="'+(L.id===pg.L.id?'on':'')+'">'+esc(L.name)+'</span>'}).join('')+'</div><div class="rows">'+pg.t.map(rowTicker).join('')+'</div>'},
+      return '<div class="seg">'+S.lists.map(function(L){return '<span class="'+(L.id===pg.L.id?'on':'')+'">'+esc(L.name)+'</span>'}).join('')+'<span class="segk">'+pg.k+'</span></div><div class="rows">'+pg.t.map(rowTicker).join('')+'</div>'},
     d:function(){var h='';S.lists.forEach(function(L){h+='<table class="dtbl" style="margin-bottom:18px"><tr><th>'+esc(L.name)+'</th><th>Nome</th><th>Borsa</th><th class="n">Prezzo</th><th class="n">Var. giorno</th><th class="n">Ultimo</th></tr>'+
-      sortedTickers(L).map(function(t){var q=Q[ysym(t)],ok=okq(q);return '<tr><td><b>'+esc(t.s)+'</b>'+(t.t==='ETF'?' <span class="etf">ETF</span>':'')+'</td><td>'+esc(t.n||(q&&q.name)||'')+'</td><td class="mut">'+mkDot(t.x)+esc(XNAME[t.x]||t.x)+'</td><td class="n num">'+
-        (ok?fmt(q.price,dgOf(q))+' '+curSym(q,t):'<span class="mut">'+(q?esc(qerr(q)||'n/d'):'—')+'</span>')+'</td><td class="n num">'+(ok?pct(q.changePct):'')+'</td><td class="n num mut">'+(ok?whenStr(q.marketTime):'')+'</td></tr>'}).join('')+'</table>'});return h},
+      (function(a){var az=a.filter(function(t){return !isEtf(t)}),et=a.filter(isEtf);return (az.length&&et.length?[['Azioni',az],['ETF',et]]:[['',a]])})(sortedTickers(L)).map(function(g){return (g[0]?'<tr><td colspan="6" class="mut" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding-top:14px">'+g[0]+'</td></tr>':'')+g[1].map(function(t){var q=Q[ysym(t)],ok=okq(q);return '<tr><td><b>'+esc(t.s)+'</b>'+(t.t==='ETF'?' <span class="etf">ETF</span>':'')+'</td><td>'+esc(t.n||(q&&q.name)||'')+'</td><td class="mut">'+mkDot(t.x)+esc(XNAME[t.x]||t.x)+'</td><td class="n num">'+
+        (ok?fmt(q.price,dgOf(q))+' '+curSym(q,t):'<span class="mut">'+(q?esc(qerr(q)||'n/d'):'—')+'</span>')+'</td><td class="n num">'+(ok?pct(q.changePct):'')+'</td><td class="n num mut">'+(ok?whenStr(q.marketTime):'')+'</td></tr>'}).join('')}).join('')+'</table>'});return h},
     sub:'Tutte le liste · gestibili da Impostazioni › Liste titoli'},
   fx:{l:'Valute',s:'Yahoo · intraday',live:true,n:one,c:function(){
       return '<div class="rows">'+FXL.map(function(f){var q=Q[f.y],ok=okq(q);return '<div class="r"><span class="k">'+f.k+'</span><span class="v num" style="font-size:26px">'+(ok?fmt(q.price,f.dg):'—')+'<small>'+(ok?pct(q.changePct):'&nbsp;')+'</small></span></div>'}).join('')+'</div>'},
@@ -596,14 +595,14 @@ var M={
     d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Fonte</th></tr>'+D.news.map(function(n){return '<tr><td>'+esc(n.k)+'</td><td class="mut">'+esc(n.d)+'</td></tr>'}).join('')+'</table>'}, sub:'Tutte le notizie dei feed configurati'}
 };
 
-M.movers={l:'Più mossi',s:'dalle liste',live:true,n:one,c:function(){
+M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
     var top=a.slice(0,3),bot=a.length>3?a.slice(Math.max(3,a.length-2)).reverse():[];
     var f=function(o){return '<div class="r"><span class="k">'+esc(o.t.s)+'<small>'+esc(o.t.n||o.q.name||'')+'</small></span><span class="v num" style="font-size:20px">'+pct(o.q.changePct)+'</span></div>'};
     return '<div class="rows">'+top.map(f).join('')+bot.map(f).join('')+'</div>'},
   d:function(){var a=moverList();if(!a.length)return nodata();
     return '<table class="dtbl"><tr><th>Titolo</th><th>Nome</th><th class="n">Prezzo</th><th class="n">Var. giorno</th></tr>'+a.map(function(o){return '<tr><td><b>'+esc(o.t.s)+'</b></td><td class="mut">'+esc(o.t.n||o.q.name||'')+'</td><td class="n num">'+fmt(o.q.price,dgOf(o.q))+' '+curSym(o.q,o.t)+'</td><td class="n num">'+pct(o.q.changePct)+'</td></tr>'}).join('')+'</table>'},
-  sub:'Tutti i titoli delle liste ordinati per variazione del giorno'};
+  sub:'Azioni delle liste ordinate per variazione del giorno (ETF esclusi)'};
 M.mktnews={l:'Notizie mercati',s:'RSS',n:function(){return chunk(D.mktnews,3).length},c:function(i){var g=chunk(D.mktnews,3);return '<div class="rows news">'+g[i%g.length].map(function(n){return '<div class="r"><span class="k">'+esc(n.k)+'<small>'+esc(n.d)+'</small></span></div>'}).join('')+'</div>'},
   d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Sezione</th></tr>'+D.mktnews.map(function(n){return '<tr><td>'+esc(n.k)+'</td><td class="mut">'+esc(n.d)+'</td></tr>'}).join('')+'</table>'}, sub:'Feed configurabili · titoli di esempio'};
 M.commod={l:'Materie prime e cripto',s:'',n:one,c:function(){return '<div class="rows">'+D.commod.map(function(c){return '<div class="r"><span class="k">'+c.k+'<small>'+c.d+'</small></span><span class="v num" style="font-size:24px">'+fmt(c.v,c.dg)+'<small>'+pct(c.c)+'</small></span></div>'}).join('')+'</div>'},
@@ -757,13 +756,13 @@ $('sPageMods').addEventListener('click',function(e){
 function renderLists(){
   $('sLists').innerHTML=W.lists.map(function(L,li){
     return '<div class="lst"><div class="lst-h"><input type="text" id="ln_'+L.id+'" data-ln="'+li+'" value="'+esc(L.name)+'" aria-label="Nome lista" maxlength="24"><button class="btn sm del" data-dl="'+li+'">Elimina lista</button></div>'+
-      '<div class="chips">'+(L.tickers.length?L.tickers.map(function(t,ti){return '<span class="chip">'+esc(t.s)+' <span class="mut" style="font-weight:400;font-size:12px">'+esc(t.x)+'</span><button data-dt="'+li+':'+ti+'" aria-label="Rimuovi '+esc(t.s)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessun titolo</span>')+'</div>'+
-      '<div class="add"><input type="text" id="la_'+L.id+'" data-la="'+li+'" placeholder="Ticker, es. ENI" aria-label="Nuovo ticker" maxlength="12"><select id="lx_'+L.id+'" data-lx="'+li+'" aria-label="Borsa">'+Object.keys(XNAME).map(function(x){return '<option value="'+x+'">'+XNAME[x]+'</option>'}).join('')+'</select><input type="text" id="lnm_'+L.id+'" data-lnm="'+li+'" placeholder="Nome (facoltativo)" aria-label="Nome titolo" maxlength="40" style="width:200px;text-transform:none"><button class="btn sm" data-at="'+li+'">Aggiungi</button></div></div>';
+      '<div class="chips">'+(L.tickers.length?L.tickers.map(function(t,ti){return '<span class="chip">'+esc(t.s)+(t.t==='ETF'?' <span class="etf">ETF</span>':'')+' <span class="mut" style="font-weight:400;font-size:12px">'+esc(XNAME[t.x]||t.x)+'</span><button data-dt="'+li+':'+ti+'" aria-label="Rimuovi '+esc(t.s)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessun titolo</span>')+'</div>'+
+      '<div class="add"><input type="text" id="la_'+L.id+'" data-la="'+li+'" placeholder="Ticker, es. ENI" aria-label="Nuovo ticker" maxlength="12"><select id="lt_'+L.id+'" data-lt="'+li+'" aria-label="Tipo"><option value="AZN">Azione</option><option value="ETF">ETF</option></select><select id="lx_'+L.id+'" data-lx="'+li+'" aria-label="Borsa">'+Object.keys(XNAME).map(function(x){return '<option value="'+x+'">'+XNAME[x]+'</option>'}).join('')+'</select><input type="text" id="lnm_'+L.id+'" data-lnm="'+li+'" placeholder="Nome (facoltativo)" aria-label="Nome titolo" maxlength="40" style="width:200px;text-transform:none"><button class="btn sm" data-at="'+li+'">Aggiungi</button></div></div>';
   }).join('');
 }
 function addTicker(li){var inp=document.querySelector('[data-la="'+li+'"]');var v=(inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.\-=^]/g,'');if(!v)return;
   var x=document.querySelector('[data-lx="'+li+'"]').value,nm=(document.querySelector('[data-lnm="'+li+'"]').value||'').trim()||v;
-  var T=W.lists[li].tickers;if(!T.some(function(t){return t.s===v&&t.x===x}))T.push({s:v,x:x,n:(nm===v?'':nm),t:'AZN',cur:XCUR[x]||''});refreshQuotes();
+  var T=W.lists[li].tickers;if(!T.some(function(t){return t.s===v&&t.x===x}))T.push({s:v,x:x,n:(nm===v?'':nm),t:document.querySelector('[data-lt="'+li+'"]').value});refreshQuotes();
   renderLists();var n=document.querySelector('[data-la="'+li+'"]');if(n)n.focus()}
 $('sLists').addEventListener('click',function(e){
   var t=e.target,a;
@@ -789,6 +788,33 @@ $('sSave').addEventListener('click',function(){
 });
 $('sReset').addEventListener('click',function(){S=clone(DEF);save();openSettings();refreshQuotes();scheduleQuotes()});
 
+
+
+/* ---------- esporta / importa configurazione ---------- */
+function cfgMsg(t){$('cfgMsg').textContent=t}
+$('sExport').addEventListener('click',function(){
+  var data=clone(S);data.app='DigitalPanel';data.version=1;data.saved=new Date().toISOString();
+  try{
+    var blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='configurazione-pannello.json';document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url)},1000);cfgMsg('File esportato');
+  }catch(e){cfgMsg('Esportazione non riuscita')}
+});
+$('sImport').addEventListener('click',function(){$('sImportFile').value='';$('sImportFile').click()});
+$('sImportFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){
+    try{var cfg=JSON.parse(r.result);
+      if(!cfg||cfg.app!=='DigitalPanel'||!Array.isArray(cfg.lists))throw new Error('formato');
+      delete cfg.app;delete cfg.version;delete cfg.saved;
+      S=Object.assign(clone(S),cfg);save();openSettings();refreshQuotes();scheduleQuotes();
+      subIdx=0;renderPage();startSub();
+      var n=0;S.lists.forEach(function(L){n+=L.tickers.length});cfgMsg('Importato: '+S.lists.length+' liste, '+n+' titoli');
+    }catch(e){cfgMsg('File non valido')}
+  };
+  r.onerror=function(){cfgMsg('Lettura del file non riuscita')};
+  r.readAsText(f);
+});
 
 /* ---------- avvisi eventi ---------- */
 var EVT={
