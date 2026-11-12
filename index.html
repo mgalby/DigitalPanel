@@ -258,6 +258,22 @@ html,body{margin:0}
 .r .k{flex:1;overflow:hidden}.r .v{flex:none;max-width:55%;overflow:hidden;text-overflow:ellipsis}.r .k small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .net b.wait{background:var(--accent)} .net b.err{background:var(--down)}
 .demo-tag{color:var(--accent);opacity:.75;letter-spacing:.06em;text-transform:uppercase;font-size:9px;border:1px solid rgba(201,161,91,.4);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px}
+.nw{padding:5px 0;border-bottom:1px solid rgba(36,40,48,.6);min-width:0}
+.nw:last-child{border-bottom:0}
+.nw .nt{font-size:15px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nw .nm{font-size:12px;color:var(--text-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nw .nm b{color:var(--accent);font-weight:600}
+.nw.full{padding:10px 0}.nw.full .nt{font-size:17px;-webkit-line-clamp:3}
+.nw .ns{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:4px}
+.ebadge{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(201,161,91,.5);border-radius:4px;padding:0 4px;margin-right:6px;vertical-align:2px}
+.ehd{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpis > div{background:var(--surface-2);border-radius:10px;padding:10px 14px}
+.kpis span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
+.kpis b{display:block;font-size:26px;font-weight:300;margin-top:2px}
+.kpis small{font-size:12px;color:var(--text-3)}
+.dtbl tr.xh td{font-size:12px;color:var(--text-2);padding:10px 6px 4px;border-bottom:0}
+.cd .i div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -401,7 +417,7 @@ function refreshQuotes(){
   Promise.all(parts.map(function(p){return getJSON(base+p.map(encodeURIComponent).join(','))})).then(function(res){
     res.forEach(function(d){(d.quotes||[]).forEach(function(q){Q[q.symbol]=q})});
     QS.at=new Date();QS.err=null;
-  }).catch(function(e){QS.err=String((e&&e.message)||e)}).then(function(){QS.loading=false;updateNet();refreshTiles()});
+  }).catch(function(e){QS.err=String((e&&e.message)||e)}).then(function(){QS.loading=false;updateNet();refreshTiles();if(QS.at)startExtra()});
 }
 function updateNet(){var dot=$('netDot'),tx=$('netTxt');
   if(QS.err){dot.className='err';tx.textContent=QS.at?'Dati non aggiornati · '+hm(QS.at):'Dati non disponibili'}
@@ -410,8 +426,90 @@ function updateNet(){var dot=$('netDot'),tx=$('netTxt');
 function refreshTiles(){
   Array.prototype.forEach.call(grid.querySelectorAll('.tile[data-mod]'),function(t){var m=M[t.getAttribute('data-mod')];
     if(!m||!m.live)return;var tb=t.querySelector('.tb');if(tb)tb.innerHTML=m.c(subIdx)});
-  if(openMod&&M[openMod]&&M[openMod].live&&$('detail').classList.contains('show'))$('dBody').innerHTML=M[openMod].d();
+  if(openMod&&M[openMod]&&M[openMod].live&&$('detail').classList.contains('show')){var b=$('dBody'),st=b.scrollTop;b.innerHTML=M[openMod].d();b.scrollTop=st}
 }
+/* ---------- trimestrali e notizie (stesso ponte dati, /earnings e /news) ---------- */
+var E={},ES={at:null,err:null,loading:false},NW={},NS={at:null,err:null,loading:false},earnSel=null;
+function apiBase(){return (S.api||DEF.api).replace(/\/+$/,'')}
+function stockTickers(){return allTickers().filter(function(t){return !isEtf(t)})}
+function tickerBy(y){var r=null;allTickers().forEach(function(t){if(ysym(t)===y)r=t});return r}
+function nameOf(t){var q=Q[ysym(t)];return t.n||(q&&q.name)||t.s}
+function refreshEarnings(){
+  var syms=stockTickers().map(ysym);if(!syms.length||ES.loading)return;ES.loading=true;
+  Promise.all(chunk(syms,12).map(function(p){return getJSON(apiBase()+'/earnings?symbols='+p.map(encodeURIComponent).join(',')).catch(function(e){return {err:String((e&&e.message)||e)}})})).then(function(res){
+    var bad=0;res.forEach(function(d){if(d.err){bad++;return}(d.earnings||[]).forEach(function(x){E[x.symbol]=x})});
+    if(bad<res.length)ES.at=new Date();ES.err=bad?'parziale':null;
+  }).then(function(){ES.loading=false;refreshTiles()});
+}
+function refreshNews(){
+  var T=stockTickers();if(!T.length||NS.loading)return;NS.loading=true;
+  Promise.all(chunk(T,10).map(function(p){return getJSON(apiBase()+'/news?days=30&symbols='+p.map(function(t){return encodeURIComponent(ysym(t))}).join(',')+
+      '&names='+p.map(function(t){return encodeURIComponent(nameOf(t).replace(/\|/g,' '))}).join('|')).catch(function(e){return {err:String((e&&e.message)||e)}})})).then(function(res){
+    var bad=0;res.forEach(function(d){if(d.err){bad++;return}(d.news||[]).forEach(function(x){NW[x.symbol]=x})});
+    if(bad<res.length)NS.at=new Date();NS.err=bad?'parziale':null;
+  }).then(function(){NS.loading=false;refreshTiles()});
+}
+/* prima lettura dopo le quotazioni (servono i nomi per filtrare le notizie), poi a intervalli */
+var extraStarted=false;
+function startExtra(){if(extraStarted)return;extraStarted=true;refreshEarnings();refreshNews();
+  setInterval(refreshEarnings,6*3600000);setInterval(refreshNews,30*60000)}
+document.addEventListener('visibilitychange',function(){if(document.hidden||!extraStarted)return;
+  if(!NS.at||Date.now()-NS.at.getTime()>30*60000)refreshNews();if(!ES.at||Date.now()-ES.at.getTime()>6*3600000)refreshEarnings()});
+/* formati */
+var GGS=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'],MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function dayDiff(iso){var d=new Date(iso),a=new Date(),x=new Date(d.getFullYear(),d.getMonth(),d.getDate()),y=new Date(a.getFullYear(),a.getMonth(),a.getDate());return Math.round((x-y)/86400000)}
+function dLabel(iso){var d=new Date(iso);return GGS[d.getDay()]+' '+d.getDate()+' '+MESI[d.getMonth()]}
+function earnWhen(e,t){ /* "Gio 13 nov · 17:30" oppure "· data stimata"; per gli USA prima/dopo la seduta */
+  var d=new Date(e.nextDate),s=dLabel(e.nextDate);
+  if(e.dateEstimated)return s+' · data stimata';
+  var h=d.getHours(),m=d.getMinutes();if(h===0&&m===0)return s;s+=' · '+hm(d);
+  if(t&&(t.x==='NYSE'||t.x==='NASDAQ'||/^[A-Z]+$/.test(e.symbol))){if(h>=21)s+=' · dopo la chiusura';else if(h<15||(h===15&&m<30))s+=' · prima dell’apertura'}
+  return s}
+function bigN(n,cur){if(n==null||isNaN(n))return '—';var a=Math.abs(n),u='';if(a>=1e9){n/=1e9;u=' mld'}else if(a>=1e6){n/=1e6;u=' mln'}
+  return fmt(n,Math.abs(n)>=100?0:1)+u+(cur?' '+(CURSYM[cur]||cur):'')}
+function eps(n,cur){return n==null?'—':fmt(n,Math.abs(n)<10?2:1)+(cur?' '+(CURSYM[cur]||cur):'')}
+function ago(iso){if(!iso)return '';var m=Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(m<1)return 'adesso';if(m<60)return m+' min fa';if(m<24*60)return Math.round(m/60)+(Math.round(m/60)===1?' ora fa':' ore fa');
+  var g=dayDiff(iso);return g===-1?'ieri':dLabel(iso)}
+var SRC={'finance.yahoo.com':'Yahoo Finance','fool.com':'Motley Fool','stocktwits.com':'Stocktwits','benzinga.com':'Benzinga','247wallst.com':'24/7 Wall St.','marketbeat.com':'MarketBeat','investing.com':'Investing.com','reuters.com':'Reuters','bloomberg.com':'Bloomberg','barrons.com':'Barron’s','marketwatch.com':'MarketWatch','tikr.com':'TIKR','trefis.com':'Trefis','zacks.com':'Zacks','gurufocus.com':'GuruFocus','seekingalpha.com':'Seeking Alpha','insidermonkey.com':'Insider Monkey','simplywall.st':'Simply Wall St'};
+function srcOf(n){if(n.source)return n.source;var h=((n.link||'').match(/^https?:\/\/([^\/?#]+)/)||[])[1]||'';h=h.replace(/^www\./,'');
+  for(var k in SRC){if(h===k||h.slice(-k.length-1)==='.'+k)return SRC[k]}var p=h.split('.');return p.length>1?p[p.length-2]:h}
+/* elenco trimestrali: azioni con data nota, dalla più vicina; nel riquadro solo entro 30 giorni (e i conti di ieri) */
+function earnList(maxDays){var o=[];stockTickers().forEach(function(t){var e=E[ysym(t)];if(!e||e.error||!e.nextDate)return;
+  var g=dayDiff(e.nextDate);if(g<-1||(maxDays!=null&&g>maxDays))return;o.push({t:t,e:e,g:g})});
+  return o.sort(function(a,b){return a.e.nextDate<b.e.nextDate?-1:1})}
+function earnWait(){return '<div class="nolive"><span>'+(ES.err&&!ES.at?'Dati non disponibili':stockTickers().length?'In attesa dei dati…':'Nessuna azione nelle liste')+'</span></div>'}
+function gBox(g){return g<=0?'<b class="num" style="font-size:22px">'+(g===0?'oggi':'ieri')+'</b><span>&nbsp;</span>':g===1?'<b class="num" style="font-size:22px">domani</b><span>&nbsp;</span>':'<b class="num">'+g+'</b><span>giorni</span>'}
+/* notizie: tutte le azioni delle liste, senza doppioni, dalla più recente */
+function newsAll(onlyTitle){var o=[],seen={};stockTickers().forEach(function(t){var n=NW[ysym(t)];if(!n||!n.items)return;
+  n.items.forEach(function(it){if(onlyTitle&&it.rel<2)return;var k=it.link||it.title;if(seen[k]){seen[k].tk.push(t.s);return}var x={it:it,tk:[t.s]};seen[k]=x;o.push(x)})});
+  return o.sort(function(a,b){return (b.it.time||'')<(a.it.time||'')?-1:1})}
+function newsTile(){return newsAll(true).slice(0,12)}
+function newsRow(x,full){var it=x.it;
+  return '<div class="nw'+(full?' full':'')+'"><div class="nt">'+(it.earnings?'<span class="ebadge">conti</span>':'')+esc(it.title)+'</div>'+
+    (full&&it.summary&&it.summary!==it.title?'<div class="ns">'+esc(it.summary)+'</div>':'')+
+    '<div class="nm"><b>'+esc(x.tk.join(' · '))+'</b> · '+esc(ago(it.time))+' · '+esc(srcOf(it))+'</div></div>'}
+/* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
+function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
+  var c=e.currency,h='<button class="btn sm" data-earn="" style="margin-bottom:14px">‹ Calendario</button>';
+  h+='<div class="ehd"><div><b style="font-size:22px">'+esc(t.s)+'</b> <span class="mut">'+esc(nameOf(t))+' · '+esc(XNAME[t.x]||t.x)+'</span></div>'+
+    (e.nextDate?'<div class="mut">Prossimi conti: <b style="color:var(--text)">'+esc(earnWhen(e,t))+'</b>'+(e.callDate&&!e.dateEstimated?' · call '+hm(new Date(e.callDate)):'')+'</div>':'')+'</div>';
+  var nx=e.next||{};
+  h+='<div class="kpis"><div><span>Utile per azione atteso</span><b class="num">'+eps(nx.epsAvg,c)+'</b><small>'+(nx.epsLow!=null?'forchetta '+eps(nx.epsLow)+' – '+eps(nx.epsHigh):'&nbsp;')+'</small></div>'+
+    '<div><span>Ricavi attesi</span><b class="num">'+bigN(nx.revAvg,c)+'</b><small>'+(nx.revLow!=null?'forchetta '+bigN(nx.revLow)+' – '+bigN(nx.revHigh):'&nbsp;')+'</small></div></div>';
+  var H=(e.history||[]).slice().reverse();
+  if(H.length){var rev={};H.forEach(function(r){if(r.label)rev[r.label]=r.revenue});
+    h+='<div class="sect" style="margin-top:18px">Ultimi trimestri</div><table class="dtbl"><tr><th>Trimestre</th><th class="n">Utile/az. effettivo</th><th class="n">Stima</th><th class="n">Sorpresa</th><th class="n">Ricavi</th><th class="n">Ricavi a/a</th></tr>'+
+    H.map(function(r){var py=r.label?r.label.replace(/(\d{4})$/,function(y){return y-1}):null,yo=(r.revenue&&py&&rev[py])?(r.revenue/rev[py]-1)*100:null;
+      return '<tr><td>'+esc(r.label?r.label.replace(/^(\d)Q/,'$1° trim. '):r.quarter)+'</td><td class="n num"><b>'+eps(r.epsActual)+'</b></td><td class="n num mut">'+eps(r.epsEstimate)+'</td><td class="n num">'+(r.surprisePct==null?'—':pct(r.surprisePct))+'</td><td class="n num">'+bigN(r.revenue)+'</td><td class="n num">'+(yo==null?'<span class="mut">—</span>':pct(yo))+'</td></tr>'}).join('')+'</table>'}
+  var Y=(e.trend||[]).filter(function(x){return x.period==='0y'||x.period==='+1y'});
+  if(Y.length)h+='<div class="sect" style="margin-top:18px">Stime annuali degli analisti</div><table class="dtbl"><tr><th>Esercizio</th><th class="n">Utile/az.</th><th class="n">Crescita</th><th class="n">Ricavi</th></tr>'+
+    Y.map(function(x){return '<tr><td>'+(x.period==='0y'?'In corso':'Prossimo')+(x.endDate?' <span class="mut">· chiude '+esc(x.endDate.slice(5,7)+'/'+x.endDate.slice(0,4))+'</span>':'')+'</td><td class="n num">'+eps(x.epsAvg,c)+'</td><td class="n num">'+(x.growth==null?'—':pct(x.growth*100))+'</td><td class="n num">'+bigN(x.revAvg,c)+'</td></tr>'}).join('')+'</table>';
+  var n=(NW[y]&&NW[y].items)||[],ne=n.filter(function(it){return it.earnings}),no=n.filter(function(it){return !it.earnings&&it.rel===2}).slice(0,Math.max(0,5-ne.length));
+  h+='<div class="sect" style="margin-top:18px">Dai conti e dalla call · notizie</div>'+
+    (ne.length||no.length?ne.concat(no).map(function(it){return newsRow({it:it,tk:[t.s]},true)}).join(''):'<div class="mut" style="font-size:14px">Nessuna notizia recente su '+esc(t.s)+'. Gli articoli sui risultati compaiono nei giorni dei conti e restano disponibili per qualche settimana.</div>')+
+    '<div class="note">Notizie da Yahoo Finance, in genere in inglese. Quelle con l’etichetta «conti» parlano di risultati, guidance o call.</div>';
+  return h}
 function anyOpen(){var xs={};IDX.forEach(function(i){xs[i.x]=1});allTickers().forEach(function(t){xs[t.x]=1});
   for(var x in xs){if(isOpen(x))return true}return false}
 function scheduleQuotes(){clearTimeout(qTimer);var min=anyOpen()?FQB[S.fqB]:+S.fqBoff;
@@ -419,19 +517,6 @@ function scheduleQuotes(){clearTimeout(qTimer);var min=anyOpen()?FQB[S.fqB]:+S.f
   qTimer=setTimeout(function(){refreshQuotes();scheduleQuotes()},min*60000)}
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&(!QS.at||Date.now()-QS.at.getTime()>60000))refreshQuotes()});
 var D={
-  earn:[
-    {g:2,k:'Titolo A',d:'Gio 13 nov · dopo chiusura',e:'Data e stime di esempio'},
-    {g:6,k:'Titolo B',d:'Lun 17 nov · prima apertura',e:'Data e stime di esempio'},
-    {g:20,k:'Titolo C',d:'Mar 1 dic · prima apertura',e:'Data stimata, non confermata'}
-  ],
-  mktnews:[
-    {k:'BCE lascia i tassi invariati, focus sull’inflazione core',d:'Mercati · 1 ora fa'},
-    {k:'Semiconduttori in rialzo dopo i conti di un big del settore',d:'Mercati · 3 ore fa'},
-    {k:'Yen debole: Tokyo valuta interventi sul cambio',d:'Valute · 4 ore fa'},
-    {k:'Petrolio in calo sulle scorte americane',d:'Materie prime · 5 ore fa'},
-    {k:'Lusso europeo sotto pressione per la domanda cinese',d:'Settori · ieri'},
-    {k:'Treasury a breve: rendimenti stabili in attesa della Fed',d:'Obbligazioni · ieri'}
-  ],
   commod:[
     {k:'Oro',d:'$/oncia',v:4085.2,c:0.44,dg:1},
     {k:'Brent',d:'$/barile',v:63.18,c:-1.12,dg:2},
@@ -540,18 +625,24 @@ var M={
       var P=portPages();if(!P.length)return '<div class="nolive"><span>Nessun titolo nelle liste</span></div>';
       var pg=P[i%P.length];
       return '<div class="seg">'+S.lists.map(function(L){return '<span class="'+(L.id===pg.L.id?'on':'')+'">'+esc(L.name)+'</span>'}).join('')+'<span class="segk">'+pg.k+'</span></div><div class="rows">'+pg.t.map(rowTicker).join('')+'</div>'},
-    d:function(){var h='';S.lists.forEach(function(L){h+='<table class="dtbl" style="margin-bottom:18px"><tr><th>'+esc(L.name)+'</th><th>Nome</th><th>Borsa</th><th class="n">Prezzo</th><th class="n">Var. giorno</th><th class="n">Ultimo</th></tr>'+
-      (function(a){var az=a.filter(function(t){return !isEtf(t)}),et=a.filter(isEtf);return (az.length&&et.length?[['Azioni',az],['ETF',et]]:[['',a]])})(sortedTickers(L)).map(function(g){return (g[0]?'<tr><td colspan="6" class="mut" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding-top:14px">'+g[0]+'</td></tr>':'')+g[1].map(function(t){var q=Q[ysym(t)],ok=okq(q);return '<tr><td><b>'+esc(t.s)+'</b>'+(t.t==='ETF'?' <span class="etf">ETF</span>':'')+'</td><td>'+esc(t.n||(q&&q.name)||'')+'</td><td class="mut">'+mkDot(t.x)+esc(XNAME[t.x]||t.x)+'</td><td class="n num">'+
-        (ok?fmt(q.price,dgOf(q))+' '+curSym(q,t):'<span class="mut">'+(q?esc(qerr(q)||'n/d'):'—')+'</span>')+'</td><td class="n num">'+(ok?pct(q.changePct):'')+'</td><td class="n num mut">'+(ok?whenStr(q.marketTime):'')+'</td></tr>'}).join('')}).join('')+'</table>'});return h},
+    d:function(){var h='',byX=S.order!=='manual';S.lists.forEach(function(L){
+      h+='<table class="dtbl" style="margin-bottom:18px"><tr><th>'+esc(L.name)+'</th><th>Nome</th>'+(byX?'':'<th>Borsa</th>')+'<th class="n">Prezzo</th><th class="n">Var. giorno</th><th class="n">Ultimo</th></tr>';
+      var a=sortedTickers(L),az=a.filter(function(t){return !isEtf(t)}),et=a.filter(isEtf),G=az.length&&et.length?[['Azioni',az],['ETF',et]]:[['',a]],cols=byX?5:6;
+      G.forEach(function(g){
+        if(g[0])h+='<tr><td colspan="'+cols+'" class="mut" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding-top:14px;color:var(--accent)">'+g[0]+'</td></tr>';
+        var lastX=null;
+        g[1].forEach(function(t){var q=Q[ysym(t)],ok=okq(q);
+          /* intestazione di borsa quando cambia (solo con l'ordine per borsa) */
+          if(byX&&t.x!==lastX){lastX=t.x;h+='<tr class="xh"><td colspan="'+cols+'">'+mkDot(t.x)+esc(XNAME[t.x]||t.x)+'</td></tr>'}
+          h+='<tr><td><b>'+esc(t.s)+'</b>'+(t.t==='ETF'?' <span class="etf">ETF</span>':'')+'</td><td>'+esc(t.n||(q&&q.name)||'')+'</td>'+(byX?'':'<td class="mut">'+mkDot(t.x)+esc(XNAME[t.x]||t.x)+'</td>')+'<td class="n num">'+
+            (ok?fmt(q.price,dgOf(q))+' '+curSym(q,t):'<span class="mut">'+(q?esc(qerr(q)||'n/d'):'—')+'</span>')+'</td><td class="n num">'+(ok?pct(q.changePct):'')+'</td><td class="n num mut">'+(ok?whenStr(q.marketTime):'')+'</td></tr>'});
+      });h+='</table>'});return h},
     sub:'Tutte le liste · gestibili da Impostazioni › Liste titoli'},
   fx:{l:'Valute',s:'Yahoo · intraday',live:true,n:one,c:function(){
       return '<div class="rows">'+FXL.map(function(f){var q=Q[f.y],ok=okq(q);return '<div class="r"><span class="k">'+f.k+'</span><span class="v num" style="font-size:26px">'+(ok?fmt(q.price,f.dg):'—')+'<small>'+(ok?pct(q.changePct):'&nbsp;')+'</small></span></div>'}).join('')+'</div>'},
     d:function(){return '<table class="dtbl"><tr><th>Cambio</th><th class="n">Valore</th><th class="n">Var. %</th><th class="n">Ultimo</th></tr>'+
       FXL.map(function(f){var q=Q[f.y]||{};return '<tr><td><b>'+f.k+'</b></td><td class="n num">'+fmt(q.price,f.dg)+'</td><td class="n num">'+pct(q.changePct)+'</td><td class="n num mut">'+whenStr(q.marketTime)+'</td></tr>'}).join('')+'</table>'},
     sub:'Cambi dell’euro intraday da Yahoo Finance'},
-  earnings:{l:'Trimestrali',s:'prossimi 30 gg',n:one,c:function(){
-      return '<div class="rows">'+D.earn.map(function(e,i){return '<div class="cd'+(i===0?' first':'')+'"><div class="g"><b class="num">'+e.g+'</b><span>'+(e.g===1?'giorno':'giorni')+'</span></div><div class="i"><b>'+e.k+'</b><div>'+e.d+'</div></div></div>'}).join('')+'</div>'},
-    d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Data</th><th>Attese</th><th class="n">Ultimo trim.</th></tr>'+D.earn.map(function(e,i){return '<tr><td><b>'+e.k+'</b></td><td>'+e.d+'</td><td class="mut">'+e.e+'</td><td class="n">'+['<span class="up">sopra stime</span>','<span class="up">sopra stime</span>','<span class="down">sotto stime</span>'][i]+'</td></tr>'}).join('')+'</table>'}, sub:'Calendario dai titoli delle liste · stime vs risultato'},
   live:{l:'In diretta',s:'Serie A',
     n:function(){var L=liveList();return L.length>5?chunk(L,4).length:1},
     c:function(i){var L=liveList();
@@ -603,8 +694,28 @@ M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
   d:function(){var a=moverList();if(!a.length)return nodata();
     return '<table class="dtbl"><tr><th>Titolo</th><th>Nome</th><th class="n">Prezzo</th><th class="n">Var. giorno</th></tr>'+a.map(function(o){return '<tr><td><b>'+esc(o.t.s)+'</b></td><td class="mut">'+esc(o.t.n||o.q.name||'')+'</td><td class="n num">'+fmt(o.q.price,dgOf(o.q))+' '+curSym(o.q,o.t)+'</td><td class="n num">'+pct(o.q.changePct)+'</td></tr>'}).join('')+'</table>'},
   sub:'Azioni delle liste ordinate per variazione del giorno (ETF esclusi)'};
-M.mktnews={l:'Notizie mercati',s:'RSS',n:function(){return chunk(D.mktnews,3).length},c:function(i){var g=chunk(D.mktnews,3);return '<div class="rows news">'+g[i%g.length].map(function(n){return '<div class="r"><span class="k">'+esc(n.k)+'<small>'+esc(n.d)+'</small></span></div>'}).join('')+'</div>'},
-  d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Sezione</th></tr>'+D.mktnews.map(function(n){return '<tr><td>'+esc(n.k)+'</td><td class="mut">'+esc(n.d)+'</td></tr>'}).join('')+'</table>'}, sub:'Feed configurabili · titoli di esempio'};
+M.earnings={l:'Trimestrali',s:'prossimi 30 gg',live:true,n:function(){return chunk(earnList(30),3).length},c:function(i){
+    var L=earnList(30);if(!L.length){if(!ES.at)return earnWait();var nx=earnList(null)[0];
+      return '<div class="nolive"><span>Nessuna trimestrale nei prossimi 30 giorni</span>'+(nx?'<b>'+esc(nx.t.s)+'</b><span>'+esc(dLabel(nx.e.nextDate))+(nx.e.dateEstimated?' · stimata':'')+'</span>':'')+'</div>'}
+    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(o,k){var nx=o.e.next||{};
+      return '<div class="cd'+(i%g.length===0&&k===0?' first':'')+'"><div class="g">'+gBox(o.g)+'</div><div class="i"><b>'+esc(o.t.s)+'</b> <span class="mut" style="font-size:13px">'+esc(nameOf(o.t))+'</span><div>'+esc(earnWhen(o.e,o.t))+'</div>'+
+        (nx.epsAvg!=null?'<div>Attesi '+eps(nx.epsAvg,o.e.currency)+' per azione</div>':'')+'</div></div>'}).join('')+'</div>'},
+  d:function(){if(earnSel)return earnDetail(earnSel);var L=earnList(null);
+    var none=stockTickers().filter(function(t){var e=E[ysym(t)];return !e||e.error||!e.nextDate});
+    if(!L.length&&!none.length)return earnWait();
+    return '<table class="dtbl"><tr><th>Titolo</th><th>Prossimi conti</th><th class="n">Utile/az. atteso</th><th class="n">Ultimo trimestre</th><th></th></tr>'+L.map(function(o){
+        var H=o.e.history||[],last=H[H.length-1],nx=o.e.next||{};
+        return '<tr data-earn="'+esc(ysym(o.t))+'" style="cursor:pointer"><td><b>'+esc(o.t.s)+'</b><div class="mut" style="font-size:12px">'+esc(nameOf(o.t))+'</div></td><td>'+esc(earnWhen(o.e,o.t))+(o.g>=0&&o.g<=30?'<div class="mut" style="font-size:12px">'+(o.g===0?'oggi':o.g===1?'domani':'tra '+o.g+' giorni')+'</div>':'')+'</td>'+
+          '<td class="n num">'+eps(nx.epsAvg,o.e.currency)+'</td><td class="n">'+(last&&last.surprisePct!=null?(last.surprisePct>=0?'<span class="up">sopra stime</span>':'<span class="down">sotto stime</span>')+'<div class="num" style="font-size:12px">'+pct(last.surprisePct)+'</div>':'<span class="mut">—</span>')+'</td><td class="n mut" style="font-size:20px">›</td></tr>'}).join('')+
+      none.map(function(t){var e=E[ysym(t)];return '<tr><td><b>'+esc(t.s)+'</b><div class="mut" style="font-size:12px">'+esc(nameOf(t))+'</div></td><td class="mut" colspan="4">'+(e&&e.error?'dati non disponibili':e?'data non ancora annunciata':'in attesa dei dati')+'</td></tr>'}).join('')+'</table>'+
+      '<div class="note">Tocca un titolo per consuntivi, stime e notizie sui conti. Dati Yahoo Finance; gli ETF sono esclusi.</div>'},
+  sub:'Calendario delle azioni delle liste · tocca un titolo per il dettaglio'};
+M.mktnews={l:'Notizie',s:'titoli delle liste',live:true,n:function(){return chunk(newsTile(),3).length},c:function(i){
+    var L=newsTile();if(!L.length)return '<div class="nolive"><span>'+(NS.at?'Nessuna notizia recente sui titoli delle liste':NS.err?'Dati non disponibili':stockTickers().length?'In attesa delle notizie…':'Nessuna azione nelle liste')+'</span></div>';
+    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(x){return newsRow(x,false)}).join('')+'</div>'},
+  d:function(){var L=newsAll(false);if(!L.length)return '<div class="mut">Nessuna notizia recente.</div>';
+    return L.map(function(x){return newsRow(x,true)}).join('')+'<div class="note">Ultimi 30 giorni, solo notizie che citano la società. Fonte Yahoo Finance, in genere in inglese.</div>'},
+  sub:'Notizie sulle azioni delle liste · Yahoo Finance'};
 M.commod={l:'Materie prime e cripto',s:'',n:one,c:function(){return '<div class="rows">'+D.commod.map(function(c){return '<div class="r"><span class="k">'+c.k+'<small>'+c.d+'</small></span><span class="v num" style="font-size:24px">'+fmt(c.v,c.dg)+'<small>'+pct(c.c)+'</small></span></div>'}).join('')+'</div>'},
   d:function(){return M.commod.c(0)}, sub:'Valori di esempio'};
 M.results={l:'Risultati giornata 12',s:'Serie A',n:function(){return chunk(D.results,4).length},c:function(i){var g=chunk(D.results,4);return '<div class="rows">'+g[i%g.length].map(function(r){return '<div class="lrow ht"><span class="h">'+r.h+'</span><span class="sc num">'+r.sh+'–'+r.sa+'</span><span class="a">'+r.a+'</span><span class="m">Fin.</span></div>'}).join('')+'</div>'},
@@ -637,7 +748,7 @@ var grid=$('grid'),bar=$('bar'),prog=$('prog');
 var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
-var DEMO={earnings:1,mktnews:1,commod:1,live:1,table:1,next:1,ucl:1,results:1,ucltable:1,cinema:1,stream:1,episodes:1,shows:1,photowx:1,portfolioPh:1,morning:1,sunweek:1,news:1};
+var DEMO={commod:1,live:1,table:1,next:1,ucl:1,results:1,ucltable:1,cinema:1,stream:1,episodes:1,shows:1,photowx:1,portfolioPh:1,morning:1,sunweek:1,news:1};
 function tileHead(m,id){return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+(m.s||'')+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
@@ -702,7 +813,7 @@ function endInteractive(){
 /* ---------- overlay ---------- */
 function openOv(id){$(id).classList.add('show')}
 function closeOv(id){$(id).classList.remove('show')}
-function openDetail(mod){openMod=mod;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
+function openDetail(mod){openMod=mod;earnSel=null;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
 /* ---------- impostazioni: copia di lavoro ---------- */
 var W=null;
@@ -785,7 +896,7 @@ $('sSave').addEventListener('click',function(){
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
-  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 $('sReset').addEventListener('click',function(){S=clone(DEF);save();openSettings();refreshQuotes();scheduleQuotes()});
 
@@ -808,7 +919,7 @@ $('sImportFile').addEventListener('change',function(){
     try{var cfg=JSON.parse(r.result);
       if(!cfg||cfg.app!=='DigitalPanel'||!Array.isArray(cfg.lists))throw new Error('formato');
       delete cfg.app;delete cfg.version;delete cfg.saved;
-      S=Object.assign(clone(S),cfg);save();openSettings();refreshQuotes();scheduleQuotes();
+      S=Object.assign(clone(S),cfg);save();openSettings();refreshQuotes();scheduleQuotes();if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}
       subIdx=0;renderPage();startSub();
       var n=0;S.lists.forEach(function(L){n+=L.tickers.length});cfgMsg('Importato: '+S.lists.length+' liste, '+n+' titoli');
     }catch(e){cfgMsg('File non valido')}
@@ -888,6 +999,7 @@ var stage=$('stage'),tx=0,ty=0,lp=null;
 stage.addEventListener('click',function(e){
   var t=e.target;
   var cl=t.closest('[data-close]');if(cl){closeOv(cl.getAttribute('data-close'));touch();return}
+  var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
   if(t.closest('.panel')){touch();return}
   if(t.closest('.ov')){closeOv('detail');closeOv('settings');touch();return}
   var b=t.closest('[data-pg]');if(b){go(+b.getAttribute('data-pg'));touch();return}
