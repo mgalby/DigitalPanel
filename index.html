@@ -473,11 +473,14 @@ function ago(iso){if(!iso)return '';var m=Math.round((Date.now()-new Date(iso).g
   var g=dayDiff(iso);return g===-1?'ieri':dLabel(iso)}
 var SRC={'finance.yahoo.com':'Yahoo Finance','fool.com':'Motley Fool','stocktwits.com':'Stocktwits','benzinga.com':'Benzinga','247wallst.com':'24/7 Wall St.','marketbeat.com':'MarketBeat','investing.com':'Investing.com','reuters.com':'Reuters','bloomberg.com':'Bloomberg','barrons.com':'Barron’s','marketwatch.com':'MarketWatch','tikr.com':'TIKR','trefis.com':'Trefis','zacks.com':'Zacks','gurufocus.com':'GuruFocus','seekingalpha.com':'Seeking Alpha','insidermonkey.com':'Insider Monkey','simplywall.st':'Simply Wall St'};
 function srcOf(n){if(n.source)return n.source;var h=((n.link||'').match(/^https?:\/\/([^\/?#]+)/)||[])[1]||'';h=h.replace(/^www\./,'');
-  for(var k in SRC){if(h===k||h.slice(-k.length-1)==='.'+k)return SRC[k]}var p=h.split('.');return p.length>1?p[p.length-2]:h}
+  for(var k in SRC){if(h===k||h.slice(-k.length-1)==='.'+k)return SRC[k]}var p=h.split('.'),w=p.length>1?p[p.length-2]:h;return w.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()})}
 /* elenco trimestrali: azioni con data nota, dalla più vicina; nel riquadro solo entro 30 giorni (e i conti di ieri) */
 function earnList(maxDays){var o=[];stockTickers().forEach(function(t){var e=E[ysym(t)];if(!e||e.error||!e.nextDate)return;
   var g=dayDiff(e.nextDate);if(g<-1||(maxDays!=null&&g>maxDays))return;o.push({t:t,e:e,g:g})});
   return o.sort(function(a,b){return a.e.nextDate<b.e.nextDate?-1:1})}
+function earnPast(){var o=[];stockTickers().forEach(function(t){var e=E[ysym(t)];if(e&&!e.error&&e.nextDate&&dayDiff(e.nextDate)<-1)o.push({t:t,e:e,g:dayDiff(e.nextDate)})});
+  return o.sort(function(a,b){return a.e.nextDate>b.e.nextDate?-1:1})}
+function lastSurp(e){var H=(e.history||[]).filter(function(r){return r.surprisePct!=null});return H[H.length-1]||null}
 function earnWait(){return '<div class="nolive"><span>'+(ES.err&&!ES.at?'Dati non disponibili':stockTickers().length?'In attesa dei dati…':'Nessuna azione nelle liste')+'</span></div>'}
 function gBox(g){return g<=0?'<b class="num" style="font-size:22px">'+(g===0?'oggi':'ieri')+'</b><span>&nbsp;</span>':g===1?'<b class="num" style="font-size:22px">domani</b><span>&nbsp;</span>':'<b class="num">'+g+'</b><span>giorni</span>'}
 /* notizie: tutte le azioni delle liste, senza doppioni, dalla più recente */
@@ -491,17 +494,18 @@ function newsRow(x,full){var it=x.it;
     '<div class="nm"><b>'+esc(x.tk.join(' · '))+'</b> · '+esc(ago(it.time))+' · '+esc(srcOf(it))+'</div></div>'}
 /* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
 function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
-  var c=e.currency,h='<button class="btn sm" data-earn="" style="margin-bottom:14px">‹ Calendario</button>';
+  var c=e.currency,isPast=e.nextDate&&dayDiff(e.nextDate)<-1,h='<button class="btn sm" data-earn="" style="margin-bottom:14px">‹ Calendario</button>';
   h+='<div class="ehd"><div><b style="font-size:22px">'+esc(t.s)+'</b> <span class="mut">'+esc(nameOf(t))+' · '+esc(XNAME[t.x]||t.x)+'</span></div>'+
-    (e.nextDate?'<div class="mut">Prossimi conti: <b style="color:var(--text)">'+esc(earnWhen(e,t))+'</b>'+(e.callDate&&!e.dateEstimated?' · call '+hm(new Date(e.callDate)):'')+'</div>':'')+'</div>';
+    (e.nextDate?'<div class="mut">'+(isPast?'Ultimi conti: <b style="color:var(--text)">'+esc(dLabel(e.nextDate))+'</b> · prossima data non ancora annunciata':'Prossimi conti: <b style="color:var(--text)">'+esc(earnWhen(e,t))+'</b>'+(e.callDate&&!e.dateEstimated?' · call '+hm(new Date(e.callDate)):''))+'</div>':'')+'</div>';
   var nx=e.next||{};
-  h+='<div class="kpis"><div><span>Utile per azione atteso</span><b class="num">'+eps(nx.epsAvg,c)+'</b><small>'+(nx.epsLow!=null?'forchetta '+eps(nx.epsLow)+' – '+eps(nx.epsHigh):'&nbsp;')+'</small></div>'+
+  if(!isPast)h+='<div class="kpis"><div><span>Utile per azione atteso</span><b class="num">'+eps(nx.epsAvg,c)+'</b><small>'+(nx.epsLow!=null?'forchetta '+eps(nx.epsLow)+' – '+eps(nx.epsHigh):'&nbsp;')+'</small></div>'+
     '<div><span>Ricavi attesi</span><b class="num">'+bigN(nx.revAvg,c)+'</b><small>'+(nx.revLow!=null?'forchetta '+bigN(nx.revLow)+' – '+bigN(nx.revHigh):'&nbsp;')+'</small></div></div>';
   var H=(e.history||[]).slice().reverse();
   if(H.length){var rev={};H.forEach(function(r){if(r.label)rev[r.label]=r.revenue});
-    h+='<div class="sect" style="margin-top:18px">Ultimi trimestri</div><table class="dtbl"><tr><th>Trimestre</th><th class="n">Utile/az. effettivo</th><th class="n">Stima</th><th class="n">Sorpresa</th><th class="n">Ricavi</th><th class="n">Ricavi a/a</th></tr>'+
-    H.map(function(r){var py=r.label?r.label.replace(/(\d{4})$/,function(y){return y-1}):null,yo=(r.revenue&&py&&rev[py])?(r.revenue/rev[py]-1)*100:null;
-      return '<tr><td>'+esc(r.label?r.label.replace(/^(\d)Q/,'$1° trim. '):r.quarter)+'</td><td class="n num"><b>'+eps(r.epsActual)+'</b></td><td class="n num mut">'+eps(r.epsEstimate)+'</td><td class="n num">'+(r.surprisePct==null?'—':pct(r.surprisePct))+'</td><td class="n num">'+bigN(r.revenue)+'</td><td class="n num">'+(yo==null?'<span class="mut">—</span>':pct(yo))+'</td></tr>'}).join('')+'</table>'}
+    var yoyOf=function(r){var py=r.label?r.label.replace(/(\d{4})$/,function(y){return y-1}):null;return (r.revenue&&py&&rev[py])?(r.revenue/rev[py]-1)*100:null},hasY=H.some(function(r){return yoyOf(r)!=null});
+    h+='<div class="sect" style="margin-top:18px">Ultimi trimestri</div><table class="dtbl"><tr><th>Trimestre</th><th class="n">Utile/az. effettivo</th><th class="n">Stima</th><th class="n">Sorpresa</th><th class="n">Ricavi</th>'+(hasY?'<th class="n">Ricavi a/a</th>':'')+'</tr>'+
+    H.map(function(r){var yo=yoyOf(r);
+      return '<tr><td>'+esc(r.label?r.label.replace(/^(\d)Q/,'$1° trim. '):r.quarter)+'</td><td class="n num"><b>'+eps(r.epsActual)+'</b></td><td class="n num mut">'+eps(r.epsEstimate)+'</td><td class="n num">'+(r.surprisePct==null?'—':pct(r.surprisePct))+'</td><td class="n num">'+bigN(r.revenue)+'</td>'+(hasY?'<td class="n num">'+(yo==null?'<span class="mut">—</span>':pct(yo))+'</td>':'')+'</tr>'}).join('')+'</table>'}
   var Y=(e.trend||[]).filter(function(x){return x.period==='0y'||x.period==='+1y'});
   if(Y.length)h+='<div class="sect" style="margin-top:18px">Stime annuali degli analisti</div><table class="dtbl"><tr><th>Esercizio</th><th class="n">Utile/az.</th><th class="n">Crescita</th><th class="n">Ricavi</th></tr>'+
     Y.map(function(x){return '<tr><td>'+(x.period==='0y'?'In corso':'Prossimo')+(x.endDate?' <span class="mut">· chiude '+esc(x.endDate.slice(5,7)+'/'+x.endDate.slice(0,4))+'</span>':'')+'</td><td class="n num">'+eps(x.epsAvg,c)+'</td><td class="n num">'+(x.growth==null?'—':pct(x.growth*100))+'</td><td class="n num">'+bigN(x.revAvg,c)+'</td></tr>'}).join('')+'</table>';
@@ -701,12 +705,16 @@ M.earnings={l:'Trimestrali',s:'prossimi 30 gg',live:true,n:function(){return chu
       return '<div class="cd'+(i%g.length===0&&k===0?' first':'')+'"><div class="g">'+gBox(o.g)+'</div><div class="i"><b>'+esc(o.t.s)+'</b> <span class="mut" style="font-size:13px">'+esc(nameOf(o.t))+'</span><div>'+esc(earnWhen(o.e,o.t))+'</div>'+
         (nx.epsAvg!=null?'<div>Attesi '+eps(nx.epsAvg,o.e.currency)+' per azione</div>':'')+'</div></div>'}).join('')+'</div>'},
   d:function(){if(earnSel)return earnDetail(earnSel);var L=earnList(null);
-    var none=stockTickers().filter(function(t){var e=E[ysym(t)];return !e||e.error||!e.nextDate});
-    if(!L.length&&!none.length)return earnWait();
+    var none=stockTickers().filter(function(t){var e=E[ysym(t)];return !e||e.error||!e.nextDate}),PA=earnPast();
+    if(!L.length&&!none.length&&!PA.length)return earnWait();
     return '<table class="dtbl"><tr><th>Titolo</th><th>Prossimi conti</th><th class="n">Utile/az. atteso</th><th class="n">Ultimo trimestre</th><th></th></tr>'+L.map(function(o){
-        var H=o.e.history||[],last=H[H.length-1],nx=o.e.next||{};
+        var last=lastSurp(o.e),nx=o.e.next||{};
         return '<tr data-earn="'+esc(ysym(o.t))+'" style="cursor:pointer"><td><b>'+esc(o.t.s)+'</b><div class="mut" style="font-size:12px">'+esc(nameOf(o.t))+'</div></td><td>'+esc(earnWhen(o.e,o.t))+(o.g>=0&&o.g<=30?'<div class="mut" style="font-size:12px">'+(o.g===0?'oggi':o.g===1?'domani':'tra '+o.g+' giorni')+'</div>':'')+'</td>'+
           '<td class="n num">'+eps(nx.epsAvg,o.e.currency)+'</td><td class="n">'+(last&&last.surprisePct!=null?(last.surprisePct>=0?'<span class="up">sopra stime</span>':'<span class="down">sotto stime</span>')+'<div class="num" style="font-size:12px">'+pct(last.surprisePct)+'</div>':'<span class="mut">—</span>')+'</td><td class="n mut" style="font-size:20px">›</td></tr>'}).join('')+
+      (PA.length?'<tr class="xh"><td colspan="5">Conti già pubblicati · prossima data non ancora annunciata</td></tr>':'')+
+      PA.map(function(o){var last=lastSurp(o.e);return '<tr data-earn="'+esc(ysym(o.t))+'" style="cursor:pointer"><td><b>'+esc(o.t.s)+'</b><div class="mut" style="font-size:12px">'+esc(nameOf(o.t))+'</div></td><td class="mut">Ultimi conti '+esc(dLabel(o.e.nextDate))+'</td><td></td>'+
+        '<td class="n">'+(last?(last.surprisePct>=0?'<span class="up">sopra stime</span>':'<span class="down">sotto stime</span>')+'<div class="num" style="font-size:12px">'+pct(last.surprisePct)+'</div>':'<span class="mut">—</span>')+'</td><td class="n mut" style="font-size:20px">›</td></tr>'}).join('')+
+      (none.length?'<tr class="xh"><td colspan="5">Senza dati trimestrali</td></tr>':'')+
       none.map(function(t){var e=E[ysym(t)];return '<tr><td><b>'+esc(t.s)+'</b><div class="mut" style="font-size:12px">'+esc(nameOf(t))+'</div></td><td class="mut" colspan="4">'+(e&&e.error?'dati non disponibili':e?'data non ancora annunciata':'in attesa dei dati')+'</td></tr>'}).join('')+'</table>'+
       '<div class="note">Tocca un titolo per consuntivi, stime e notizie sui conti. Dati Yahoo Finance; gli ETF sono esclusi.</div>'},
   sub:'Calendario delle azioni delle liste · tocca un titolo per il dettaglio'};
