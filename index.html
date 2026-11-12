@@ -291,6 +291,11 @@ html,body{margin:0}
 .seg span.segk .fr-reg,.seg span.segk .fr-att{border:0;padding:0;letter-spacing:0;text-transform:none;font-weight:500}
 .seg span.segk .fr-reg,.poster .fbadge .fr-reg{color:var(--accent)}.seg span.segk .fr-att,.poster .fbadge .fr-att{color:#7DB4E8}.poster .fbadge span{font-size:11px;font-weight:600}
 .cd.new .g b{color:var(--up)}
+.slide{position:relative;height:470px;background:#0B0D10;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.slide img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.sl-nav{position:absolute;top:0;bottom:0;width:90px;border:0;background:transparent;color:rgba(232,234,237,.75);font-size:44px;cursor:pointer}
+.sl-nav.l{left:0}.sl-nav.r{right:0}
+.sl-cap{margin-top:12px}.sl-cap b{font-size:18px;font-weight:500;display:block}.sl-cap span{font-size:13px;color:var(--text-2)}
 </style>
 </head>
 <body>
@@ -336,7 +341,9 @@ html,body{margin:0}
         <div class="btns" style="margin-top:0;margin-bottom:24px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div><div class="sect">Intrattenimento</div><div class="set" style="margin-bottom:24px"><div class="fld" style="grid-column:1 / -1"><span class="lab">Piattaforme in abbonamento</span><div class="chk" id="sProv"></div></div>
           <div class="fld" style="grid-column:1 / -1"><span class="lab">Serie seguite</span><div class="chips" id="sTv"></div><div class="add"><input type="text" id="sTvQ" placeholder="Cerca una serie per titolo" aria-label="Cerca una serie" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sTvGo">Cerca</button><span class="mut" id="sTvMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sTvRes"></div></div>
           <div class="fld" style="grid-column:1 / -1"><span class="lab">Registi e attori preferiti</span><div class="chips" id="sPp"></div><div class="add"><input type="text" id="sPpQ" placeholder="Cerca un regista o un attore" aria-label="Cerca un regista o un attore" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPpGo">Cerca</button><span class="mut" id="sPpMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPpRes"></div></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Generi esclusi dalle novità streaming</span><div class="chk" id="sGen"></div></div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
+          <div class="fld" style="grid-column:1 / -1"><span class="lab">Generi esclusi dalle novità streaming</span><div class="chk" id="sGen"></div></div></div><div class="sect">Fotografia</div><div class="set" style="margin-bottom:24px"><div class="fld"><label for="sFkUser">Profilo Flickr (alias o codice)</label><input type="text" id="sFkUser" placeholder="es. il nome in flickr.com/photos/…" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
+          <div class="fld"><label for="sFkTag">Tag delle foto del portfolio</label><input type="text" id="sFkTag" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
+          <div class="note" style="grid-column:1 / -1;margin-top:0">Compaiono le foto pubbliche del profilo con questo tag (le ultime 20 caricate). In Lightroom Classic basta aggiungere la parola chiave e ripubblicare.</div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
 
         <div class="sect">Aggiornamento dati</div>
         <div class="set">
@@ -584,6 +591,19 @@ function vote(v){return v?'<span class="vt">★ '+fmt(v,1)+'</span>':''}
 function entRow(m,meta){return '<div class="er">'+thumb(m.poster)+'<div class="ei"><b>'+esc(m.title)+'</b>'+(m.original?' <span class="mut" style="font-size:13px">'+esc(m.original)+'</span>':'')+
   '<div class="em">'+meta+'</div>'+(m.overview?'<div class="eo">'+esc(m.overview)+'</div>':'')+'</div></div>'}
 
+/* ---------- fotografia: portfolio da Flickr (feed pubblico per tag) ---------- */
+var PH={items:null,err:null,at:null,loading:false},phIdx=0;
+function fotoCfg(){return S.foto||DEF.foto}
+function refreshPhotos(){var c=fotoCfg();if(!c.user){PH.items=null;PH.err=null;refreshTiles();return}if(PH.loading)return;PH.loading=true;
+  getJSON(apiBase()+'/flickr?user='+encodeURIComponent(c.user)+'&tag='+encodeURIComponent(c.tag||'')).then(function(d){PH.items=(d.items||[]).slice(0,24);PH.err=d.error||null;PH.at=new Date()},
+    function(e){PH.err=String((e&&e.message)||e)}).then(function(){PH.loading=false;refreshTiles()})}
+setTimeout(function(){refreshPhotos();setInterval(refreshPhotos,30*60000)},2500);
+function preload(u){if(u){var im=new Image();im.src=u}}
+function phCaption(it,i,n){return '<b>'+esc(it.title||'Senza titolo')+'</b><span>Portfolio · '+(i+1)+' / '+n+(it.taken?' · '+esc(dShort(it.taken.slice(0,10)))+' '+it.taken.slice(0,4):'')+'</span>'}
+function phSlide(){var L=PH.items||[];if(!L.length)return '<div class="mut">Nessuna foto.</div>';var i=((phIdx%L.length)+L.length)%L.length,it=L[i];preload(L[(i+1)%L.length].img);preload(L[(i-1+L.length)%L.length].img);
+  return '<div class="slide"><img src="'+esc(it.img)+'" alt="'+esc(it.title||'')+'"><button class="sl-nav l" data-ph="prev" aria-label="Foto precedente">‹</button><button class="sl-nav r" data-ph="next" aria-label="Foto successiva">›</button></div>'+
+    '<div class="sl-cap">'+phCaption(it,i,L.length)+(it.desc?'<div class="eo" style="-webkit-line-clamp:2">'+esc(it.desc)+'</div>':'')+'</div>'}
+
 /* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
 function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
   var c=e.currency,isPast=e.nextDate&&dayDiff(e.nextDate)<-1,h='<button class="btn sm" data-earn="" style="margin-bottom:14px">‹ Calendario</button>';
@@ -662,13 +682,14 @@ var D={
 /* ---------- impostazioni ---------- */
 var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
   lists:[{id:'l1',name:'Lista 1',tickers:[]}],
-  ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]}};
+  ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
+  foto:{user:'',tag:'currentportfolio'}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
 function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j){var o=Object.assign(clone(DEF),j);migrate(o);return o}}catch(e){}return clone(DEF)}
 /* impostazioni salvate con versioni precedenti */
 function migrate(o){var I=o.pageMods&&o.pageMods.intr;if(I){var k=I.indexOf('shows');if(k>=0){if(I.indexOf('favs')<0)I[k]='favs';else I.splice(k,1)}} /* le mostre passano alla pagina Fotografia */
-  o.ent=Object.assign(clone(DEF.ent),o.ent||{})}
+  o.ent=Object.assign(clone(DEF.ent),o.ent||{});o.foto=Object.assign(clone(DEF.foto),o.foto||{})}
 function save(){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(S))}catch(e){}}
 
 /* ---------- moduli ----------
@@ -741,9 +762,6 @@ var M={
       '<div class="ph-r"><div class="kv"><span>Golden hour</span><b class="num">16:19 – 16:56</b></div><div class="kv"><span>Ora blu</span><b class="num">16:56 – 17:24</b></div><div class="bars"><div class="bar">Alte<i><em class="g" style="width:60%"></em></i><b class="num">60%</b></div><div class="bar">Medie<i><em class="g" style="width:45%"></em></i><b class="num">45%</b></div><div class="bar">Basse<i><em style="width:15%"></em></i><b class="num">15%</b></div></div><div class="kv"><span>Visibilità · vento</span><b class="num">18 km · 8 km/h</b></div></div></div>'},
     d:function(){var h='<div class="big-chart"><div class="kv"><span>Domattina · alba 07:19 · nebbia leggera</span><b class="num">41 / 100</b></div></div><table class="dtbl"><tr><th>Ora</th><th class="n">Nuvole alte</th><th class="n">Medie</th><th class="n">Basse</th><th class="n">Visib.</th><th class="n">Vento</th><th class="n">Punteggio</th></tr>';
       [['15:00',55,40,20,16,10,62],['16:00',60,45,15,18,8,78],['17:00',62,48,18,17,7,74],['18:00',70,50,30,14,6,40]].forEach(function(x){h+='<tr><td class="num">'+x[0]+'</td><td class="n num">'+x[1]+'%</td><td class="n num">'+x[2]+'%</td><td class="n num">'+x[3]+'%</td><td class="n num">'+x[4]+' km</td><td class="n num">'+x[5]+' km/h</td><td class="n num"><b>'+x[6]+'</b></td></tr>'});return h+'</table>'}, sub:'Ora per ora · pesi del punteggio configurabili'},
-  portfolioPh:{l:'',s:'',raw:true,n:one,c:function(){
-      return '<div class="photo" style="background:linear-gradient(180deg,#2B3550 0%,#7A5A6E 38%,#D08A5A 62%,#3A2A24 63%,#1A1412 100%)"><span class="tag">Portfolio</span><div class="cap"><b>Navigli all’alba</b><span>Progetto di esempio · album Flickr · 3 / 24</span></div></div>'},
-    d:function(){return '<div class="big-chart" style="height:440px;background:linear-gradient(180deg,#2B3550 0%,#7A5A6E 38%,#D08A5A 62%,#3A2A24 63%,#1A1412 100%)"></div>'}, sub:'A schermo intero con scorrimento tra le foto del progetto'},
   news:{l:'Novità foto',s:'RSS',n:function(){return chunk(D.news,3).length},c:function(i){
       var g=chunk(D.news,3);return '<div class="rows news">'+g[i%g.length].map(function(n){return '<div class="r"><span class="k">'+esc(n.k)+'<small>'+esc(n.d)+'</small></span></div>'}).join('')+'</div>'},
     d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Fonte</th></tr>'+D.news.map(function(n){return '<tr><td>'+esc(n.k)+'</td><td class="mut">'+esc(n.d)+'</td></tr>'}).join('')+'</table>'}, sub:'Tutte le notizie dei feed configurati'}
@@ -795,6 +813,13 @@ M.favs={l:'I tuoi preferiti',s:'registi e attori',live:true,n:function(){return 
       '<div class="sect" style="margin-top:18px">Usciti negli ultimi 24 mesi</div>'+(rec.length?rec.map(row).join(''):'<div class="mut" style="font-size:14px">Niente negli ultimi 24 mesi.</div>')+
       '<div class="note">Seguiti: '+esc(ppl.map(function(p){return p.name}).join(', '))+'. In oro i registi, in azzurro gli attori (solo ruoli principali). In arrivo dal più vicino, usciti dal più recente. Le date sono quelle di prima uscita e possono differire da quella italiana; «su …» indica dove il titolo è in abbonamento in Italia. Dati TMDB.</div>'},
   sub:'Uscite recenti e in arrivo dei registi e attori che segui'};
+M.portfolioPh={l:'Portfolio',s:'',raw:true,live:true,n:function(){return Math.max(1,(PH.items||[]).length)},c:function(i){var c=fotoCfg(),L=PH.items||[];
+    if(!c.user)return '<div class="photo" style="background:var(--surface)"><span class="tag">Portfolio</span><div class="nolive" style="height:100%"><span>Indica il tuo profilo Flickr</span><span style="font-size:13px">Impostazioni › Fotografia</span></div></div>';
+    if(!L.length)return '<div class="photo" style="background:var(--surface)"><span class="tag">Portfolio</span><div class="nolive" style="height:100%"><span>'+(PH.err?'Foto non disponibili':PH.at?'Nessuna foto con il tag «'+esc(c.tag)+'»':'In attesa delle foto…')+'</span></div></div>';
+    var k=i%L.length,it=L[k];preload(L[(k+1)%L.length].img);
+    return '<div class="photo" style="background:#0B0D10 url('+esc(it.img)+') center/cover no-repeat"><span class="tag">Portfolio</span><div class="cap">'+phCaption(it,k,L.length)+'</div></div>'},
+  d:function(){return phSlide()},
+  sub:'Foto con il tag del portfolio dal tuo profilo Flickr · tocca le frecce o scorri'};
 M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
     var top=a.slice(0,3),bot=a.length>3?a.slice(Math.max(3,a.length-2)).reverse():[];
@@ -865,7 +890,7 @@ var grid=$('grid'),bar=$('bar'),prog=$('prog');
 var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
-var DEMO={live:1,table:1,next:1,ucl:1,results:1,ucltable:1,shows:1,photowx:1,portfolioPh:1,morning:1,sunweek:1,news:1};
+var DEMO={live:1,table:1,next:1,ucl:1,results:1,ucltable:1,shows:1,photowx:1,morning:1,sunweek:1,news:1};
 function tileHead(m,id){return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+(m.s||'')+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
@@ -930,7 +955,7 @@ function endInteractive(){
 /* ---------- overlay ---------- */
 function openOv(id){$(id).classList.add('show')}
 function closeOv(id){$(id).classList.remove('show')}
-function openDetail(mod){openMod=mod;earnSel=null;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
+function openDetail(mod){openMod=mod;earnSel=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
 /* ---------- impostazioni: copia di lavoro ---------- */
 var W=null;
@@ -945,7 +970,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
-  migrate(W);renderEnt();renderEnt2();renderPageMods();renderLists();openOv('settings');
+  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';$('sFkTag').value=W.foto.tag||'';renderPageMods();renderLists();openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
 var FQB=[1,2,5,10,15,30],FQC=[1,2,3,5,10];
@@ -1037,10 +1062,11 @@ $('sSave').addEventListener('click',function(){
   W.lists.forEach(function(L){if(!L.name.trim())L.name='Lista'});
   W.ent.prov=PROV.map(function(p){return p.k}).filter(function(k){var c=$('pv_'+k);return c&&c.checked});
   W.ent.ex=GEN.map(function(g){return g[0]}).filter(function(k){var c=$('gn_'+k);return c&&c.checked});
+  W.foto.user=($('sFkUser').value||'').trim().replace(/^.*flickr\.com\/photos\//i,'').replace(/[\/?#].*$/,'');W.foto.tag=($('sFkTag').value||'').trim().toLowerCase().replace(/[^a-z0-9_\-]/g,'')||DEF.foto.tag;
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
-  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 $('sReset').addEventListener('click',function(){S=clone(DEF);save();openSettings();refreshQuotes();scheduleQuotes()});
 
@@ -1143,6 +1169,7 @@ var stage=$('stage'),tx=0,ty=0,lp=null;
 stage.addEventListener('click',function(e){
   var t=e.target;
   var cl=t.closest('[data-close]');if(cl){closeOv(cl.getAttribute('data-close'));touch();return}
+  var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
   if(t.closest('.panel')){touch();return}
   if(t.closest('.ov')){closeOv('detail');closeOv('settings');touch();return}
@@ -1157,6 +1184,7 @@ stage.addEventListener('click',function(e){
 stage.addEventListener('touchstart',function(e){var p=e.touches[0];tx=p.clientX;ty=p.clientY},{passive:true});
 stage.addEventListener('touchend',function(e){
   var p=e.changedTouches[0],dx=p.clientX-tx,dy=p.clientY-ty;
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5&&openMod==='portfolioPh'&&$('detail').classList.contains('show')){phIdx+=dx<0?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5&&!document.querySelector('.ov.show')){
     var n=PAGES.length;go((cur+(dx<0?1:n-1))%n);touch();
   }
