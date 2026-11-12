@@ -300,6 +300,11 @@ html,body{margin:0}
 .pchips button{border:1px solid var(--line);background:transparent;color:var(--text-2);border-radius:18px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer}
 .pchips button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .gauge .lbl{line-height:1.4}
+.mn{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0}
+.mn-ic{display:flex;align-items:center;gap:14px}
+.mn-ic b{display:block;font-size:17px;font-weight:500}.mn-ic span{font-size:12px;color:var(--text-2)}
+.mn .ph-r{gap:2px;justify-content:space-around}.mn .kv{font-size:14px}.mn .kv b{white-space:nowrap}
+.tall .ph{flex-direction:column;align-items:stretch;gap:12px}.tall .gauge{width:auto}.tall .ph-r{gap:8px}.tall .kv b{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -348,6 +353,7 @@ html,body{margin:0}
           <div class="fld" style="grid-column:1 / -1"><span class="lab">Generi esclusi dalle novità streaming</span><div class="chk" id="sGen"></div></div></div><div class="sect">Fotografia</div><div class="set" style="margin-bottom:24px"><div class="fld"><label for="sFkUser">Profilo Flickr (alias o codice)</label><input type="text" id="sFkUser" placeholder="es. il nome in flickr.com/photos/…" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
           <div class="fld"><label for="sFkTag">Tag delle foto del portfolio</label><input type="text" id="sFkTag" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
           <div class="fld" style="grid-column:1 / -1"><span class="lab">Località per il meteo fotografico</span><div class="chips" id="sPl"></div><div class="add"><input type="text" id="sPlQ" placeholder="Cerca una località" aria-label="Cerca una località" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPlGo">Cerca</button><span class="mut" id="sPlMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPlRes"></div></div>
+          <div class="fld" style="grid-column:1 / -1"><span class="lab">Fonti di Novità foto</span><div class="chk" id="sFsrc"></div></div>
           <div class="note" style="grid-column:1 / -1;margin-top:0">Compaiono le foto pubbliche del profilo con questo tag (le ultime 20 caricate). In Lightroom Classic basta aggiungere la parola chiave e ripubblicare.</div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
 
         <div class="sect">Aggiornamento dati</div>
@@ -667,6 +673,61 @@ function hourTable(ev){var d=WX.data;if(!d||!ev)return '';var c=ev.at.getTime(),
     rows+='<tr'+(k===0?' style="background:var(--accent-soft)"':'')+'><td class="num">'+hm(new Date(Math.round(t.getTime()/3600000)*3600000))+'</td><td class="n num">'+Math.round(w.hi)+'%</td><td class="n num">'+Math.round(w.mi)+'%</td><td class="n num">'+Math.round(w.lo)+'%</td><td class="n num">'+fmt(w.vis,0)+' km</td><td class="n num">'+Math.round(w.pp)+'%</td><td class="n num">'+Math.round(w.wind||0)+' km/h</td><td class="n num"><b>'+sc+'</b></td></tr>'}
   return '<table class="dtbl"><tr><th>Ora</th><th class="n">Nuvole alte</th><th class="n">Medie</th><th class="n">Basse</th><th class="n">Visib.</th><th class="n">Pioggia</th><th class="n">Vento</th><th class="n">Punteggio</th></tr>'+rows+'</table>'}
 
+/* luna e altezza del sole (formule di SunCalc): fase, illuminazione, sorgere e tramonto per campionamento */
+var MOON=(function(){var PI=Math.PI,rad=PI/180,dayMs=864e5,J1970=2440588,J2000=2451545,e=rad*23.4397;
+  function toDays(d){return d.valueOf()/dayMs-0.5+J1970-J2000}
+  function ra(l,b){return Math.atan2(Math.sin(l)*Math.cos(e)-Math.tan(b)*Math.sin(e),Math.cos(l))}
+  function dec(l,b){return Math.asin(Math.sin(b)*Math.cos(e)+Math.cos(b)*Math.sin(e)*Math.sin(l))}
+  function sidereal(d,lw){return rad*(280.16+360.9856235*d)-lw}
+  function alt(H,phi,de){return Math.asin(Math.sin(phi)*Math.sin(de)+Math.cos(phi)*Math.cos(de)*Math.cos(H))}
+  function sunC(d){var M=rad*(357.5291+0.98560028*d),C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M)),L=M+C+rad*102.9372+PI;return {dec:dec(L,0),ra:ra(L,0)}}
+  function moonC(d){var L=rad*(218.316+13.176396*d),M=rad*(134.963+13.064993*d),F=rad*(93.272+13.229350*d),l=L+rad*6.289*Math.sin(M),b=rad*5.128*Math.sin(F);return {ra:ra(l,b),dec:dec(l,b),dist:385001-20905*Math.cos(M)}}
+  function sunAlt(date,lat,lng){var lw=rad*-lng,phi=rad*lat,d=toDays(date),c=sunC(d);return alt(sidereal(d,lw)-c.ra,phi,c.dec)/rad}
+  function moonAlt(date,lat,lng){var lw=rad*-lng,phi=rad*lat,d=toDays(date),c=moonC(d),h=alt(sidereal(d,lw)-c.ra,phi,c.dec);
+    if(h<0)h=0;return (h+0.0002967/Math.tan(h+0.00312536/(h+0.08901179)))/rad}
+  function moonAltRaw(date,lat,lng){var lw=rad*-lng,phi=rad*lat,d=toDays(date),c=moonC(d);return alt(sidereal(d,lw)-c.ra,phi,c.dec)/rad}
+  function illum(date){var d=toDays(date||new Date()),s=sunC(d),m=moonC(d),sd=149598000,
+    phi=Math.acos(Math.sin(s.dec)*Math.sin(m.dec)+Math.cos(s.dec)*Math.cos(m.dec)*Math.cos(s.ra-m.ra)),
+    inc=Math.atan2(sd*Math.sin(phi),m.dist-sd*Math.cos(phi)),
+    ang=Math.atan2(Math.cos(s.dec)*Math.sin(s.ra-m.ra),Math.sin(s.dec)*Math.cos(m.dec)-Math.cos(s.dec)*Math.sin(m.dec)*Math.cos(s.ra-m.ra));
+    return {fraction:(1+Math.cos(inc))/2,phase:0.5+0.5*inc*(ang<0?-1:1)/PI}}
+  /* sorgere e tramonto nelle 24 ore da "from", campionando ogni 5 minuti */
+  function riseSet(from,lat,lng){var o={rise:null,set:null},step=5*60000,prev=moonAltRaw(from,lat,lng)-0.133;
+    for(var t=from.getTime()+step;t<=from.getTime()+dayMs;t+=step){var a=moonAltRaw(new Date(t),lat,lng)-0.133;
+      if(prev<0&&a>=0&&!o.rise)o.rise=new Date(t-step*a/(a-prev));if(prev>=0&&a<0&&!o.set)o.set=new Date(t-step*a/(a-prev));prev=a}return o}
+  /* prossimo istante in cui la fase passa per un valore (0 = nuova, 0.5 = piena) */
+  function nextPhase(target,from){var t=from.getTime(),p0=illum(new Date(t)).phase;
+    for(var k=1;k<=24*31;k++){var t1=t+k*3600000,p1=illum(new Date(t1)).phase;
+      var crossed=target===0?(p0>0.9&&p1<0.1):(p0<0.5&&p1>=0.5);if(crossed)return new Date(t1-1800000);p0=p1}return null}
+  return {illum:illum,riseSet:riseSet,nextPhase:nextPhase,sunAlt:sunAlt,moonAlt:moonAltRaw}})();
+
+/* ---------- novità dai siti di fotografia (tramite il ponte dati) ---------- */
+var FSRC=[['fuji','Fuji Rumors'],['leica','Leica Rumors'],['nikon','Nikon Rumors'],['sony','Sony Alpha Rumors'],['canon','Canon Rumors'],['photo','Photo Rumors'],['petapixel','PetaPixel']];
+var FN={items:null,err:null,at:null,loading:false};
+function refreshFotoNews(){var src=(fotoCfg().src||DEF.foto.src);if(!src.length){FN.items=[];refreshTiles();return}if(FN.loading)return;FN.loading=true;
+  getJSON(apiBase()+'/rss?src='+src.join(',')).then(function(d){FN.items=d.items||[];FN.err=null;FN.at=new Date()},function(e){FN.err=String((e&&e.message)||e)}).then(function(){FN.loading=false;refreshTiles()})}
+setTimeout(function(){refreshFotoNews();setInterval(refreshFotoNews,30*60000)},3500);
+/* ---------- luna e cielo notturno (calcolo locale + nuvole da Open-Meteo) ---------- */
+var PHN=['Luna nuova','Luna crescente','Primo quarto','Gibbosa crescente','Luna piena','Gibbosa calante','Ultimo quarto','Luna calante'];
+/* nome della fase dalla parte illuminata: i quarti solo attorno al 50% */
+function phaseName(p){var f=MOON.illum(new Date()).fraction,wax=p<0.5;if(arguments.length>1)f=arguments[1];return f<0.03?'Luna nuova':f>0.97?'Luna piena':(f>=0.45&&f<=0.55)?(wax?'Primo quarto':'Ultimo quarto'):f<0.45?(wax?'Luna crescente':'Luna calante'):(wax?'Gibbosa crescente':'Gibbosa calante')}
+function moonSvg(ph,size){var r=size/2-2,c=size/2,f=Math.cos(ph*2*Math.PI),wax=ph<0.5;
+  /* parte illuminata: semicerchio dal lato del sole + ellisse del terminatore */
+  var rx=Math.abs(f)*r,sweepOuter=wax?1:0,sweepIn=(f>0)===wax?0:1;
+  var d='M'+c+','+(c-r)+' A'+r+','+r+' 0 0,'+sweepOuter+' '+c+','+(c+r)+' A'+rx.toFixed(2)+','+r+' 0 0,'+sweepIn+' '+c+','+(c-r)+'Z';
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'"><circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="#23272E"/><path d="'+d+'" fill="#E8E2CF"/></svg>'}
+/* finestra buia di stanotte: sole sotto −18° e luna sotto l'orizzonte, campionando ogni 10 minuti */
+function darkWindow(){var p=curPlace(),now=new Date(),start=new Date(now);start.setHours(16,0,0,0);if(now.getHours()<8)start.setDate(start.getDate()-1);
+  var best=null,curS=null,step=10*60000;
+  for(var t=start.getTime();t<=start.getTime()+17*3600000;t+=step){var d=new Date(t),ok=MOON.sunAlt(d,p.lat,p.lon)<-18&&MOON.moonAlt(d,p.lat,p.lon)<0;
+    if(ok&&curS===null)curS=t;if((!ok||t+step>start.getTime()+17*3600000)&&curS!==null){var len=t-curS;if(!best||len>best.e-best.s)best={s:curS,e:t};curS=null}}
+  if(!best)return null;var cl=[],k;for(k=best.s;k<=best.e;k+=3600000){var w=wxAt(new Date(k));if(w)cl.push(Math.max(w.lo,w.mi,w.hi))}
+  return {s:new Date(best.s),e:new Date(best.e),clouds:cl.length?Math.round(cl.reduce(function(a,b){return a+b},0)/cl.length):null}}
+function moonData(){var p=curPlace(),now=new Date(),il=MOON.illum(now),d0=new Date(now);d0.setHours(0,0,0,0);
+  var rs=MOON.riseSet(d0,p.lat,p.lon),rs2=MOON.riseSet(new Date(d0.getTime()+864e5),p.lat,p.lon);
+  return {il:il,rise:rs.rise&&rs.rise>now?rs.rise:rs2.rise,set:rs.set&&rs.set>now?rs.set:rs2.set,full:MOON.nextPhase(0.5,now),nw:MOON.nextPhase(0,now),dark:darkWindow()}}
+function dDay(d){if(!d)return '—';var g=dayDiff(d.toISOString());return (g===0?'oggi':g===1?'domani':GGS[d.getDay()]+' '+d.getDate()+' '+MESI[d.getMonth()])}
+
 /* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
 function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
   var c=e.currency,isPast=e.nextDate&&dayDiff(e.nextDate)<-1,h='<button class="btn sm" data-earn="" style="margin-bottom:14px">‹ Calendario</button>';
@@ -729,29 +790,21 @@ var D={
     {k:'Fotografia di paesaggio, retrospettiva',d:'Milano, Palazzo Reale',v:'fino 18 gen'},
     {k:'Reportage anni ’70',d:'Torino, CAMERA',v:'fino 6 dic'},
     {k:'Ritratti in pellicola',d:'Milano, Fondazione Stelline',v:'fino 31 gen'}
-  ],
-  news:[
-    {k:'Nuovo corpo medio formato atteso a gennaio',d:'Fuji Rumors · 2 ore fa'},
-    {k:'Roadmap obiettivi 2027: tre nuovi fissi',d:'43 Rumors · 5 ore fa'},
-    {k:'Aggiornamento firmware per la serie X',d:'Fuji Rumors · ieri'},
-    {k:'Compatta a ottica fissa: specifiche trapelate',d:'Fuji Rumors · ieri'},
-    {k:'Teleobiettivo leggero in arrivo in primavera',d:'43 Rumors · 2 giorni fa'},
-    {k:'Nuove simulazioni pellicola via firmware',d:'Fuji Rumors · 2 giorni fa'},
-    {k:'Corpo compatto con sensore stabilizzato',d:'43 Rumors · 3 giorni fa'}
   ]
 };
 
 /* ---------- impostazioni ---------- */
-var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
+var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
   lists:[{id:'l1',name:'Lista 1',tickers:[]}],
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
-  foto:{user:'',tag:'currentportfolio',places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0}};
+  foto:{user:'',tag:'currentportfolio',places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
 function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j){var o=Object.assign(clone(DEF),j);migrate(o);return o}}catch(e){}return clone(DEF)}
 /* impostazioni salvate con versioni precedenti */
 function migrate(o){var I=o.pageMods&&o.pageMods.intr;if(I){var k=I.indexOf('shows');if(k>=0){if(I.indexOf('favs')<0)I[k]='favs';else I.splice(k,1)}} /* le mostre passano alla pagina Fotografia */
-  o.ent=Object.assign(clone(DEF.ent),o.ent||{});o.foto=Object.assign(clone(DEF.foto),o.foto||{})}
+  o.ent=Object.assign(clone(DEF.ent),o.ent||{});o.foto=Object.assign(clone(DEF.foto),o.foto||{});
+  var F=o.pageMods&&o.pageMods.foto;if(F){var j=F.indexOf('shows');if(j>=0)F.splice(j,1);if(F.join()==='photowx,portfolioPh,morning')o.pageMods.foto=['photowx','portfolioPh','morning','moon','news']}}
 function save(){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(S))}catch(e){}}
 
 /* ---------- moduli ----------
@@ -818,9 +871,7 @@ var M={
   shows:{l:'Mostre fotografiche',s:'',n:one,c:function(){
       return '<div class="rows">'+D.shows.map(function(s){return '<div class="r"><span class="k" style="font-size:17px">'+esc(s.k)+'<small>'+esc(s.d)+'</small></span><span class="v mut" style="font-size:15px">'+s.v+'</span></div>'}).join('')+'</div>'},
     d:function(){return M.shows.c(0)}, sub:'Lista manuale · titoli di esempio'},
-  news:{l:'Novità foto',s:'RSS',n:function(){return chunk(D.news,3).length},c:function(i){
-      var g=chunk(D.news,3);return '<div class="rows news">'+g[i%g.length].map(function(n){return '<div class="r"><span class="k">'+esc(n.k)+'<small>'+esc(n.d)+'</small></span></div>'}).join('')+'</div>'},
-    d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Fonte</th></tr>'+D.news.map(function(n){return '<tr><td>'+esc(n.k)+'</td><td class="mut">'+esc(n.d)+'</td></tr>'}).join('')+'</table>'}, sub:'Tutte le notizie dei feed configurati'}
+
 };
 
 M.cinema={l:'In sala',s:'Italia',live:true,n:function(){return chunk(cinemaAll(),3).length},c:function(i){var L=cinemaAll();if(!L.length)return entWait();
@@ -893,6 +944,26 @@ M.sunweek={l:'Settimana di luce',s:'tramonti',live:true,n:one,c:function(){if(!W
     return '<table class="tbl">'+R.map(function(x,i){return '<tr><td>'+(i===0?'Oggi':GGS[x.d.getDay()]+' '+x.d.getDate())+'</td><td class="g num">'+hmx(x.r&&x.r.at)+'</td><td class="g num">'+hmx(x.s.at)+'</td><td class="pt num" style="color:'+(x.s.score>=70?'var(--accent)':'var(--text)')+'">'+x.s.score+'</td></tr>'}).join('')+'</table>'},
   d:function(){if(!WX.data)return wxWait();return '<table class="dtbl"><tr><th>Giorno</th><th class="n">Alba</th><th class="n">Punteggio alba</th><th class="n">Tramonto</th><th class="n">Punteggio tramonto</th></tr>'+weekRows().map(function(x){return '<tr><td>'+GGS[x.d.getDay()]+' '+x.d.getDate()+' '+MESI[x.d.getMonth()]+'</td><td class="n num">'+hmx(x.r&&x.r.at)+'</td><td class="n num">'+(x.r&&x.r.score!=null?x.r.score:'—')+'</td><td class="n num">'+hmx(x.s.at)+'</td><td class="n num"><b>'+x.s.score+'</b></td></tr>'}).join('')+'</table><div class="note">Più il giorno è lontano, meno la previsione delle nuvole è affidabile.</div>'},
   sub:'Alba, tramonto e punteggio previsto'};
+M.moon={l:'Luna e cielo notturno',s:'',live:true,n:one,c:function(){var m=moonData(),dk=m.dark,ph=m.il.phase;
+    var nextBig=m.full&&m.nw?(m.full<m.nw?['Piena',m.full]:['Nuova',m.nw]):['',null];
+    return '<div class="mn"><div class="mn-ic">'+moonSvg(ph,58)+'<div><b>'+phaseName(ph)+'</b><span class="num">'+Math.round(m.il.fraction*100)+'% illuminata</span></div></div><div class="ph-r">'+
+      '<div class="kv"><span>Sorge · tram.</span><b class="num">'+hmx(m.rise)+' · '+hmx(m.set)+'</b></div>'+
+      '<div class="kv"><span>Luna '+nextBig[0].toLowerCase()+'</span><b>'+dDay(nextBig[1])+'</b></div>'+
+      '<div class="kv"><span>Buio senza luna</span><b class="num">'+(dk?hmx(dk.s)+' – '+hmx(dk.e):'nessuno')+'</b></div>'+
+      '<div class="kv"><span>Nuvole al buio</span><b class="num">'+(dk&&dk.clouds!=null?dk.clouds+'%':'—')+'</b></div></div></div>'},
+  d:function(){var m=moonData(),p=curPlace(),rows='';for(var k=0;k<8;k++){var day=new Date();day.setHours(12,0,0,0);day.setDate(day.getDate()+k);var il=MOON.illum(day),d0=new Date(day);d0.setHours(0,0,0,0);var rs=MOON.riseSet(d0,p.lat,p.lon);
+      rows+='<tr><td>'+(k===0?'Oggi':GGS[day.getDay()]+' '+day.getDate()+' '+MESI[day.getMonth()])+'</td><td>'+moonSvg(il.phase,22)+'</td><td>'+phaseName(il.phase,il.fraction)+'</td><td class="n num">'+Math.round(il.fraction*100)+'%</td><td class="n num">'+hmx(rs.rise)+'</td><td class="n num">'+hmx(rs.set)+'</td></tr>'}
+    return placeChips()+'<div class="sect" style="margin-top:14px">Stanotte</div><div class="kv"><span>Buio astronomico senza luna</span><b class="num">'+(m.dark?hmx(m.dark.s)+' – '+hmx(m.dark.e)+(m.dark.clouds!=null?' · nuvole '+m.dark.clouds+'%':''):'nessuna finestra')+'</b></div>'+
+      '<div class="kv"><span>Prossima luna piena · nuova</span><b>'+dDay(m.full)+' · '+dDay(m.nw)+'</b></div>'+
+      '<div class="sect" style="margin-top:18px">Prossimi giorni</div><table class="dtbl"><tr><th>Giorno</th><th></th><th>Fase</th><th class="n">Illuminata</th><th class="n">Sorge</th><th class="n">Tramonta</th></tr>'+rows+'</table>'+
+      '<div class="note">«Buio senza luna»: sole oltre 18° sotto l’orizzonte e luna tramontata, le condizioni migliori per stelle e Via Lattea. Calcoli astronomici locali (precisione di qualche minuto); nuvole da Open-Meteo.</div>'},
+  sub:'Fasi, orari della luna e finestre di buio per la località attiva'};
+M.news={l:'Novità foto',s:'',live:true,n:function(){return chunk((FN.items||[]).slice(0,12),3).length},c:function(i){var L=(FN.items||[]).slice(0,12);
+    if(!L.length)return '<div class="nolive"><span>'+(FN.err?'Notizie non disponibili':FN.at?'Nessuna novità':'In attesa delle notizie…')+'</span></div>';
+    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(n){return '<div class="nw"><div class="nt">'+esc(n.title)+'</div><div class="nm"><b>'+esc(n.source)+'</b> · '+esc(ago(n.time))+'</div></div>'}).join('')+'</div>'},
+  d:function(){var L=FN.items||[];if(!L.length)return '<div class="mut">Nessuna novità.</div>';
+    return L.map(function(n){return '<div class="nw full"><div class="nt">'+esc(n.title)+'</div>'+(n.summary?'<div class="ns">'+esc(n.summary)+'</div>':'')+'<div class="nm"><b>'+esc(n.source)+'</b> · '+esc(ago(n.time))+'</div></div>'}).join('')+'<div class="note">Fonti scelte in Impostazioni › Fotografia.</div>'},
+  sub:'Indiscrezioni e novità dai siti che segui'};
 M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
     var top=a.slice(0,3),bot=a.length>3?a.slice(Math.max(3,a.length-2)).reverse():[];
@@ -942,7 +1013,7 @@ var THEME={
   borsa:['indices','portfolio','fx','earnings','movers','mktnews','commod'],
   sport:['live','table','next','ucl','results','ucltable'],
   intr:['cinema','stream','episodes','favs'],
-  foto:['photowx','portfolioPh','morning','sunweek','news','shows']
+  foto:['photowx','portfolioPh','morning','moon','news','sunweek']
 };
 var PAGES=[
   {id:'borsa',t:'Borsa'},
@@ -959,14 +1030,14 @@ var grid=$('grid'),bar=$('bar'),prog=$('prog');
 var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
-var DEMO={live:1,table:1,next:1,ucl:1,results:1,ucltable:1,shows:1,news:1};
-function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):(m.s||'');return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
+var DEMO={live:1,table:1,next:1,ucl:1,results:1,ucltable:1,shows:1};
+function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):(m.s||'');return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
   grid.style.gridTemplateColumns='repeat('+L[0]+',1fr)';
   grid.style.gridTemplateRows='repeat('+L[1]+',1fr)';
   grid.innerHTML=mods.map(function(id,i){var m=M[id];
-    return '<div class="tile" data-mod="'+id+'"'+(i===0&&L[2]?' style="grid-row:span 2"':'')+'>'+tileHead(m,id)+'<div class="tb">'+m.c(subIdx)+'</div></div>'}).join('');
+    return '<div class="tile'+(i===0&&L[2]&&L[0]===3?' tall':'')+'" data-mod="'+id+'"'+(i===0&&L[2]?' style="grid-row:span 2"':'')+'>'+tileHead(m,id)+'<div class="tb">'+m.c(subIdx)+'</div></div>'}).join('');
   $('pgName').textContent=P.t;
   $('dots').innerHTML=PAGES.map(function(p,i){return '<i class="'+(i===cur?'on':'')+'"></i>'}).join('');
   renderBar();
@@ -1039,7 +1110,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
-  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFkTag').value=W.foto.tag||'';renderPageMods();renderLists();openOv('settings');
+  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';renderPageMods();renderLists();openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
 var FQB=[1,2,5,10,15,30],FQC=[1,2,3,5,10];
@@ -1141,10 +1212,11 @@ $('sSave').addEventListener('click',function(){
   W.ent.prov=PROV.map(function(p){return p.k}).filter(function(k){var c=$('pv_'+k);return c&&c.checked});
   W.ent.ex=GEN.map(function(g){return g[0]}).filter(function(k){var c=$('gn_'+k);return c&&c.checked});
   W.foto.user=($('sFkUser').value||'').trim().replace(/^.*flickr\.com\/photos\//i,'').replace(/[\/?#].*$/,'');W.foto.tag=($('sFkTag').value||'').trim().toLowerCase().replace(/[^a-z0-9_\-]/g,'')||DEF.foto.tag;
+  W.foto.src=FSRC.map(function(f){return f[0]}).filter(function(k){var c=$('fs_'+k);return c&&c.checked});
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
-  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);WX.data=null;setTimeout(refreshWx,1000);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 $('sReset').addEventListener('click',function(){S=clone(DEF);save();openSettings();refreshQuotes();scheduleQuotes()});
 
