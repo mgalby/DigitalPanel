@@ -403,6 +403,7 @@ var Q={},QS={at:null,err:null,loading:false},qTimer=null,openMod=null;
 function hm(d){return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}
 function whenStr(iso){if(!iso)return '—';var d=new Date(iso),n=new Date();
   return d.toDateString()===n.toDateString()?hm(d):d.toLocaleDateString('it-IT',{day:'numeric',month:'short'})+' '+hm(d)}
+function whenShort(iso){if(!iso)return '';var d=new Date(iso);return d.toDateString()===new Date().toDateString()?hm(d):d.getDate()+' '+['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'][d.getMonth()]}
 function fmtSigned(n,d){if(n==null||isNaN(n))return '—';return (n>0?'+':n<0?'−':'')+fmt(Math.abs(n),d)}
 function okq(q){return !!(q&&!q.error&&q.price!=null)}
 function dgOf(q){if(q.currency==='JPY')return 0;return Math.abs(q.price)>=10000?0:2}
@@ -634,7 +635,7 @@ var M={
   indices:{l:'Indici',s:'Yahoo',live:true,n:one,c:function(){
       return '<div class="q4">'+IDX.map(function(i){var q=Q[i.y],ok=okq(q);
         return '<div><span class="n">'+mkDot(i.x)+esc(i.n)+'</span><span class="v num">'+(ok?fmt(q.price,q.price>10000?0:2):'—')+'</span>'+(ok&&SPK[i.y]?'<div style="margin:2px 0 3px">'+sparkLine(SPK[i.y],26,q.changePct>=0)+'</div>':'')+'<div class="row">'+
-          (ok?pct(q.changePct):'<span class="chg mut">'+(q&&q.error?'n/d':'—')+'</span>')+'<span class="mut num" style="font-size:12px">'+(ok?whenStr(q.marketTime):'')+'</span></div></div>'}).join('')+'</div>'},
+          (ok?pct(q.changePct):'<span class="chg mut">'+(q&&q.error?'n/d':'—')+'</span>')+'<span class="mut num" style="font-size:12px;white-space:nowrap">'+(ok?whenShort(q.marketTime):'')+'</span></div></div>'}).join('')+'</div>'},
     d:function(){return '<table class="dtbl"><tr><th>Indice</th><th class="n">Valore</th><th class="n">Var. punti</th><th class="n">Var. %</th><th style="width:180px">Ultima seduta</th><th class="n">Ultimo prezzo</th></tr>'+
       IDX.map(function(i){var q=Q[i.y]||{};return '<tr><td>'+mkDot(i.x)+'<b>'+esc(i.n)+'</b></td><td class="n num">'+fmt(q.price,2)+'</td><td class="n num">'+fmtSigned(q.change,2)+'</td><td class="n num">'+pct(q.changePct)+'</td><td>'+(SPK[i.y]?sparkLine(SPK[i.y],34,(q.changePct||0)>=0):'<span class="mut">—</span>')+'</td><td class="n num mut">'+whenStr(q.marketTime)+'</td></tr>'}).join('')+'</table>'+
       '<div class="note">Il grafico mostra la seduta in corso, o l’ultima se la borsa è chiusa, a intervalli di 5 minuti; la linea tratteggiata è la chiusura precedente.</div>'},
@@ -715,7 +716,7 @@ M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
 M.earnings={l:'Trimestrali',s:'prossimi 30 gg',live:true,n:function(){return chunk(earnList(30),3).length},c:function(i){
     var L=earnList(30);if(!L.length){if(!ES.at)return earnWait();var nx=earnList(null)[0];
       return '<div class="nolive"><span>Nessuna trimestrale nei prossimi 30 giorni</span>'+(nx?'<b>'+esc(nx.t.s)+'</b><span>'+esc(dLabel(nx.e.nextDate))+(nx.e.dateEstimated?' · stimata':'')+'</span>':'')+'</div>'}
-    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(o,k){var nx=o.e.next||{};
+    var g=chunk(L,3);return '<div class="rows" style="justify-content:'+(g[i%g.length].length<3?'flex-start':'space-around')+'">'+g[i%g.length].map(function(o,k){var nx=o.e.next||{};
       return '<div class="cd'+(i%g.length===0&&k===0?' first':'')+'"><div class="g">'+gBox(o.g)+'</div><div class="i"><b>'+esc(o.t.s)+'</b> <span class="mut" style="font-size:13px">'+esc(nameOf(o.t))+'</span><div>'+esc(earnWhen(o.e,o.t))+'</div>'+
         (nx.epsAvg!=null?'<div>Attesi '+eps(nx.epsAvg,o.e.currency)+' per azione</div>':'')+'</div></div>'}).join('')+'</div>'},
   d:function(){if(earnSel)return earnDetail(earnSel);var L=earnList(null);
