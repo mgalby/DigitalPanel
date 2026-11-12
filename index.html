@@ -314,6 +314,30 @@ html,body{margin:0}
 .mn-ic b{display:block;font-size:17px;font-weight:500}.mn-ic span{font-size:12px;color:var(--text-2)}
 .mn .ph-r{gap:2px;justify-content:space-around}.mn .kv{font-size:14px}.mn .kv b{white-space:nowrap}
 .tall .ph{flex-direction:column;align-items:stretch;gap:12px}.tall .gauge{width:auto}.tall .ph-r{gap:8px}.tall .kv b{white-space:nowrap}
+.tn.fv{color:var(--accent);font-weight:600}
+.live .score{width:100%;justify-content:center}.live .score .tm{width:auto;flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.live .score .sc{white-space:nowrap}
+.live.sm{gap:4px}.live.sm .score .sc{font-size:46px}.live.sm .score .tm{font-size:18px}
+.tn.fl{font-weight:600}
+.tn.fl::after{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--text-2);margin-left:6px;vertical-align:middle}
+.tbl tr.me td,.dtbl tr.me td{background:var(--accent-soft)}
+.dtbl tr.fol td{background:rgba(232,234,237,.03)}
+.tbl.sm{font-size:15px}.tbl.sm td{padding:2px 0}
+.lrow.pre .m{color:var(--text-2);font-weight:500}
+.lrow .h,.lrow .a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lrow .tn.fl::after{display:none}
+.lrow .sc .vs{font-size:16px;color:var(--text-3)}
+.lvc{color:var(--live)!important;font-weight:600}
+.cdn{font-size:13px;color:var(--accent);letter-spacing:.04em}
+.spsect{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin:6px 0 2px}
+.natw{display:flex;flex-direction:column;justify-content:center;flex:1;gap:14px;min-height:0}
+.nat{display:flex;flex-direction:column;gap:3px}
+.nat .lab,.nat-l .lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3)}
+.nat b{font-size:24px;font-weight:500}
+.nat-l{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:10px;font-size:16px}
+.zn{display:inline-block;width:3px;height:13px;border-radius:2px;margin-right:6px;vertical-align:-2px;background:transparent}
+.zn.z1{background:var(--accent)}.zn.z2{background:var(--text-3)}.zn.z3{background:rgba(232,234,237,.12)}
+.evl{font-size:13px;color:var(--text-2);padding-top:0!important}
+.evi{display:inline-block;margin-right:14px}.evi.red{color:var(--down)}
 </style>
 </head>
 <body>
@@ -363,14 +387,17 @@ html,body{margin:0}
           <div class="fld"><label for="sFkTag">Tag delle foto del portfolio</label><input type="text" id="sFkTag" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
           <div class="fld" style="grid-column:1 / -1"><span class="lab">Località per il meteo fotografico</span><div class="chips" id="sPl"></div><div class="add"><input type="text" id="sPlQ" placeholder="Cerca una località" aria-label="Cerca una località" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPlGo">Cerca</button><span class="mut" id="sPlMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPlRes"></div></div>
           <div class="fld" style="grid-column:1 / -1"><span class="lab">Fonti di Novità foto</span><div class="chk" id="sFsrc"></div></div>
-          <div class="note" style="grid-column:1 / -1;margin-top:0">Compaiono le foto pubbliche del profilo con questo tag (le ultime 20 caricate). In Lightroom Classic basta aggiungere la parola chiave e ripubblicare.</div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
+          <div class="note" style="grid-column:1 / -1;margin-top:0">Compaiono le foto pubbliche del profilo con questo tag (le ultime 20 caricate). In Lightroom Classic basta aggiungere la parola chiave e ripubblicare.</div></div><div class="sect">Sport</div><div class="set" style="margin-bottom:24px"><div class="fld"><label for="sFav">Squadra preferita</label><select id="sFav"></select></div>
+          <div class="fld"><span class="lab">&nbsp;</span><div class="note" style="margin:0">Colore pieno, sempre in cima alle dirette e nel riquadro «In diretta» quando non si gioca.</div></div>
+          <div class="fld" style="grid-column:1 / -1"><span class="lab">Squadre seguite</span><div class="chips" id="sFol"></div><div class="add"><button class="btn sm" id="sFolAuto">Ripristina: italiane in Champions</button><span class="mut" id="sFolMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sFolAv"></div></div>
+          <div class="note" style="grid-column:1 / -1;margin-top:0">Le squadre seguite sono in grassetto con un pallino in classifiche e partite, e in Champions vengono mostrate per prime. L’Italia è sempre seguita. Tocca una squadra dell’elenco per aggiungerla.</div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
 
         <div class="sect">Aggiornamento dati</div>
         <div class="set">
           <div class="fld"><label for="sFqB">Borsa · a mercato aperto</label><div class="rng"><input type="range" id="sFqB" min="0" max="5" step="1"><output id="oFqB" class="num"></output></div></div>
           <div class="fld"><label for="sFqBoff">Borsa · a mercato chiuso</label><select id="sFqBoff"><option value="30">Ogni 30 minuti</option><option value="60">Ogni ora</option><option value="0">Nessun aggiornamento</option></select></div>
           <div class="fld"><label for="sFqC">Calcio · durante le partite</label><div class="rng"><input type="range" id="sFqC" min="0" max="4" step="1"><output id="oFqC" class="num"></output></div></div>
-          <div class="fld"><label for="sFqCscope">Calcio · partite seguite in tempo reale</label><select id="sFqCscope"><option value="all">Tutte (Serie A e Champions)</option><option value="it">Solo partite delle italiane in Champions + Serie A big match</option><option value="fav">Solo la squadra preferita</option></select></div>
+          <div class="fld"><label for="sFqCscope">Calcio · partite che attivano avvisi e priorità</label><select id="sFqCscope"><option value="follow">Squadra preferita, squadre seguite e Italia</option><option value="fav">Solo la squadra preferita e l’Italia</option><option value="all">Tutte (Serie A, Champions, Nazionale)</option></select></div>
           <div class="fld" style="grid-column:1 / -1"><label for="sApi">Indirizzo del ponte dati (Cloudflare Worker)</label><input type="text" id="sApi" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></div><div class="fld" style="grid-column:1 / -1"><div class="budget" id="budget"></div></div>
         </div>
 
@@ -837,22 +864,25 @@ var D={
 };
 
 /* ---------- impostazioni ---------- */
-var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
+var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'follow',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl','italy'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:false,red:false,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
   lists:[{id:'l1',name:'Lista 1',tickers:[]}],
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
-  foto:{user:'',tag:'currentportfolio',places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']}};
+  foto:{user:'',tag:'currentportfolio',places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
+  sport:{fav:{k:'inter',n:'Inter'},follow:null}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
-function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j){var o=Object.assign(clone(DEF),j);migrate(o);return o}}catch(e){}return clone(DEF)}
+function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j){var first=!j.sport,o=Object.assign(clone(DEF),j);migrate(o);if(first)sportFirst(o);return o}}catch(e){}return clone(DEF)}
+/* prima apertura con la pagina Sport reale: avvisi scelti da Marco (gol, inizio e fine) e riquadro Nazionale */
+function sportFirst(o){o.alerts=Object.assign({},o.alerts,{pen:false,red:false});var P=o.pageMods&&o.pageMods.sport;if(P&&P.join()==='live,table,next,ucl')P.push('italy');save.call(null,o)}
 /* impostazioni salvate con versioni precedenti */
 function migrate(o){var I=o.pageMods&&o.pageMods.intr;if(I){var k=I.indexOf('shows');if(k>=0){if(I.indexOf('favs')<0)I[k]='favs';else I.splice(k,1)}} /* le mostre passano alla pagina Fotografia */
   o.ent=Object.assign(clone(DEF.ent),o.ent||{});o.foto=Object.assign(clone(DEF.foto),o.foto||{});
+  o.sport=Object.assign(clone(DEF.sport),o.sport||{});if(o.fqCscope==='it')o.fqCscope='follow';
   var F=o.pageMods&&o.pageMods.foto;if(F){var j=F.indexOf('shows');if(j>=0)F.splice(j,1);if(F.join()==='photowx,portfolioPh,morning')o.pageMods.foto=['photowx','portfolioPh','morning','moon','news']}}
-function save(){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(S))}catch(e){}}
+function save(x){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(x||S))}catch(e){}}
 
 /* ---------- moduli ----------
    ogni modulo: l (etichetta), s (nota), n() = numero sotto-pagine, c(i) = vista compatta della sotto-pagina i, d() = dettaglio */
-function liveList(){return D.liveAll.slice(0,S.liveN)}
 function isEtf(t){return t.t==='ETF'}
 function portPages(){var p=[];S.lists.forEach(function(L){var all=sortedTickers(L);[['Azioni',all.filter(function(t){return !isEtf(t)})],['ETF',all.filter(isEtf)]].forEach(function(g){if(g[1].length)chunk(g[1],5).forEach(function(ch){p.push({L:L,t:ch,k:g[0]})})})});return p}
 function rowTicker(t){var q=Q[ysym(t)],nm=t.n||(q&&q.name)||t.s;
@@ -894,23 +924,6 @@ var M={
     d:function(){return '<table class="dtbl"><tr><th>Cambio</th><th class="n">Valore</th><th class="n">Var. %</th><th class="n">Ultimo</th></tr>'+
       FXL.map(function(f){var q=Q[f.y]||{};return '<tr><td><b>'+f.k+'</b></td><td class="n num">'+fmt(q.price,f.dg)+'</td><td class="n num">'+pct(q.changePct)+'</td><td class="n num mut">'+whenStr(q.marketTime)+'</td></tr>'}).join('')+'</table>'},
     sub:'Cambi dell’euro intraday da Yahoo Finance'},
-  live:{l:'In diretta',s:'Serie A',
-    n:function(){var L=liveList();return L.length>5?chunk(L,4).length:1},
-    c:function(i){var L=liveList();
-      if(!L.length){var x=D.next[0];return '<div class="nolive"><span>Nessuna partita in diretta</span><b>'+x.m+'</b><span class="num">'+x.d+' · '+x.t+'</span></div>'}
-      if(L.length===1){var g=L[0];return '<div class="live"><span class="badge">LIVE</span><div class="score"><span class="tm">'+g.h+'</span><span class="sc num">'+g.sh+'–'+g.sa+'</span><span class="tm">'+g.a+'</span></div><span class="mins num">'+g.m+'</span><span class="ev">'+(g.ev||'')+'</span></div>'}
-      var grp=L.length>5?chunk(L,4)[i%chunk(L,4).length]:L;
-      return '<div class="rows">'+grp.map(function(g){return '<div class="lrow'+(g.m==='Int.'?' ht':'')+'"><span class="h">'+g.h+'</span><span class="sc num">'+g.sh+'–'+g.sa+'</span><span class="a">'+g.a+'</span><span class="m num">'+g.m+'</span></div>'}).join('')+'</div>'},
-    d:function(){var L=liveList();if(!L.length)return '<div class="mut">Nessuna partita in corso.</div>';return '<table class="dtbl"><tr><th class="n">Casa</th><th style="text-align:center">Risultato</th><th>Ospiti</th><th class="n">Minuto</th></tr>'+L.map(function(g){return '<tr><td class="n">'+g.h+'</td><td class="num" style="text-align:center">'+g.sh+'–'+g.sa+'</td><td>'+g.a+'</td><td class="n num">'+g.m+'</td></tr>'}).join('')+'</table>'}, sub:'Tutte le partite in corso · dati con leggero ritardo'},
-  next:{l:'Prossime Serie A',s:'giornata 13',n:function(){return chunk(D.next,4).length},c:function(i){
-      var g=chunk(D.next,4);return '<div class="rows">'+g[i%g.length].map(function(m){return '<div class="r"><span class="k" style="font-size:18px">'+m.m+'</span><span class="v num mut" style="font-size:16px">'+m.d+' · '+m.t+'</span></div>'}).join('')+'</div>'},
-    d:function(){return '<table class="dtbl"><tr><th>Giorno</th><th>Ora</th><th>Partita</th></tr>'+D.next.map(function(m){return '<tr><td>'+m.d+'</td><td class="num">'+m.t+'</td><td>'+m.m+'</td></tr>'}).join('')+'</table>'}, sub:'Calendario completo della giornata'},
-  table:{l:'Classifica Serie A',s:'',n:function(){return chunk(D.table,6).length},c:function(i){
-      var g=chunk(D.table,6),k=i%g.length;return '<table class="tbl">'+g[k].map(function(r,j){return '<tr><td class="p num">'+(k*6+j+1)+'</td><td>'+r[0]+'</td><td class="g num">'+r[2]+'</td><td class="pt num">'+r[1]+'</td></tr>'}).join('')+'</table>'},
-    d:function(){return '<table class="dtbl"><tr><th>#</th><th>Squadra</th><th class="n">DR</th><th class="n">Punti</th></tr>'+D.table.map(function(r,i){return '<tr><td class="num">'+(i+1)+'</td><td>'+r[0]+'</td><td class="n num">'+r[2]+'</td><td class="n num"><b>'+r[1]+'</b></td></tr>'}).join('')+'</table>'}, sub:'Classifica completa'},
-  ucl:{l:'Champions League',s:'5ª giornata',n:one,c:function(){
-      return '<div class="rows">'+D.ucl.map(function(m){return '<div class="r"><span class="k" style="font-size:18px">'+m.m+'</span><span class="v num mut" style="font-size:16px">'+m.d+' · '+m.t+'</span></div>'}).join('')+'</div>'},
-    d:function(){return M.ucl.c(0)}, sub:'Partite delle italiane'},
   shows:{l:'Mostre fotografiche',s:'',n:one,c:function(){
       return '<div class="rows">'+D.shows.map(function(s){return '<div class="r"><span class="k" style="font-size:17px">'+esc(s.k)+'<small>'+esc(s.d)+'</small></span><span class="v mut" style="font-size:15px">'+s.v+'</span></div>'}).join('')+'</div>'},
     d:function(){return M.shows.c(0)}, sub:'Lista manuale · titoli di esempio'},
@@ -1047,14 +1060,205 @@ M.commod={l:'Materie prime e cripto',s:'Yahoo',live:true,n:one,c:function(){retu
     return '<tr><td><b>'+c.k+'</b></td><td class="mut">'+c.d+'</td><td class="n num">'+fmt(q.price,c.dg)+'</td><td class="n num">'+pct(q.changePct)+'</td><td class="n num mut">'+whenStr(q.marketTime)+'</td></tr>'}).join('')+'</table>'+
     '<div class="note">Oro, Brent e gas TTF sono i contratti futures di riferimento; Bitcoin in dollari, scambiato 24 ore su 24.</div>'},
   sub:'Futures e cripto da Yahoo Finance'};
-M.results={l:'Risultati giornata 12',s:'Serie A',n:function(){return chunk(D.results,4).length},c:function(i){var g=chunk(D.results,4);return '<div class="rows">'+g[i%g.length].map(function(r){return '<div class="lrow ht"><span class="h">'+r.h+'</span><span class="sc num">'+r.sh+'–'+r.sa+'</span><span class="a">'+r.a+'</span><span class="m">Fin.</span></div>'}).join('')+'</div>'},
-  d:function(){return '<table class="dtbl">'+D.results.map(function(r){return '<tr><td class="n">'+r.h+'</td><td class="num" style="text-align:center">'+r.sh+'–'+r.sa+'</td><td>'+r.a+'</td></tr>'}).join('')+'</table>'}, sub:'Tutti i risultati della giornata'};
-M.ucltable={l:'Classifica Champions',s:'fase campionato',n:function(){return chunk(D.ucltable,6).length},c:function(i){var g=chunk(D.ucltable,6),k=i%g.length;return '<table class="tbl">'+g[k].map(function(r,j){return '<tr><td class="p num">'+(k*6+j+1)+'</td><td>'+r[0]+'</td><td class="pt num">'+r[1]+'</td></tr>'}).join('')+'</table>'},
-  d:function(){return '<table class="dtbl"><tr><th>#</th><th>Squadra</th><th class="n">Punti</th></tr>'+D.ucltable.map(function(r,i){return '<tr><td class="num">'+(i+1)+'</td><td>'+r[0]+'</td><td class="n num"><b>'+r[1]+'</b></td></tr>'}).join('')+'</table>'}, sub:'Classifica di esempio'};
+/* ---------- Sport: dati reali (ESPN per le dirette e la Nazionale, football-data per classifiche e calendario) ---------- */
+var SP={live:null,fx:{sa:null,cl:null},tb:{sa:null,cl:null},it:null,err:{},liveAt:null,prev:null,busyLive:false},spTimer=null;
+var SPLG={sa:'Serie A',cl:'Champions League',nat:'Nazionale'};
+var SPG=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'],SPM=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+var SPKNOWN=['Atalanta','Bologna','Cagliari','Como','Cremonese','Fiorentina','Genoa','Inter','Juventus','Lazio','Lecce','Milan','Napoli','Parma','Pisa','Roma','Sassuolo','Torino','Udinese','Verona'];
+var SPSTAGE={LEAGUE_STAGE:'fase campionato',PLAYOFFS:'spareggi',LAST_16:'ottavi',QUARTER_FINALS:'quarti',SEMI_FINALS:'semifinali',FINAL:'finale'};
+function spKey(n){var s=String(n||'');if(s.normalize)s=s.normalize('NFD').replace(/[̀-ͯ]/g,'');return s.toLowerCase().replace(/[^a-z0-9]/g,'')}
+function spByDate(a,b){return (a.date||'').localeCompare(b.date||'')}
+/* squadra preferita, squadre seguite (null = automatico: le italiane in Champions) e Italia, sempre seguita */
+function spCfg(c){return (c||S).sport||DEF.sport}
+function spFavK(c){var f=spCfg(c).fav;return (f&&f.k)||''}
+function spAuto(){var sa=SP.tb.sa&&SP.tb.sa.rows,cl=SP.tb.cl&&SP.tb.cl.rows;if(!sa||!cl||!sa.length||!cl.length)return [];
+  var ks={};sa.forEach(function(r){ks[r.k]=1});var fk=spFavK();return cl.filter(function(r){return ks[r.k]&&!spSame(r.k,fk)}).map(function(r){return {k:r.k,n:r.n}})}
+function spFollow(c){var f=spCfg(c).follow;return f||spAuto()}
+function spSame(a,b){if(!a||!b)return false;if(a===b)return true;return a.length>=4&&b.length>=4&&(a.indexOf(b)===0||b.indexOf(a)===0)}
+function spLevel(k){if(spSame(k,spFavK()))return 2;if(k==='italia')return 1;var F=spFollow();for(var i=0;i<F.length;i++){if(spSame(k,F[i].k))return 1}return 0}
+function spMLevel(m){return Math.max(spLevel(m.home.k),spLevel(m.away.k))}
+function spNm(name,k){var l=spLevel(k||spKey(name));return '<span class="tn'+(l===2?' fv':l===1?' fl':'')+'">'+esc(name)+'</span>'}
+function spIsIt(m){return m.home.k==='italia'||m.away.k==='italia'}
+/* partite che attivano avvisi e priorità della pagina Sport */
+function spInScope(m){var sc=S.fqCscope;if(sc==='all')return true;var l=spMLevel(m);if(sc==='fav')return spSame(m.home.k,spFavK())||spSame(m.away.k,spFavK())||spIsIt(m);return l>=1}
+function spToday(){return (SP.live&&SP.live.matches)||[]}
+function spLiveNow(){return spToday().filter(function(m){return m.state==='in'})}
+function spSort(L){return L.slice().sort(function(a,b){return spMLevel(b)-spMLevel(a)||spByDate(a,b)})}
+function spLiveActive(){return S.liveN>0||spLiveNow().some(spInScope)}
+/* date e orari */
+function spHm(iso){return iso?hm(new Date(iso)):''}
+function spDay(iso){if(!iso)return '';var d=new Date(iso),n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),x=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),dd=Math.round((x-t)/86400000);
+  if(dd===0)return 'Oggi';if(dd===1)return 'Domani';if(dd===-1)return 'Ieri';return SPG[d.getDay()]+' '+d.getDate()+(Math.abs(dd)>6?' '+SPM[d.getMonth()]:'')}
+function spWhen(iso){return iso?spDay(iso)+' · '+spHm(iso):''}
+function spCount(iso){var ms=Date.parse(iso)-Date.now();if(isNaN(ms))return '';if(ms<=0)return 'in corso';var m=Math.round(ms/60000);if(m<60)return 'tra '+m+' min';var h=Math.round(m/60);if(h<24)return 'tra '+h+(h===1?' ora':' ore');var g=Math.round(h/24);return 'tra '+g+(g===1?' giorno':' giorni')}
+function spMin(m){if(m.state==='in')return m.ht?'Int.':(m.clock||'live');if(m.state==='post')return 'Fin.';if(m.state==='off')return 'Rinv.';return spHm(m.date)}
+function spGoals(m){return (m.ev||[]).filter(function(e){return e.t==='goal'||e.t==='pg'||e.t==='og'}).map(function(e){return (e.who||'?')+' '+e.m+(e.t==='pg'?' (rig.)':e.t==='og'?' (aut.)':'')}).join(' · ')}
+/* vista di una partita per riquadri e avvisi (stessa forma delle partite di esempio) */
+function spVm(m){return {id:m.id,h:m.home.n,a:m.away.n,hk:m.home.k,ak:m.away.k,sh:m.home.s==null?0:m.home.s,sa:m.away.s==null?0:m.away.s,
+  pre:m.state==='pre'||m.state==='off',m:spMin(m),ht:!!m.ht,comp:m.comp||SPLG[m.lg]||'',ev:spGoals(m),src:m}}
+function liveList(){
+  if(S.liveN>0)return D.liveAll.slice(0,S.liveN).map(function(g){g.hk=g.hk||spKey(g.h);g.ak=g.ak||spKey(g.a);g.comp=g.comp||'Serie A';return g});
+  return spSort(spLiveNow()).map(spVm)}
+function spRow(g){return '<div class="lrow'+(g.ht||g.m==='Int.'||g.m==='Fin.'?' ht':'')+(g.pre?' pre':'')+'"><span class="h">'+spNm(g.h,g.hk)+'</span><span class="sc num">'+(g.pre?'<span class="vs">–</span>':g.sh+'–'+g.sa)+'</span><span class="a">'+spNm(g.a,g.ak)+'</span><span class="m num">'+esc(g.m)+'</span></div>'}
+function spFxRow(m){var lv=m.state==='in'?spLiveOf(m):null;
+  return '<div class="r"><span class="k" style="font-size:18px">'+spNm(m.home.n,m.home.k)+' – '+spNm(m.away.n,m.away.k)+'</span><span class="v num '+(lv?'lvc':'mut')+'" style="font-size:16px">'+(lv?lv.home.s+'–'+lv.away.s+' · '+esc(spMin(lv)):esc(m.state==='off'?'rinviata':spWhen(m.date)))+'</span></div>'}
+function spResRow(m){return spRow(spVm(m))}
+/* la stessa partita nei dati in diretta (ESPN) a partire dal calendario (football-data) */
+function spLiveOf(m){var T=spToday();for(var i=0;i<T.length;i++){var x=T[i];if(spSame(x.home.k,m.home.k)&&spSame(x.away.k,m.away.k))return x}return null}
+function spWait(kind){var e=SP.err[kind];return '<div class="nolive"><span>'+(e?'Dati non disponibili':'In attesa dei dati…')+'</span>'+(e?'<span style="font-size:12px;max-width:90%">'+esc(e)+'</span>':'')+'</div>'}
+function spAll(){return [].concat(spToday(),(SP.fx.sa&&SP.fx.sa.matches)||[],(SP.fx.cl&&SP.fx.cl.matches)||[],(SP.it&&SP.it.next)||[])}
+function spNextFav(){var now=Date.now(),L=spAll().filter(function(m){return m.state==='pre'&&Date.parse(m.date)>now-3600000}).sort(spByDate);
+  var f=L.filter(function(m){return spMLevel(m)===2});if(f.length)return f[0];f=L.filter(function(m){return spMLevel(m)===1});return f[0]||null}
+function spNextHtml(nx){return nx?'<b>'+spNm(nx.home.n,nx.home.k)+' – '+spNm(nx.away.n,nx.away.k)+'</b><span class="num">'+esc(spWhen(nx.date))+' · '+esc(nx.comp||SPLG[nx.lg]||'')+'</span><span class="cdn num">'+esc(spCount(nx.date))+'</span>':''}
+function spIdle(){
+  if(!SP.live&&!SP.err.live)return spWait('live');
+  var T=spSort(spToday().filter(function(m){return m.state!=='in'})),nx=spNextFav();
+  var h='<div class="nolive" style="flex:0 0 auto;padding:4px 0 8px"><span>Nessuna partita in diretta</span>'+spNextHtml(nx)+'</div>';
+  if(T.length)h+='<div class="spsect">Oggi</div><div class="rows" style="flex:0 0 auto">'+T.slice(0,4).map(function(m){return spRow(spVm(m))}).join('')+'</div>';
+  return '<div style="display:flex;flex-direction:column;flex:1;justify-content:center;min-height:0">'+h+'</div>'}
+/* Serie A: giornata in corso o prossima, ultima giornata conclusa */
+function spSaUp(){var A=((SP.fx.sa&&SP.fx.sa.matches)||[]).filter(function(m){return m.state!=='post'}).sort(spByDate);if(!A.length)return [];
+  var md=A[0].matchday;return md?A.filter(function(m){return m.matchday===md}):A.slice(0,10)}
+function spSaLast(){var A=((SP.fx.sa&&SP.fx.sa.matches)||[]).filter(function(m){return m.state==='post'}).sort(spByDate);if(!A.length)return [];
+  var md=A[A.length-1].matchday;return md?A.filter(function(m){return m.matchday===md}):A.slice(-10)}
+/* Champions: risultati del turno appena giocato (ultime 36 ore), altrimenti il prossimo turno; squadre seguite per prime */
+function spRound(m){return (m.stage||'')+'|'+(m.matchday||'')}
+function spClList(){var A=((SP.fx.cl&&SP.fx.cl.matches)||[]).slice().sort(spByDate),now=Date.now();if(!A.length)return [];
+  var rec=A.filter(function(m){return m.state==='post'&&Date.parse(m.date)>now-36*3600000}),up=A.filter(function(m){return m.state!=='post'});
+  var base=rec.length?rec[rec.length-1]:up[0]||A[A.length-1],r=spRound(base);
+  var L=A.filter(function(m){return spRound(m)===r});if(r==='|')L=rec.length?rec:up.slice(0,9);return spSort(L)}
+function spClLabel(m){if(!m)return '';var s=SPSTAGE[m.stage]||'';if(m.stage==='LEAGUE_STAGE'&&m.matchday)return m.matchday+'ª giornata';return s}
+function spTb(c){return (SP.tb[c]&&SP.tb[c].rows)||[]}
+function spSgn(n){return n==null?'':(n>0?'+':n<0?'−':'')+Math.abs(n)}
+function spTr(r){var l=spLevel(r.k);return l===2?' class="me"':l===1?' class="fol"':''}
+function spZone(c,p){if(c!=='cl'||!p)return '';return '<i class="zn '+(p<=8?'z1':p<=24?'z2':'z3')+'"></i>'}
+function spTableDetail(c){var R=spTb(c);if(!R.length)return spWait('tb');var d=SP.tb[c];
+  return '<table class="dtbl"><tr><th>#</th><th>Squadra</th><th class="n">G</th><th class="n">V</th><th class="n">N</th><th class="n">P</th><th class="n">GF</th><th class="n">GS</th><th class="n">DR</th><th class="n">Punti</th>'+(c==='sa'?'<th>Forma</th>':'')+'</tr>'+
+    R.map(function(r){return '<tr'+spTr(r)+'><td class="num">'+spZone(c,r.pos)+r.pos+'</td><td>'+spNm(r.n,r.k)+'</td><td class="n num">'+(r.pg==null?'':r.pg)+'</td><td class="n num">'+(r.w==null?'':r.w)+'</td><td class="n num">'+(r.d==null?'':r.d)+'</td><td class="n num">'+(r.l==null?'':r.l)+'</td><td class="n num">'+(r.gf==null?'':r.gf)+'</td><td class="n num">'+(r.ga==null?'':r.ga)+'</td><td class="n num">'+spSgn(r.gd)+'</td><td class="n num"><b>'+r.pts+'</b></td>'+(c==='sa'?'<td class="mut num" style="font-size:13px;letter-spacing:.05em">'+esc((r.form||'').replace(/W/g,'V').replace(/D/g,'N').replace(/L/g,'P').replace(/,/g,' '))+'</td>':'')+'</tr>'}).join('')+'</table>'+
+    (c==='cl'?'<div class="note"><i class="zn z1"></i>1°–8° agli ottavi · <i class="zn z2"></i>9°–24° agli spareggi · <i class="zn z3"></i>25°–36° eliminate</div>':'')+
+    '<div class="note">Fonte: '+(d.src==='espn'?'ESPN (football-data non disponibile)':'football-data.org')+'. La squadra preferita è evidenziata, le squadre seguite sono in grassetto.</div>'}
+function spFxDetail(c){var d=SP.fx[c];if(!d)return spWait('fx');var A=(d.matches||[]).slice().sort(spByDate);
+  var up=A.filter(function(m){return m.state!=='post'}),done=A.filter(function(m){return m.state==='post'}).reverse();
+  function grp(L,res){var h='',last=null;L.forEach(function(m){var k=c==='sa'?(m.matchday?m.matchday+'ª giornata':''):spClLabel(m);
+      if(k&&k!==last){last=k;h+='<tr class="xh"><td colspan="4">'+esc(k)+'</td></tr>'}
+      var lv=m.state==='in'?spLiveOf(m):null,x=lv||m;
+      h+='<tr'+(spMLevel(m)?' class="fol"':'')+'><td class="mut num" style="width:150px">'+esc(spWhen(m.date))+'</td><td class="n">'+spNm(m.home.n,m.home.k)+'</td><td class="num" style="text-align:center;width:90px">'+(res||lv?x.home.s+'–'+x.away.s:m.state==='off'?'rinv.':'–')+'</td><td>'+spNm(m.away.n,m.away.k)+'</td></tr>'});return h}
+  return (up.length?'<div class="sect">In programma</div><table class="dtbl">'+grp(up,false)+'</table>':'')+
+    (done.length?'<div class="sect" style="margin-top:18px">Risultati</div><table class="dtbl">'+grp(done,true)+'</table>':'')+
+    (!up.length&&!done.length?'<div class="mut">Nessuna partita nelle ultime e nelle prossime settimane.</div>':'')+
+    '<div class="note">Fonte: '+(d.src==='espn'?'ESPN (football-data non disponibile)':'football-data.org, risultati con leggero ritardo')+'. Per le partite in corso il punteggio viene dalle dirette.</div>'}
+function spItNext(){return (SP.it&&SP.it.next&&SP.it.next[0])||null}
+function spItLive(){var T=spToday();for(var i=0;i<T.length;i++){if(T[i].state==='in'&&spIsIt(T[i]))return T[i]}return null}
+function spEvLine(m){return (m.ev||[]).map(function(e){var t={goal:'gol',pg:'gol su rigore',og:'autogol',red:'espulso',pmiss:'rigore sbagliato'}[e.t]||e.t;
+  return '<span class="evi'+(e.t==='red'?' red':'')+'">'+esc(e.m)+' '+t+(e.who?' '+esc(e.who):'')+(e.side?' ('+esc(e.side==='h'?m.home.n:m.away.n)+')':'')+'</span>'}).join('')}
+
+/* ---------- lettura dati ---------- */
+function spGet(p){return getJSON(apiBase()+p)}
+function spErr(e){return String((e&&e.message)||e)}
+function refreshSportLive(){if(SP.busyLive)return;SP.busyLive=true;
+  spGet('/sport/live?lg=sa,cl,nat').then(function(d){SP.live=d;SP.err.live=null;SP.liveAt=new Date();spDetect(d.matches||[])},function(e){SP.err.live=spErr(e)})
+    .then(function(){SP.busyLive=false;spRender();scheduleSport()})}
+function refreshSportFx(){['sa','cl'].forEach(function(c,i){setTimeout(function(){spGet('/sport/fixtures?c='+c).then(function(d){SP.fx[c]=d;SP.err.fx=null},function(e){SP.err.fx=spErr(e)}).then(spRender)},i*900)})}
+function refreshSportTables(){['sa','cl'].forEach(function(c,i){setTimeout(function(){spGet('/sport/table?c='+c).then(function(d){SP.tb[c]=d;SP.err.tb=null},function(e){SP.err.tb=spErr(e)}).then(spRender)},400+i*900)})}
+function refreshItaly(){spGet('/sport/italy').then(function(d){SP.it=d;SP.err.it=null},function(e){SP.err.it=spErr(e)}).then(spRender)}
+/* frequenza: durante le partite quella impostata; prima di un calcio d'inizio si sveglia un minuto prima; altrimenti ogni 30 minuti */
+function scheduleSport(){clearTimeout(spTimer);var now=Date.now(),T=spToday(),fast=FQC[S.fqC]*60000,delay=30*60000;
+  var soon=T.filter(function(m){return m.state==='pre'&&m.date}).map(function(m){return Date.parse(m.date)}).filter(function(t){return t>now-3*3600000}).sort(function(a,b){return a-b})[0];
+  if(T.some(function(m){return m.state==='in'}))delay=fast;
+  else if(soon!=null&&soon-now<2*60000)delay=fast;
+  else if(soon!=null)delay=Math.min(Math.max(soon-now-60000,30000),30*60000);
+  spTimer=setTimeout(refreshSportLive,delay)}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&(!SP.liveAt||Date.now()-SP.liveAt.getTime()>90000))refreshSportLive()});
+/* ridisegna i riquadri Sport visibili (testata compresa: le sotto-pagine possono cambiare) */
+function spRender(){
+  Array.prototype.forEach.call(grid.querySelectorAll('.tile[data-mod]'),function(t){var id=t.getAttribute('data-mod');if(THEME.sport.indexOf(id)<0)return;var m=M[id];
+    var head=tileHead(m,id),tb=t.querySelector('.tb'),th=t.querySelector('.th');
+    if(th){var tmp=document.createElement('div');tmp.innerHTML=head;if(tmp.firstChild)t.replaceChild(tmp.firstChild,th)}
+    if(tb)tb.innerHTML=m.c(subIdx)});
+  if(openMod&&THEME.sport.indexOf(openMod)>=0&&$('detail').classList.contains('show')){var b=$('dBody'),st=b.scrollTop;b.innerHTML=M[openMod].d();b.scrollTop=st}
+  renderBar();var was=SP.act;SP.act=spLiveActive();if(SP.act!==was&&!interactive&&!busy)schedule()}
+
+/* ---------- eventi delle partite → avvisi ---------- */
+function spDetect(list){var prev=SP.prev,next={};
+  list.forEach(function(m){next[m.id]={st:m.state,ht:!!m.ht,h:m.home.s||0,a:m.away.s||0,n:(m.ev||[]).length}});
+  SP.prev=next;if(!prev)return; /* prima lettura: solo memoria, nessun avviso */
+  var ended=false;
+  list.forEach(function(m){var p=prev[m.id];if(!p)return;if(p.st==='in'&&m.state==='post')ended=true;if(!spInScope(m))return;
+    var g=spVm(m),out=[],nev=(m.ev||[]).slice(p.n);
+    if(p.st==='pre'&&m.state==='in')out.push({type:'start',title:'CALCIO D’INIZIO',home:null,txt:g.comp});
+    if(p.st==='in'&&p.ht&&m.state==='in'&&!m.ht)out.push({type:'start',home:null,txt:'Si riparte dal '+g.sh+'–'+g.sa});
+    ['h','a'].forEach(function(sd){var diff=(sd==='h'?(m.home.s||0)-p.h:(m.away.s||0)-p.a);
+      if(diff>0){var gl=nev.filter(function(e){return (e.t==='goal'||e.t==='pg'||e.t==='og')&&e.side===sd});
+        for(var i=0;i<diff;i++){var e=gl[gl.length-diff+i];out.push({type:'goal',home:sd==='h',txt:e?(e.who||'Gol')+(e.t==='pg'?' su rigore':e.t==='og'?' (autogol)':'')+' · '+e.m:g.m})}}
+      else if(diff<0)out.push({type:'var',home:sd==='h',txt:'Rete annullata · '+g.m})});
+    nev.forEach(function(e){if(e.t==='red')out.push({type:'red',home:e.side==='h'?true:e.side==='a'?false:null,txt:'Espulso '+(e.who||'un giocatore')+' · '+e.m});
+      if(e.t==='pmiss')out.push({type:'pen',home:e.side==='h'?true:e.side==='a'?false:null,txt:'Rigore sbagliato'+(e.who?' da '+e.who:'')+' · '+e.m})});
+    if(p.st==='in'&&m.state==='post')out.push({type:'end',home:g.sh===g.sa?null:g.sh>g.sa,txt:g.sh===g.sa?'Pareggio':'Vince '+(g.sh>g.sa?g.h:g.a)});
+    out.forEach(function(ev){ev.g=g;pushAlert(ev)})});
+  if(ended)setTimeout(function(){refreshSportFx();refreshSportTables();refreshItaly()},4*60000)}
+
+/* ---------- moduli ---------- */
+M.live={l:'In diretta',live:true,s:function(){var L=liveList();if(S.liveN>0)return 'simulazione';if(!L.length)return '';var c={};L.forEach(function(g){c[g.comp]=1});return Object.keys(c).join(' · ')},
+  n:function(){var L=liveList();return L.length>5?chunk(L,4).length:1},
+  c:function(i){var L=liveList();if(!L.length)return spIdle();
+    function board(g,sm){return '<div class="live'+(sm?' sm':'')+'"><span class="badge">LIVE</span><div class="score"><span class="tm">'+spNm(g.h,g.hk)+'</span><span class="sc num">'+g.sh+'–'+g.sa+'</span><span class="tm">'+spNm(g.a,g.ak)+'</span></div><span class="mins num">'+esc(g.m)+'</span><span class="ev">'+esc(g.ev||'')+'</span></div>'}
+    if(L.length===1)return board(L[0]);
+    /* 2-3 partite: la più importante in grande, le altre sotto */
+    if(L.length<=3)return board(L[0],true)+'<div class="rows" style="flex:0 0 auto">'+L.slice(1).map(spRow).join('')+'</div>';
+    var grp=L.length>5?chunk(L,4)[i%chunk(L,4).length]:L;return '<div class="rows">'+grp.map(spRow).join('')+'</div>'},
+  d:function(){if(S.liveN>0){var Q=liveList();return '<table class="dtbl"><tr><th class="n">Casa</th><th style="text-align:center">Risultato</th><th>Ospiti</th><th class="n">Minuto</th></tr>'+Q.map(function(g){return '<tr><td class="n">'+esc(g.h)+'</td><td class="num" style="text-align:center">'+g.sh+'–'+g.sa+'</td><td>'+esc(g.a)+'</td><td class="n num">'+esc(g.m)+'</td></tr>'}).join('')+'</table><div class="note">Partite di esempio: la simulazione è attiva in Impostazioni.</div>'}
+    if(!SP.live)return spWait('live');var L=spSort(spToday()),nx=spNextFav();
+    var h=L.length?'<table class="dtbl"><tr><th>Competizione</th><th class="n">Casa</th><th style="text-align:center">Risultato</th><th>Ospiti</th><th class="n">Stato</th></tr>'+L.map(function(m){var g=spVm(m);
+        return '<tr'+(spMLevel(m)?' class="fol"':'')+'><td class="mut">'+esc(g.comp)+'</td><td class="n">'+spNm(g.h,g.hk)+'</td><td class="num" style="text-align:center">'+(g.pre?'–':g.sh+'–'+g.sa)+'</td><td>'+spNm(g.a,g.ak)+'</td><td class="n num'+(m.state==='in'&&!m.ht?' lvc':'')+'">'+esc(g.m)+'</td></tr>'+
+          ((m.ev||[]).length?'<tr><td></td><td colspan="4" class="evl">'+spEvLine(m)+'</td></tr>':'')}).join('')+'</table>':'<div class="mut">Nessuna partita oggi in Serie A, Champions League o per la Nazionale.</div>';
+    if(nx)h+='<div class="sect" style="margin-top:18px">Prossima partita</div><div class="nolive" style="align-items:flex-start;text-align:left">'+spNextHtml(nx)+'</div>';
+    return h+'<div class="note">Dirette da ESPN'+(SP.liveAt?', ultimo aggiornamento alle '+hm(SP.liveAt):'')+'. Durante le partite il pannello si aggiorna '+fqLabel(FQC[S.fqC])+'.</div>'},
+  sub:'Partite di oggi · Serie A, Champions League, Nazionale'};
+M.table={l:'Classifica Serie A',live:true,s:function(){var d=SP.tb.sa;return d&&d.matchday?d.matchday+'ª giornata':''},
+  n:function(){var R=spTb('sa');return R.length?chunk(R,6).length:1},
+  c:function(i){var R=spTb('sa');if(!R.length)return spWait('tb');var g=chunk(R,6),k=i%g.length;
+    return '<table class="tbl">'+g[k].map(function(r){return '<tr'+spTr(r)+'><td class="p num">'+r.pos+'</td><td>'+spNm(r.n,r.k)+'</td><td class="g num">'+spSgn(r.gd)+'</td><td class="pt num">'+r.pts+'</td></tr>'}).join('')+'</table>'},
+  d:function(){return spTableDetail('sa')}, sub:'Classifica completa'};
+M.next={l:'Serie A',live:true,s:function(){var L=spSaUp();return L.length&&L[0].matchday?L[0].matchday+'ª giornata':''},
+  n:function(){return chunk(spSaUp(),4).length},
+  c:function(i){var L=spSaUp();if(!L.length)return SP.fx.sa?'<div class="nolive"><span>Nessuna partita in programma</span></div>':spWait('fx');var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(spFxRow).join('')+'</div>'},
+  d:function(){return spFxDetail('sa')}, sub:'Calendario e risultati di Serie A'};
+M.results={l:'Risultati Serie A',live:true,s:function(){var L=spSaLast();return L.length&&L[0].matchday?L[0].matchday+'ª giornata':''},
+  n:function(){return chunk(spSaLast(),4).length},
+  c:function(i){var L=spSaLast();if(!L.length)return SP.fx.sa?'<div class="nolive"><span>Nessun risultato recente</span></div>':spWait('fx');var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(spResRow).join('')+'</div>'},
+  d:function(){return spFxDetail('sa')}, sub:'Calendario e risultati di Serie A'};
+M.ucl={l:'Champions League',live:true,s:function(){return spClLabel(spClList()[0])},
+  n:function(){return chunk(spClList(),4).length},
+  c:function(i){var L=spClList();if(!L.length)return SP.fx.cl?'<div class="nolive"><span>Nessuna partita nelle prossime settimane</span></div>':spWait('fx');var g=chunk(L,4);
+    return '<div class="rows">'+g[i%g.length].map(function(m){return m.state==='post'?spResRow(m):spFxRow(m)}).join('')+'</div>'},
+  d:function(){return spFxDetail('cl')}, sub:'Partite della Champions League · squadre seguite in evidenza'};
+M.ucltable={l:'Classifica Champions',live:true,s:function(){var d=SP.tb.cl;return d&&d.stage&&SPSTAGE[d.stage]?SPSTAGE[d.stage]:''},
+  n:function(){return spUclPages().length},
+  c:function(i){var P=spUclPages();if(!spTb('cl').length)return spWait('tb');var pg=P[i%P.length];
+    return (pg.k?'<div class="spsect" style="margin-top:0">'+pg.k+'</div>':'')+'<table class="tbl sm">'+pg.r.map(function(r){return '<tr'+spTr(r)+'><td class="p num">'+spZone('cl',r.pos)+r.pos+'</td><td>'+spNm(r.n,r.k)+'</td><td class="g num">'+spSgn(r.gd)+'</td><td class="pt num">'+r.pts+'</td></tr>'}).join('')+'</table>'},
+  d:function(){return spTableDetail('cl')}, sub:'Classifica della fase campionato'};
+function spUclPages(){var R=spTb('cl');if(!R.length)return [{r:[]}];var P=[],F=R.filter(function(r){return spLevel(r.k)>0});
+  if(F.length)P.push({k:'Le tue squadre',r:F.slice(0,8)});chunk(R.slice(0,24),8).forEach(function(c){P.push({r:c})});return P}
+M.italy={l:'Nazionale',live:true,s:function(){var lv=spItLive(),n=lv||spItNext();return n?(n.comp||''):''},n:one,
+  c:function(){var lv=spItLive();
+    if(lv){var g=spVm(lv);return '<div class="live"><span class="badge">LIVE</span><div class="score"><span class="tm">'+spNm(g.h,g.hk)+'</span><span class="sc num">'+g.sh+'–'+g.sa+'</span><span class="tm">'+spNm(g.a,g.ak)+'</span></div><span class="mins num">'+esc(g.m)+'</span><span class="ev">'+esc(g.ev||'')+'</span></div>'}
+    if(!SP.it)return spWait('it');var n=spItNext(),l=(SP.it.last||[])[0],h='';
+    if(n)h+='<div class="nat"><span class="lab">Prossima partita</span><b>'+esc(n.home.n)+' – '+esc(n.away.n)+'</b><span class="num">'+esc(spWhen(n.date))+'</span>'+(n.venue?'<span class="mut" style="font-size:13px">'+esc(n.venue)+'</span>':'')+'<span class="cdn num">'+esc(spCount(n.date))+'</span></div>';
+    else h+='<div class="nat"><span class="lab">Prossima partita</span><b class="mut" style="font-weight:400;font-size:18px">Non ancora in calendario</b></div>';
+    if(l)h+='<div class="nat-l"><span class="lab">Ultima partita · '+esc(l.comp||'')+'</span><span>'+esc(l.home.n)+' <b class="num">'+l.home.s+'–'+l.away.s+'</b> '+esc(l.away.n)+'</span><span class="mut num" style="font-size:13px">'+esc(spWhen(l.date))+'</span></div>';
+    return '<div class="natw">'+h+'</div>'},
+  d:function(){if(!SP.it)return spWait('it');var N=SP.it.next||[],L=SP.it.last||[];
+    function rows(A,res){return A.map(function(m){return '<tr><td class="mut num" style="width:150px">'+esc(spWhen(m.date))+'</td><td class="mut">'+esc(m.comp||'')+'</td><td class="n">'+esc(m.home.n)+'</td><td class="num" style="text-align:center;width:80px">'+(res?m.home.s+'–'+m.away.s:'–')+'</td><td>'+esc(m.away.n)+'</td></tr>'}).join('')}
+    return (N.length?'<div class="sect">Prossime partite</div><table class="dtbl">'+rows(N,false)+'</table>':'<div class="mut">Nessuna partita dell’Italia ancora in calendario.</div>')+
+      (L.length?'<div class="sect" style="margin-top:18px">Ultime partite</div><table class="dtbl">'+rows(L,true)+'</table>':'')+
+      '<div class="note">Nations League, amichevoli e qualificazioni europee da ESPN.</div>'},
+  sub:'Partite dell’Italia'};
+setTimeout(function(){refreshSportLive();refreshSportFx();refreshSportTables();refreshItaly();
+  setInterval(refreshSportFx,30*60000);setInterval(refreshSportTables,30*60000);setInterval(refreshItaly,3*3600000)},4500);
 /* tema di ogni modulo: una pagina può usare solo i moduli del suo tema */
 var THEME={
   borsa:['indices','portfolio','fx','earnings','movers','mktnews','commod'],
-  sport:['live','table','next','ucl','results','ucltable'],
+  sport:['live','table','next','ucl','results','ucltable','italy'],
   intr:['cinema','stream','episodes','favs'],
   foto:['photowx','portfolioPh','morning','moon','news','sunweek']
 };
@@ -1073,8 +1277,8 @@ var grid=$('grid'),bar=$('bar'),prog=$('prog');
 var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
-var DEMO={live:1,table:1,next:1,ucl:1,results:1,ucltable:1,shows:1};
-function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):(m.s||'');return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
+var DEMO={shows:1};
+function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):esc(typeof m.s==='function'?m.s():(m.s||''));return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
   grid.style.gridTemplateColumns='repeat('+L[0]+',1fr)';
@@ -1086,7 +1290,7 @@ function renderPage(){
   renderBar();
 }
 function renderBar(){
-  bar.innerHTML=PAGES.map(function(p,i){return '<button data-pg="'+i+'" class="'+(i===cur?'on':'')+'">'+(p.id==='sport'&&S.liveN>0?'<span class="lv"></span>':'')+p.t+'</button>'}).join('')+'<span class="sep"></span><button class="ic" id="bResume" aria-label="Riprendi la rotazione">▶</button><button class="ic" id="bNight" aria-label="Modalità notte">☾</button><button class="ic" id="bSet" aria-label="Impostazioni">⚙︎</button>';
+  bar.innerHTML=PAGES.map(function(p,i){return '<button data-pg="'+i+'" class="'+(i===cur?'on':'')+'">'+(p.id==='sport'&&spLiveActive()?'<span class="lv"></span>':'')+p.t+'</button>'}).join('')+'<span class="sep"></span><button class="ic" id="bResume" aria-label="Riprendi la rotazione">▶</button><button class="ic" id="bNight" aria-label="Modalità notte">☾</button><button class="ic" id="bSet" aria-label="Impostazioni">⚙︎</button>';
 }
 /* sotto-pagine: avanzano tutte insieme ogni S.sub secondi */
 function maxSub(){var mx=1;visibleMods().forEach(function(id){if(M[id])mx=Math.max(mx,M[id].n())});return mx}
@@ -1116,8 +1320,9 @@ function startProg(sec){
 function schedule(){
   clearTimeout(rotTimer);
   if(interactive||nightForced||busy){prog.style.transition='none';prog.style.width='0';return}
-  if(S.liveN>0){ // regola di priorità: con partite in diretta la pagina Sport resta fissa
-    if(cur!==1)go(1);prog.style.transition='none';prog.style.width='100%';prog.style.opacity='.35';return}
+  var spi=PAGES.map(function(p){return p.id}).indexOf('sport');
+  if(spLiveActive()&&S.pages.sport&&spi>=0){ // regola di priorità: con partite seguite in diretta la pagina Sport resta fissa
+    if(cur!==spi)go(spi);prog.style.transition='none';prog.style.width='100%';prog.style.opacity='.35';return}
   prog.style.opacity='.75';
   var sec=pageSeconds();startProg(sec);
   rotTimer=setTimeout(function(){
@@ -1153,22 +1358,22 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
-  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';renderPageMods();renderLists();openOv('settings');
+  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';renderPageMods();renderLists();renderSp();openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
-var FQB=[1,2,5,10,15,30],FQC=[1,2,3,5,10];
-function fqLabel(m){return m===1?'ogni minuto':'ogni '+m+' min'}
+var FQB=[1,2,5,10,15,30],FQC=[0.5,1,2,3,5];
+function fqLabel(m){return m<1?'ogni '+Math.round(m*60)+' s':m===1?'ogni minuto':'ogni '+m+' min'}
 function budget(){
   var fb=FQB[+$('sFqB').value],off=+$('sFqBoff').value,fc=FQC[+$('sFqC').value],sc=$('sFqCscope').value;
   $('oFqB').textContent=fqLabel(fb);$('oFqC').textContent=fqLabel(fc);
   var sym=8;(W?W.lists:S.lists).forEach(function(L){sym+=L.tickers.length});
   var openMin=13*60,closedMin=11*60; /* finestra mercati 9:00-22:00 nei giorni feriali */
   var borsa=Math.round(openMin/fb+(off?closedMin/off:0));
-  var live={all:7,it:3,fav:1}[sc],liveMin=120; /* giornata tipo con partite: 2 ore di diretta */
-  var calcio=Math.round((2+live)*liveMin/fc+24);
+  var liveMin=240; /* giornata tipo con partite: 4 ore con almeno una partita in corso */
+  var calcio=Math.round(liveMin/fc+48+20);
   var tot=borsa+calcio,lim=100000,pc=Math.min(100,tot/lim*100);
   $('budget').innerHTML='<div><span>Borsa</span><b class="num">'+borsa.toLocaleString('it-IT')+'</b><small>'+sym+' simboli in un’unica richiesta · richieste/giorno</small></div>'+
-    '<div><span>Calcio</span><b class="num">'+calcio.toLocaleString('it-IT')+'</b><small>giorno con partite · '+live+' in diretta</small></div>'+
+    '<div><span>Calcio</span><b class="num">'+calcio.toLocaleString('it-IT')+'</b><small>giorno con partite · una richiesta per tutte le dirette</small></div>'+
     '<div><span>Totale stimato</span><b class="num">'+tot.toLocaleString('it-IT')+'</b><small>limite proxy gratuito 100.000/giorno</small></div>'+
     '<div class="meter'+(pc>60?' hot':'')+'"><i style="width:'+Math.max(pc,1).toFixed(1)+'%"></i></div>';
 }
@@ -1208,6 +1413,20 @@ $('sTvQ').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDe
 $('sTvRes').addEventListener('click',function(e){var b=e.target.closest('[data-atv]');if(!b||b.disabled)return;W.ent.tv.push({id:+b.getAttribute('data-atv'),name:b.getAttribute('data-atn')});b.disabled=true;renderEnt()});
 $('sTv').addEventListener('click',function(e){var a=e.target.getAttribute('data-dtv');if(a!==null){W.ent.tv.splice(+a,1);renderEnt()}});
 function modName(id){return M[id].l||'Portfolio foto'}
+/* squadre: preferita (tra quelle di Serie A) e seguite (tra Serie A e Champions) */
+function spTeams(){var o={},A=[];spTb('sa').concat(spTb('cl')).forEach(function(r){if(!o[r.k]){o[r.k]=1;A.push({k:r.k,n:r.n})}});return A.sort(function(a,b){return a.n.localeCompare(b.n,'it')})}
+function renderSp(){var sa=spTb('sa').map(function(r){return {k:r.k,n:r.n}});if(!sa.length)sa=SPKNOWN.map(function(n){return {k:spKey(n),n:n}});
+  sa.sort(function(a,b){return a.n.localeCompare(b.n,'it')});var f=W.sport.fav||{};if(f.k&&!sa.some(function(t){return t.k===f.k}))sa.unshift(f);
+  $('sFav').innerHTML='<option value="">Nessuna</option>'+sa.map(function(t){return '<option value="'+esc(t.k)+'"'+(t.k===f.k?' selected':'')+'>'+esc(t.n)+'</option>'}).join('');
+  var F=spFollow(W),auto=!W.sport.follow;
+  $('sFol').innerHTML=(F.length?F.map(function(t,i){return '<span class="chip">'+esc(t.n)+'<button data-dfo="'+i+'" aria-label="Togli '+esc(t.n)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">'+(auto&&!spTb('cl').length?'Elenco automatico in attesa delle classifiche':'Nessuna squadra')+'</span>');
+  $('sFolMsg').textContent=auto?'Elenco automatico: le italiane in Champions di quest’anno':'Elenco personale';
+  var T=spTeams().filter(function(t){return !F.some(function(x){return x.k===t.k})&&t.k!==(W.sport.fav&&W.sport.fav.k)});
+  $('sFolAv').innerHTML=T.length?T.map(function(t){return '<button data-afo="'+esc(t.k)+'" data-afn="'+esc(t.n)+'">+ '+esc(t.n)+'</button>'}).join(''):(spTb('sa').length?'':'<span class="mut" style="font-size:13px">L’elenco delle squadre compare quando le classifiche sono state lette.</span>')}
+$('sFol').addEventListener('click',function(e){var a=e.target.getAttribute('data-dfo');if(a===null)return;W.sport.follow=spFollow(W).slice();W.sport.follow.splice(+a,1);renderSp()});
+$('sFolAv').addEventListener('click',function(e){var b=e.target.closest('[data-afo]');if(!b)return;W.sport.follow=spFollow(W).slice();W.sport.follow.push({k:b.getAttribute('data-afo'),n:b.getAttribute('data-afn')});renderSp()});
+$('sFolAuto').addEventListener('click',function(){W.sport.follow=null;renderSp()});
+$('sFav').addEventListener('change',function(){var o=this.options[this.selectedIndex];W.sport.fav=this.value?{k:this.value,n:o.textContent}:null;renderSp()});
 function renderPageMods(){
   $('sPageMods').innerHTML=PAGES.map(function(p){
     var sel=W.pageMods[p.id]||[],av=THEME[p.id].filter(function(id){return sel.indexOf(id)<0});
@@ -1258,8 +1477,9 @@ $('sSave').addEventListener('click',function(){
   W.foto.src=FSRC.map(function(f){return f[0]}).filter(function(k){var c=$('fs_'+k);return c&&c.checked});
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
+  var fo=$('sFav').options[$('sFav').selectedIndex];W.sport.fav=$('sFav').value?{k:$('sFav').value,n:fo.textContent}:null;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
-  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 $('sReset').addEventListener('click',function(){S=clone(DEF);save();openSettings();refreshQuotes();scheduleQuotes()});
 
@@ -1293,10 +1513,10 @@ $('sImportFile').addEventListener('change',function(){
 
 /* ---------- avvisi eventi ---------- */
 var EVT={
-  start:{lab:'Inizio tempo',t:'INIZIO 2° TEMPO',c:'var(--text)'},
+  start:{lab:'Inizio partita e 2° tempo',t:'INIZIO 2° TEMPO',c:'var(--text)'},
   goal:{lab:'Gol',t:'GOL',c:'var(--accent)'},
   var:{lab:'Gol annullato',t:'GOL ANNULLATO',c:'var(--text-2)'},
-  pen:{lab:'Rigore',t:'RIGORE',c:'#D9C27A'},
+  pen:{lab:'Rigore sbagliato',t:'RIGORE SBAGLIATO',c:'#D9C27A'},
   red:{lab:'Espulsione',t:'ESPULSIONE',c:'var(--down)'},
   end:{lab:'Fine partita',t:'FINALE',c:'var(--text)'}
 };
@@ -1304,7 +1524,7 @@ var EVT_KEYS=['start','goal','var','pen','red','end'];
 var SAMPLE=[['Martínez','Inter'],['Lukaku','Napoli'],['Vlahović','Juventus'],['Leão','Milan'],['Orsolini','Bologna']];
 var queue=[],busy=false,alertTimer=null,toastTimer=null,lastGoal=null;
 function emit(type,gi){
-  var g=D.liveAll[gi||0],ev={type:type,g:g,home:true,txt:''};
+  var g=D.liveAll[gi||0],ev={type:type,g:g,home:true,txt:''};g.comp=g.comp||'Serie A';
   var sideHome=Math.random()<0.5,who=SAMPLE[Math.floor(Math.random()*SAMPLE.length)][0];
   if(type==='goal'){if(sideHome)g.sh++;else g.sa++;ev.home=sideHome;ev.txt=who+' · '+g.m;lastGoal={g:g,home:sideHome}}
   else if(type==='var'){var lg=lastGoal&&lastGoal.g===g?lastGoal:{home:g.sh>=g.sa};if(lg.home&&g.sh>0)g.sh--;else if(!lg.home&&g.sa>0)g.sa--;ev.home=lg.home;ev.txt='Rete annullata dopo revisione VAR · '+g.m;lastGoal=null}
@@ -1312,25 +1532,27 @@ function emit(type,gi){
   else if(type==='red'){ev.home=sideHome;ev.txt='Espulso un giocatore di '+(sideHome?g.h:g.a)+' · '+g.m}
   else if(type==='start'){ev.home=null;ev.txt='Si riparte dal '+g.sh+'–'+g.sa}
   else if(type==='end'){ev.home=g.sh===g.sa?null:g.sh>g.sa;ev.txt=g.sh===g.sa?'Pareggio':'Vince '+(g.sh>g.sa?g.h:g.a)}
-  refreshLive();
-  if(!S.alerts[type])return; // evento non abilitato: aggiorna solo i dati
+  refreshLive();pushAlert(ev);
+}
+function pushAlert(ev){
+  if(!S.alerts[ev.type])return; // evento non abilitato: aggiorna solo i dati
   if(nightForced&&S.alertNight==='off')return;
   if(interactive){showToast(ev);return}
   queue.push(ev);if(!busy)nextAlert();
 }
-function refreshLive(){var t=grid.querySelector('.tile[data-mod="live"] .tb');if(t)t.innerHTML=M.live.c(subIdx)}
+function refreshLive(){var t=grid.querySelector('.tile[data-mod="live"] .tb');if(t)t.innerHTML=M.live.c(subIdx);renderBar()}
 function nextAlert(){
   var ev=queue.shift();if(!ev){busy=false;$('alert').classList.remove('show');schedule();return}
   busy=true;clearTimeout(rotTimer);
   var A=$('alert'),E=EVT[ev.type],g=ev.g;
   A.style.setProperty('--ev',E.c);A.classList.toggle('dim',nightForced);
-  $('evK').textContent='Serie A · '+g.h+' – '+g.a;$('evT').textContent=E.t;
+  $('evK').textContent=(g.comp||'Serie A')+' · '+g.h+' – '+g.a;$('evT').textContent=ev.title||E.t;
   $('evH').textContent=g.h;$('evA').textContent=g.a;
   $('evH').className='ev-tm'+(ev.home===true?' hit':'');$('evA').className='ev-tm'+(ev.home===false?' hit':'');
   var before=ev.type==='goal'?(ev.home?[g.sh-1,g.sa]:[g.sh,g.sa-1]):ev.type==='var'?(ev.home?[g.sh+1,g.sa]:[g.sh,g.sa+1]):[g.sh,g.sa];
   var SH=$('evSH'),SA=$('evSA');SH.textContent=before[0];SA.textContent=before[1];SH.className='';SA.className='';
   $('evD').textContent=ev.txt;
-  var others=D.liveAll.slice(0,Math.max(S.liveN,1)).filter(function(x){return x!==g});
+  var others=liveList().filter(function(x){return x!==g&&x.id!==g.id});
   $('evO').innerHTML=others.slice(0,4).map(function(x){return '<span><b>'+x.h+' '+x.sh+'–'+x.sa+' '+x.a+'</b> '+x.m+'</span>'}).join('');
   $('evQ').textContent=queue.length?'+'+queue.length+' in coda':'';
   var P=$('evP');P.style.transition='none';P.style.width='100%';void P.offsetWidth;
@@ -1345,7 +1567,7 @@ function nextAlert(){
 }
 function showToast(ev){
   var T=$('toast'),E=EVT[ev.type],g=ev.g;T.style.setProperty('--ev',E.c);
-  $('tsT').textContent=E.t;$('tsM').textContent=g.h+' '+g.sh+'–'+g.sa+' '+g.a+' · '+g.m;
+  $('tsT').textContent=ev.title||E.t;$('tsM').textContent=g.h+' '+g.sh+'–'+g.sa+' '+g.a+' · '+g.m;
   T.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){T.classList.remove('show')},5000);
 }
 $('alert').addEventListener('click',function(e){e.stopPropagation();clearTimeout(alertTimer);queue=[];$('alert').classList.remove('show');busy=false;touch()});
