@@ -267,6 +267,11 @@ html,body{margin:0}
 .nw .ns{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:4px}
 .nw.full[data-read]{cursor:pointer}.nw.full[data-read] .nt::after{content:'  ›';color:var(--text-3)}
 .rd-t{font-size:22px;font-weight:500;margin:0 0 6px;line-height:1.3}
+.er[data-title]{cursor:pointer}.er[data-title] .ei>b::after{content:'  ›';color:var(--text-3)}
+.tt{display:flex;gap:20px}.tt-p{width:150px;height:225px;object-fit:cover;border-radius:10px;flex:none;background:var(--surface-2)}.tt-i{flex:1;min-width:0}.tt-i .kv{font-size:14px;margin-top:6px;gap:16px}
+.tt-tag{font-style:italic;color:var(--text-2);margin:8px 0;font-size:15px}
+.rv{padding:10px 0;border-bottom:1px solid rgba(36,40,48,.6)}.rv:last-of-type{border-bottom:0}
+.rv-t{font-size:15px;line-height:1.55;margin-top:6px;-webkit-user-select:text;user-select:text}.rv-t.cut{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
 .rd p{font-size:17px;line-height:1.6;margin:0 0 14px;color:var(--text);-webkit-user-select:text;user-select:text}
 .rd h4{font-size:15px;letter-spacing:.04em;color:var(--accent);margin:18px 0 8px;font-weight:600}
 .ebadge{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(201,161,91,.5);border-radius:4px;padding:0 4px;margin-right:6px;vertical-align:2px}
@@ -603,7 +608,7 @@ var TVST={'Returning Series':'in corso','Ended':'conclusa','Canceled':'cancellat
 function epLabel(e){return e?'S'+e.s+' E'+(e.e<10?'0':'')+e.e+(e.name&&!/^(episodio|episode) \d+$/i.test(e.name)?' · '+e.name:''):''}
 function thumb(path){return path?'<img class="thb" src="'+img(path,'w92')+'" alt="" loading="lazy">':'<span class="thb"></span>'}
 function vote(v){return v?'<span class="vt">★ '+fmt(v,1)+'</span>':''}
-function entRow(m,meta){return '<div class="er">'+thumb(m.poster)+'<div class="ei"><b>'+esc(m.title)+'</b>'+(m.original?' <span class="mut" style="font-size:13px">'+esc(m.original)+'</span>':'')+
+function entRow(m,meta){return '<div class="er"'+(m.id&&m.type?' data-title="'+m.type+':'+m.id+'"':'')+'>'+thumb(m.poster)+'<div class="ei"><b>'+esc(m.title)+'</b>'+(m.original?' <span class="mut" style="font-size:13px">'+esc(m.original)+'</span>':'')+
   '<div class="em">'+meta+'</div>'+(m.overview?'<div class="eo">'+esc(m.overview)+'</div>':'')+'</div></div>'}
 
 /* ---------- fotografia: portfolio da Flickr (feed pubblico per tag) ---------- */
@@ -739,6 +744,29 @@ function readerHtml(){var r=READ,h='<button class="btn sm" data-readback="1" sty
   if(r.err||!r.data.paras||r.data.chars<200)return h+(r.data&&r.data.title?'<h3 class="rd-t">'+esc(r.data.title)+'</h3>':'')+'<div class="mut" style="font-size:15px;line-height:1.5">Il testo completo di questo articolo non è leggibile da qui: probabilmente il sito richiede un abbonamento o blocca la lettura automatica.</div>';
   var d=r.data;return h+'<h3 class="rd-t">'+esc(d.title||'')+'</h3><div class="nm" style="margin-bottom:12px"><b>'+esc(d.site||srcOf({link:d.url}))+'</b></div><div class="rd">'+
     d.paras.map(function(p){return p.h?'<h4>'+esc(p.t)+'</h4>':'<p>'+esc(p.t)+'</p>'}).join('')+'</div><div class="note">Testo estratto automaticamente dalla pagina originale per la lettura.</div>'}
+function titleHtml(){var r=READ,h='<button class="btn sm" data-readback="1" style="margin-bottom:14px">‹ Indietro</button>';
+  if(!r.data&&!r.err)return h+'<div class="mut">Caricamento della scheda…</div>';
+  if(r.err)return h+'<div class="mut">Scheda non disponibile.</div>';
+  var d=r.data,fav={};(entCfg().people||[]).forEach(function(p){fav[p.id]=1});
+  var who=function(p,cls){return fav[p.id]?'<b class="'+cls+'">★ '+esc(p.name)+'</b>':esc(p.name)};
+  var facts=[d.date?d.date.slice(0,4):'',d.type==='movie'&&d.runtime?d.runtime+' min':'',d.type==='tv'&&d.seasons?d.seasons+(d.seasons===1?' stagione':' stagioni')+(d.episodes?' · '+d.episodes+' episodi':''):'',(d.genres||[]).join(', ')].filter(Boolean).join(' · ');
+  var wh=function(l,a){return a&&a.length?'<div class="kv"><span>'+l+'</span><b>'+esc(a.join(', '))+'</b></div>':''};
+  var where=wh('In abbonamento',d.where.flatrate)+wh('Noleggio',d.where.rent)+wh('Acquisto',d.where.buy);
+  return h+'<div class="tt">'+(d.poster?'<img class="tt-p" src="'+img(d.poster,'w342')+'" alt="">':'')+'<div class="tt-i"><h3 class="rd-t">'+esc(d.title)+'</h3>'+
+    (d.original?'<div class="mut" style="font-size:14px">'+esc(d.original)+'</div>':'')+'<div class="em" style="margin-top:6px">'+esc(facts)+'</div>'+
+    (d.vote?'<div class="em"><span class="vt" style="margin-left:0">★ '+fmt(d.vote,1)+'</span> <span class="mut">('+d.votes+' voti TMDB)</span></div>':'')+
+    (d.tagline?'<div class="tt-tag">«'+esc(d.tagline)+'»</div>':'')+
+    (d.directors&&d.directors.length?'<div class="kv"><span>'+(d.type==='tv'?'Ideata da':'Regia')+'</span><b>'+d.directors.map(function(p){return who(p,'fr-reg')}).join(', ')+'</b></div>':'')+
+    (d.cast&&d.cast.length?'<div class="kv" style="align-items:flex-start"><span>Interpreti</span><b style="text-align:right;font-weight:400">'+d.cast.slice(0,6).map(function(p){return who(p,'fr-att')}).join(', ')+'</b></div>':'')+'</div></div>'+
+    '<div class="sect" style="margin-top:16px">Trama</div><div class="rd"><p>'+esc(d.overview||'Trama non disponibile in italiano.')+'</p></div>'+
+    '<div class="sect">Dove vederlo in Italia</div>'+(where||'<div class="mut" style="font-size:14px">Non risulta disponibile in streaming in Italia.</div>')+
+    '<div class="sect" style="margin-top:16px">Recensioni degli utenti</div>'+((d.reviews||[]).length?d.reviews.map(function(v,i){var long=v.content.length>600;
+      return '<div class="rv"><div class="em"><b style="color:var(--text)">'+esc(v.author)+'</b>'+(v.rating!=null?' · <span class="vt" style="margin-left:0">★ '+fmt(v.rating,0)+'/10</span>':'')+(v.date?' · '+esc(dShort(v.date.slice(0,10)))+' '+v.date.slice(0,4):'')+(v.lang==='en'?' · in inglese':'')+'</div>'+
+        '<div class="rv-t'+(long?' cut':'')+'" id="rv'+i+'">'+esc(v.content).replace(/\n+/g,'<br><br>')+'</div>'+(long?'<button class="btn sm" data-revx="'+i+'" style="margin-top:6px">Leggi tutta</button>':'')+'</div>'}).join(''):'<div class="mut" style="font-size:14px">Nessuna recensione disponibile.</div>')+
+    '<div class="note">Dati e recensioni degli utenti da TMDB; la critica professionale non è disponibile gratuitamente. Questo prodotto usa le API di TMDB ma non è approvato né certificato da TMDB.</div>'}
+function openTitle(type,id){var key='t:'+type+':'+id;READ={url:key,kind:'title',data:null,err:null};var b=$('dBody');b.innerHTML=titleHtml();b.scrollTop=0;
+  getJSON(apiBase()+'/tmdb/title?type='+type+'&id='+id).then(function(d){if(READ&&READ.url===key)READ.data=d},function(e){if(READ&&READ.url===key)READ.err=String((e&&e.message)||e)})
+    .then(function(){if(READ&&READ.url===key&&$('detail').classList.contains('show'))b.innerHTML=titleHtml()})}
 function openReader(url){READ={url:url,data:null,err:null};var b=$('dBody');b.innerHTML=readerHtml();b.scrollTop=0;
   getJSON(apiBase()+'/read?url='+encodeURIComponent(url)).then(function(d){if(!READ||READ.url!==url)return;READ.data=d},function(e){if(!READ||READ.url!==url)return;READ.err=String((e&&e.message)||e)})
     .then(function(){if(READ&&READ.url===url&&$('detail').classList.contains('show')){b.innerHTML=readerHtml()}})}
@@ -913,7 +941,7 @@ M.episodes={l:'Serie seguite',s:'prossimi episodi',live:true,n:function(){return
       return '<div class="cd'+(i%g.length===0&&k===0?' first':'')+'"><div class="g">'+gBox(x.g)+'</div><div class="i"><b>'+esc(t.title)+'</b><div>'+esc(epLabel(t.next))+'</div><div>'+esc(dLabel(new Date(t.next.date+'T12:00:00').toISOString()))+(t.next.e===1?' · nuova stagione':'')+'</div></div></div>'}).join('')+'</div>'},
   d:function(){var all=tvAll();if(!all.length)return '<div class="mut">Nessuna serie seguita. Aggiungile da Impostazioni › Intrattenimento.</div>';
     return '<table class="dtbl"><tr><th>Serie</th><th>Prossimo episodio</th><th>Ultimo uscito</th><th>Stato</th></tr>'+all.map(function(x){var t=x.t;if(!t||t.error)return '<tr><td><b>'+esc(x.c.name)+'</b></td><td class="mut" colspan="3">'+(t?'dati non disponibili':'in attesa dei dati')+'</td></tr>';
-      return '<tr><td><b>'+esc(t.title)+'</b>'+(t.networks&&t.networks.length?'<div class="mut" style="font-size:12px">'+esc(t.networks.join(' · '))+'</div>':'')+'</td>'+
+      return '<tr data-title="tv:'+t.id+'" style="cursor:pointer"><td><b>'+esc(t.title)+'</b>'+(t.networks&&t.networks.length?'<div class="mut" style="font-size:12px">'+esc(t.networks.join(' · '))+'</div>':'')+'</td>'+
         '<td>'+(t.next?esc(epLabel(t.next))+'<div style="font-size:12px;color:var(--accent)">'+esc(dLabel(new Date(t.next.date+'T12:00:00').toISOString()))+(x.g!=null&&x.g>=0?' · '+(x.g===0?'oggi':x.g===1?'domani':'tra '+x.g+' giorni'):'')+'</div>':'<span class="mut">non annunciato</span>')+'</td>'+
         '<td class="mut">'+(t.last?(x.recent?'<b style="color:var(--accent);font-weight:500">'+esc(t.binge?'Stagione '+t.last.s+' completa ('+t.lastSeason.count+' ep.)':epLabel(t.last))+'</b>':esc(t.binge?'Stagione '+t.last.s+' completa ('+t.lastSeason.count+' ep.)':epLabel(t.last)))+'<div style="font-size:12px">'+esc(t.last.date?dShort(t.last.date)+' '+t.last.date.slice(0,4):'')+(x.recent?' · novità':'')+'</div>':'—')+'</td><td class="mut">'+esc(TVST[t.status]||t.status||'')+'</td></tr>'}).join('')+'</table>'+
       '<div class="note">Nel riquadro compaiono le serie con un episodio in arrivo e, per due settimane, quelle appena uscite (anche le stagioni pubblicate tutte insieme). Date di messa in onda da TMDB: per le serie internazionali possono riferirsi all’uscita originale, non a quella italiana.</div>'},
@@ -1335,6 +1363,8 @@ stage.addEventListener('click',function(e){
   var t=e.target;
   var cl=t.closest('[data-close]');if(cl){closeOv(cl.getAttribute('data-close'));touch();return}
   var rb=t.closest('[data-readback]');if(rb){var st=READ&&READ.st;READ=null;$('dBody').innerHTML=M[openMod].d();if(st)$('dBody').scrollTop=st;touch();return}
+  var rx=t.closest('[data-revx]');if(rx){var el=$('rv'+rx.getAttribute('data-revx'));if(el){el.classList.toggle('cut');rx.textContent=el.classList.contains('cut')?'Leggi tutta':'Riduci'}touch();return}
+  var tt=t.closest('[data-title]');if(tt){var kp=$('dBody').scrollTop,q=tt.getAttribute('data-title').split(':');openTitle(q[0],q[1]);READ.st=kp;touch();return}
   var rd=t.closest('[data-read]');if(rd){var keep=$('dBody').scrollTop;openReader(rd.getAttribute('data-read'));READ.st=keep;touch();return}
   var pc=t.closest('[data-plc]');if(pc){S.foto.place=+pc.getAttribute('data-plc');save();WX.data=null;$('dBody').innerHTML=M[openMod].d();refreshWx();renderPage();touch();return}
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
