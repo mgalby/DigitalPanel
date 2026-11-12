@@ -283,10 +283,13 @@ html,body{margin:0}
 .em{font-size:13px;color:var(--text-2);margin-top:3px}
 .eo{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .vt{color:var(--accent);margin-left:6px}
-.poster.fav .art{box-shadow:0 0 0 2px var(--accent)}
+.poster.fav .art{box-shadow:0 0 0 2px var(--accent)}.poster.fav-att .art{box-shadow:0 0 0 2px #7DB4E8}
 .poster .art{position:relative}
 .fbadge{position:absolute;left:6px;right:6px;bottom:6px;background:rgba(14,16,20,.86);color:var(--accent);font-size:11px;font-weight:600;border-radius:5px;padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fstar{color:var(--accent)}
+.fr-reg{color:var(--accent)}.fr-att{color:#7DB4E8}
+.seg span.segk .fr-reg,.seg span.segk .fr-att{border:0;padding:0;letter-spacing:0;text-transform:none;font-weight:500}
+.seg span.segk .fr-reg,.poster .fbadge .fr-reg{color:var(--accent)}.seg span.segk .fr-att,.poster .fbadge .fr-att{color:#7DB4E8}.poster .fbadge span{font-size:11px;font-weight:600}
 </style>
 </head>
 <body>
@@ -547,6 +550,9 @@ function favOf(type,id){var P=ENT.people;if(!P||!P.items)return null;for(var i=0
 /* cognome con le particelle ("del Toro", "van Sant", "Di Caprio") */
 function surname(n){var w=n.split(' ');if(w.length<2)return n;var k=w.length-1;while(k>1&&/^(de|del|della|di|da|van|von|der|den|la|le|du|dos|das|mac|st\.?)$/i.test(w[k-1]))k--;return w.slice(k).join(' ')}
 function favNames(w){return w.who.map(function(p){return surname(p.name)}).join(', ')}
+function roleCls(p){return p.roles.indexOf('regia')>=0?'fr-reg':'fr-att'}
+function favNamesH(w){return w.who.map(function(p){return '<span class="'+roleCls(p)+'">★ '+esc(surname(p.name))+'</span>'}).join(' ')}
+function favWhoH(w){return w.who.map(function(p){return '<b class="'+roleCls(p)+'">★ '+esc(p.name)+'</b> <span class="mut">'+esc(p.roles.join(', '))+'</span>'}).join(' · ')}
 function favWho(w){return w.who.map(function(p){return p.name+' ('+p.roles.join(', ')+')'}).join(' · ')}
 function inCinema(id){var c=ENT.cinema;return !!(c&&(c.now||[]).some(function(m){return m.id===id}))}
 function favWhere(w){var today=new Date().toISOString().slice(0,10);if(w.date>today)return null;if(w.type==='movie'&&inCinema(w.id))return 'al cinema';
@@ -739,16 +745,16 @@ var M={
 M.cinema={l:'In sala',s:'Italia',live:true,n:function(){return chunk(cinemaAll(),3).length},c:function(i){var L=cinemaAll();if(!L.length)return entWait();
     var g=chunk(L,3);return '<div class="posters">'+g[i%g.length].map(function(x){var m=x.m;
       var fv=favOf('movie',m.id);
-      return '<div class="poster'+(fv?' fav':'')+'"><div class="art"'+(m.poster?' style="background:#1A1E24 url('+img(m.poster)+') center/cover no-repeat"':' style="background:linear-gradient(160deg,#3A4A5C,#1B2430)"')+'>'+(m.poster?'':esc(m.title))+(fv?'<span class="fbadge">★ '+esc(favNames(fv))+'</span>':'')+'</div><b>'+esc(m.title)+'</b><span>'+esc(x.when)+(m.vote&&x.when==='Al cinema'?' · ★ '+fmt(m.vote,1):'')+'</span></div>'}).join('')+'</div>'},
+      return '<div class="poster'+(fv?' fav'+(fv.who.some(function(p){return p.roles.indexOf('regia')>=0})?'':' fav-att'):'')+'"><div class="art"'+(m.poster?' style="background:#1A1E24 url('+img(m.poster)+') center/cover no-repeat"':' style="background:linear-gradient(160deg,#3A4A5C,#1B2430)"')+'>'+(m.poster?'':esc(m.title))+(fv?'<span class="fbadge">'+favNamesH(fv)+'</span>':'')+'</div><b>'+esc(m.title)+'</b><span>'+esc(x.when)+(m.vote&&x.when==='Al cinema'?' · ★ '+fmt(m.vote,1):'')+'</span></div>'}).join('')+'</div>'},
   d:function(){var c=ENT.cinema;if(!c)return entWait();
-    return '<div class="sect">Al cinema ora</div>'+(c.now||[]).map(function(m){var fv=favOf('movie',m.id);return entRow(m,(fv?'<b class="fstar">★ '+esc(favWho(fv))+'</b> · ':'')+'Uscito il '+esc(dShort(m.date))+' '+vote(m.vote))}).join('')+
-      '<div class="sect" style="margin-top:18px">Prossime uscite</div>'+((c.upcoming||[]).length?(c.upcoming||[]).map(function(m){var fv=favOf('movie',m.id);return entRow(m,(fv?'<b class="fstar">★ '+esc(favWho(fv))+'</b> · ':'')+'<b style="color:var(--accent)">Dal '+esc(dLabel(new Date(m.date+'T12:00:00').toISOString()))+'</b>')}).join(''):'<div class="mut">Nessuna uscita annunciata nelle prossime settimane.</div>')+
+    return '<div class="sect">Al cinema ora</div>'+(c.now||[]).map(function(m){var fv=favOf('movie',m.id);return entRow(m,(fv?favWhoH(fv)+' · ':'')+'Uscito il '+esc(dShort(m.date))+' '+vote(m.vote))}).join('')+
+      '<div class="sect" style="margin-top:18px">Prossime uscite</div>'+((c.upcoming||[]).length?(c.upcoming||[]).map(function(m){var fv=favOf('movie',m.id);return entRow(m,(fv?favWhoH(fv)+' · ':'')+'<b style="color:var(--accent)">Dal '+esc(dLabel(new Date(m.date+'T12:00:00').toISOString()))+'</b>')}).join(''):'<div class="mut">Nessuna uscita annunciata nelle prossime settimane.</div>')+
       '<div class="note">Uscite nelle sale italiane da TMDB. Questo prodotto usa le API di TMDB ma non è approvato né certificato da TMDB.</div>'},
   sub:'Film nelle sale italiane e in arrivo'};
 M.stream={l:'Novità streaming',s:'',live:true,n:function(){return chunk(streamAll(),4).length},c:function(i){var L=streamAll();if(!L.length)return ENT.stream&&!ENT.err?'<div class="nolive"><span>Nessuna novità sulle tue piattaforme</span></div>':entWait();
-    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){return '<div class="r"><span class="k" style="font-size:17px">'+(favOf(x.type,x.id)?'<span class="fstar">★</span> ':'')+esc(x.title)+'<small>'+(favOf(x.type,x.id)?'<span class="fstar">'+esc(favNames(favOf(x.type,x.id)))+'</span> · ':'')+esc(provLabel(x.provs[0]))+' · '+(x.type==='tv'?'serie':'film')+'</small></span><span class="v num mut" style="font-size:15px">'+esc(streamWhen(x))+'</span></div>'}).join('')+'</div>'},
+    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){return '<div class="r"><span class="k" style="font-size:17px">'+(favOf(x.type,x.id)?'<span class="fstar">★</span> ':'')+esc(x.title)+'<small>'+(favOf(x.type,x.id)?favNamesH(favOf(x.type,x.id))+' · ':'')+esc(provLabel(x.provs[0]))+' · '+(x.type==='tv'?'serie':'film')+'</small></span><span class="v num mut" style="font-size:15px">'+esc(streamWhen(x))+'</span></div>'}).join('')+'</div>'},
   d:function(){var L=streamAll();if(!L.length)return entWait();var d=ENT.stream,miss=(d.providers||[]).filter(function(p){return !p.found});
-    return L.map(function(x){var fv=favOf(x.type,x.id);return entRow(x,(fv?'<b class="fstar">★ '+esc(favWho(fv))+'</b> · ':'')+'<b style="color:var(--accent)">'+esc(x.provs.map(provLabel).join(' · '))+'</b> · '+(x.type==='tv'?'serie':'film')+' · '+esc(streamWhen(x))+' '+vote(x.vote))}).join('')+
+    return L.map(function(x){var fv=favOf(x.type,x.id);return entRow(x,(fv?favWhoH(fv)+' · ':'')+'<b style="color:var(--accent)">'+esc(x.provs.map(provLabel).join(' · '))+'</b> · '+(x.type==='tv'?'serie':'film')+' · '+esc(streamWhen(x))+' '+vote(x.vote))}).join('')+
       (miss.length?'<div class="note">Piattaforme non riconosciute su TMDB: '+esc(miss.map(function(p){return p.label}).join(', '))+'.</div>':'')+
       '<div class="note">Titoli usciti nelle ultime settimane e disponibili in abbonamento sulle tue piattaforme in Italia, ordinati per popolarità e per l’ordine delle piattaforme. Per le serie conta l’uscita di nuovi episodi. Dati TMDB.</div>'},
   sub:'Film e serie recenti sulle tue piattaforme'};
@@ -764,18 +770,22 @@ M.episodes={l:'Serie seguite',s:'prossimi episodi',live:true,n:function(){return
         '<td class="mut">'+(t.last?esc(epLabel(t.last))+'<div style="font-size:12px">'+esc(t.last.date?dShort(t.last.date)+' '+t.last.date.slice(0,4):'')+'</div>':'—')+'</td><td class="mut">'+esc(TVST[t.status]||t.status||'')+'</td></tr>'}).join('')+'</table>'+
       '<div class="note">Date di messa in onda da TMDB: per le serie internazionali possono riferirsi all’uscita originale, non a quella italiana.</div>'},
   sub:'Prossimi episodi delle serie che segui'};
-M.favs={l:'I tuoi preferiti',s:'registi e attori',live:true,n:function(){return chunk(favAll(),3).length},c:function(i){
+function favPages(){var A=favAll(),today=new Date().toISOString().slice(0,10),up=A.filter(function(w){return w.date>today}),rec=A.filter(function(w){return w.date<=today}),P=[];
+  if(up.length)chunk(up,3).forEach(function(c){P.push({k:'up',t:c})});if(rec.length)chunk(rec.slice(0,12),3).forEach(function(c){P.push({k:'rec',t:c})});return P}
+M.favs={l:'I tuoi preferiti',s:'registi e attori',live:true,n:function(){return Math.max(1,favPages().length)},c:function(i){
     var ppl=entCfg().people||[];if(!ppl.length)return '<div class="nolive"><span>Nessun regista o attore preferito</span><span style="font-size:13px">Aggiungili da Impostazioni › Intrattenimento</span></div>';
     var L=favAll();if(!L.length)return ENT.people?'<div class="nolive"><span>Nessuna uscita recente o in arrivo</span><span style="font-size:13px">'+ppl.length+(ppl.length===1?' preferito':' preferiti')+'</span></div>':entWait();
-    var g=chunk(L,3),pg=g[i%g.length];return '<div class="rows" style="justify-content:'+(pg.length<3?'flex-start':'space-around')+'">'+pg.map(function(w){var dd=dIsoDiff(w.date),wh=favWhere(w);
-      return '<div class="r"><span class="k" style="font-size:17px">'+esc(w.title)+'<small><span class="fstar">★ '+esc(favNames(w))+'</span> · '+(w.type==='tv'?'serie':'film')+'</small></span><span class="v mut" style="font-size:15px;text-align:right">'+
+    var P=favPages(),G=P[i%P.length],pg=G.t,hasUp=P.some(function(x){return x.k==='up'}),hasRec=P.some(function(x){return x.k==='rec'});
+    return '<div class="seg">'+(hasUp?'<span class="'+(G.k==='up'?'on':'')+'">In arrivo</span>':'')+(hasRec?'<span class="'+(G.k==='rec'?'on':'')+'">Usciti</span>':'')+'<span class="segk"><span class="fr-reg">★ regia</span> · <span class="fr-att">★ attori</span></span></div>'+
+      '<div class="rows" style="justify-content:'+(pg.length<3?'flex-start':'space-around')+'">'+pg.map(function(w){var dd=dIsoDiff(w.date),wh=favWhere(w);
+      return '<div class="r"><span class="k" style="font-size:17px">'+esc(w.title)+'<small>'+favNamesH(w)+' · '+(w.type==='tv'?'serie':'film')+'</small></span><span class="v mut" style="font-size:15px;text-align:right">'+
         (dd>0?'<b style="color:var(--accent);font-weight:500">'+(dd===1?'domani':dd<=60?'tra '+dd+' gg':esc(dShort(w.date))+' '+w.date.slice(0,4))+'</b>':esc(wh||('uscito '+dShort(w.date))))+'</span></div>'}).join('')+'</div>'},
   d:function(){var ppl=entCfg().people||[];if(!ppl.length)return '<div class="mut">Aggiungi registi e attori da Impostazioni › Intrattenimento.</div>';var L=favAll(),today=new Date().toISOString().slice(0,10);
     var up=L.filter(function(w){return w.date>today}),rec=L.filter(function(w){return w.date<=today});
-    var row=function(w){var wh=favWhere(w);return entRow(w,'<b class="fstar">★ '+esc(favWho(w))+'</b> · '+(w.type==='tv'?'serie':'film')+' · '+(w.date>today?'<b style="color:var(--accent)">'+esc(dLabel(new Date(w.date+'T12:00:00').toISOString()))+' '+w.date.slice(0,4)+'</b>':'uscito il '+esc(dShort(w.date))+(wh?' · <b style="color:var(--accent)">'+esc(wh)+'</b>':''))+' '+vote(w.vote))};
+    var row=function(w){var wh=favWhere(w);return entRow(w,favWhoH(w)+' · '+(w.type==='tv'?'serie':'film')+' · '+(w.date>today?'<b style="color:var(--accent)">'+esc(dLabel(new Date(w.date+'T12:00:00').toISOString()))+' '+w.date.slice(0,4)+'</b>':'uscito il '+esc(dShort(w.date))+(wh?' · <b style="color:var(--accent)">'+esc(wh)+'</b>':''))+' '+vote(w.vote))};
     return '<div class="sect">In arrivo</div>'+(up.length?up.map(row).join(''):'<div class="mut" style="font-size:14px">Nessuna uscita annunciata.</div>')+
-      '<div class="sect" style="margin-top:18px">Usciti di recente</div>'+(rec.length?rec.map(row).join(''):'<div class="mut" style="font-size:14px">Niente negli ultimi 4 mesi.</div>')+
-      '<div class="note">Seguiti: '+esc(ppl.map(function(p){return p.name}).join(', '))+'. Regia, o ruoli principali per gli attori. Le date sono quelle di prima uscita e possono differire da quella italiana; «su …» indica dove il titolo è in abbonamento in Italia. Dati TMDB.</div>'},
+      '<div class="sect" style="margin-top:18px">Usciti negli ultimi 24 mesi</div>'+(rec.length?rec.map(row).join(''):'<div class="mut" style="font-size:14px">Niente negli ultimi 24 mesi.</div>')+
+      '<div class="note">Seguiti: '+esc(ppl.map(function(p){return p.name}).join(', '))+'. In oro i registi, in azzurro gli attori (solo ruoli principali). In arrivo dal più vicino, usciti dal più recente. Le date sono quelle di prima uscita e possono differire da quella italiana; «su …» indica dove il titolo è in abbonamento in Italia. Dati TMDB.</div>'},
   sub:'Uscite recenti e in arrivo dei registi e attori che segui'};
 M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
