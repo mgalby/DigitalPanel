@@ -290,6 +290,7 @@ html,body{margin:0}
 .fr-reg{color:var(--accent)}.fr-att{color:#7DB4E8}
 .seg span.segk .fr-reg,.seg span.segk .fr-att{border:0;padding:0;letter-spacing:0;text-transform:none;font-weight:500}
 .seg span.segk .fr-reg,.poster .fbadge .fr-reg{color:var(--accent)}.seg span.segk .fr-att,.poster .fbadge .fr-att{color:#7DB4E8}.poster .fbadge span{font-size:11px;font-weight:600}
+.cd.new .g b{color:var(--up)}
 </style>
 </head>
 <body>
@@ -568,8 +569,14 @@ function cinemaAll(){var c=ENT.cinema;if(!c)return [];return (c.now||[]).slice(0
 function streamAll(){var d=ENT.stream;if(!d||!d.items)return [];var today=new Date().toISOString().slice(0,10);
   return d.items.slice().sort(function(a,b){return b.pop/(1+0.35*b.rank)-a.pop/(1+0.35*a.rank)}).slice(0,16)}
 function streamWhen(x){if(x.type==='tv'){if(!x.date||dIsoDiff(x.date)<-60)return 'nuovi episodi';return 'dal '+dShort(x.date)}return x.date?dShort(x.date):''}
-function tvAll(){var out=[];(entCfg().tv||[]).forEach(function(c){var t=ENT.tv[c.id];out.push({c:c,t:t,g:(t&&t.next&&t.next.date)?dIsoDiff(t.next.date):null})});
-  return out.sort(function(a,b){return (a.g==null?9999:a.g)-(b.g==null?9999:b.g)})}
+var TV_RECENT=14; /* giorni in cui una serie appena uscita resta nel riquadro */
+function tvAll(){var out=[];(entCfg().tv||[]).forEach(function(c){var t=ENT.tv[c.id],g=(t&&t.next&&t.next.date)?dIsoDiff(t.next.date):null,r=(t&&t.last&&t.last.date)?dIsoDiff(t.last.date):null;
+    out.push({c:c,t:t,g:g,r:r,recent:(g==null||g<0)&&r!=null&&r<=0&&r>=-TV_RECENT})});
+  return out.sort(function(a,b){var ka=a.g!=null&&a.g>=0?a.g:a.recent?1000-a.r:9999,kb=b.g!=null&&b.g>=0?b.g:b.recent?1000-b.r:9999;return ka-kb})}
+function tvTile(){return tvAll().filter(function(x){return (x.g!=null&&x.g>=0)||x.recent})}
+function agoDay(r){return r===0?'oggi':r===-1?'ieri':'il '}
+function tvRecentLine(t){var l=t.last,d=l.date;if(t.binge)return 'S'+l.s+' completa · '+t.lastSeason.count+' episodi';return epLabel(l)}
+function tvRecentWhen(x){var t=x.t,d=dShort(t.last.date),w=t.binge?'uscita':'uscito';return x.r===0?w+' oggi':x.r===-1?w+' ieri':w+' il '+d}
 var TVST={'Returning Series':'in corso','Ended':'conclusa','Canceled':'cancellata','In Production':'in produzione','Planned':'annunciata','Pilot':'pilota'};
 function epLabel(e){return e?'S'+e.s+' E'+(e.e<10?'0':'')+e.e+(e.name&&!/^(episodio|episode) \d+$/i.test(e.name)?' · '+e.name:''):''}
 function thumb(path){return path?'<img class="thb" src="'+img(path,'w92')+'" alt="" loading="lazy">':'<span class="thb"></span>'}
@@ -758,17 +765,18 @@ M.stream={l:'Novità streaming',s:'',live:true,n:function(){return chunk(streamA
       (miss.length?'<div class="note">Piattaforme non riconosciute su TMDB: '+esc(miss.map(function(p){return p.label}).join(', '))+'.</div>':'')+
       '<div class="note">Titoli usciti nelle ultime settimane e disponibili in abbonamento sulle tue piattaforme in Italia, ordinati per popolarità e per l’ordine delle piattaforme. Per le serie conta l’uscita di nuovi episodi. Dati TMDB.</div>'},
   sub:'Film e serie recenti sulle tue piattaforme'};
-M.episodes={l:'Serie seguite',s:'prossimi episodi',live:true,n:function(){return chunk(tvAll().filter(function(x){return x.g!=null&&x.g>=0}),3).length},c:function(i){
+M.episodes={l:'Serie seguite',s:'prossimi episodi',live:true,n:function(){return chunk(tvTile(),3).length},c:function(i){
     var all=tvAll();if(!all.length)return '<div class="nolive"><span>Nessuna serie seguita</span><span style="font-size:13px">Aggiungile da Impostazioni › Intrattenimento</span></div>';
-    var L=all.filter(function(x){return x.g!=null&&x.g>=0});if(!L.length)return ENT.at?'<div class="nolive"><span>Nessun episodio in programma</span><span style="font-size:13px">'+all.length+(all.length===1?' serie seguita':' serie seguite')+'</span></div>':entWait();
+    var L=tvTile();if(!L.length)return ENT.at?'<div class="nolive"><span>Nessun episodio in programma</span><span style="font-size:13px">'+all.length+(all.length===1?' serie seguita':' serie seguite')+'</span></div>':entWait();
     var g=chunk(L,3),pg=g[i%g.length];return '<div class="rows" style="justify-content:'+(pg.length<3?'flex-start':'space-around')+'">'+pg.map(function(x,k){var t=x.t;
+      if(x.recent)return '<div class="cd new"><div class="g"><b class="num" style="font-size:20px">'+(t.binge?'nuova':'nuovo')+'</b><span>'+(t.binge?'stagione':'episodio')+'</span></div><div class="i"><b>'+esc(t.title)+'</b><div>'+esc(tvRecentLine(t))+'</div><div>'+esc(tvRecentWhen(x))+'</div></div></div>';
       return '<div class="cd'+(i%g.length===0&&k===0?' first':'')+'"><div class="g">'+gBox(x.g)+'</div><div class="i"><b>'+esc(t.title)+'</b><div>'+esc(epLabel(t.next))+'</div><div>'+esc(dLabel(new Date(t.next.date+'T12:00:00').toISOString()))+(t.next.e===1?' · nuova stagione':'')+'</div></div></div>'}).join('')+'</div>'},
   d:function(){var all=tvAll();if(!all.length)return '<div class="mut">Nessuna serie seguita. Aggiungile da Impostazioni › Intrattenimento.</div>';
     return '<table class="dtbl"><tr><th>Serie</th><th>Prossimo episodio</th><th>Ultimo uscito</th><th>Stato</th></tr>'+all.map(function(x){var t=x.t;if(!t||t.error)return '<tr><td><b>'+esc(x.c.name)+'</b></td><td class="mut" colspan="3">'+(t?'dati non disponibili':'in attesa dei dati')+'</td></tr>';
       return '<tr><td><b>'+esc(t.title)+'</b>'+(t.networks&&t.networks.length?'<div class="mut" style="font-size:12px">'+esc(t.networks.join(' · '))+'</div>':'')+'</td>'+
         '<td>'+(t.next?esc(epLabel(t.next))+'<div style="font-size:12px;color:var(--accent)">'+esc(dLabel(new Date(t.next.date+'T12:00:00').toISOString()))+(x.g!=null&&x.g>=0?' · '+(x.g===0?'oggi':x.g===1?'domani':'tra '+x.g+' giorni'):'')+'</div>':'<span class="mut">non annunciato</span>')+'</td>'+
-        '<td class="mut">'+(t.last?esc(epLabel(t.last))+'<div style="font-size:12px">'+esc(t.last.date?dShort(t.last.date)+' '+t.last.date.slice(0,4):'')+'</div>':'—')+'</td><td class="mut">'+esc(TVST[t.status]||t.status||'')+'</td></tr>'}).join('')+'</table>'+
-      '<div class="note">Date di messa in onda da TMDB: per le serie internazionali possono riferirsi all’uscita originale, non a quella italiana.</div>'},
+        '<td class="mut">'+(t.last?(x.recent?'<b style="color:var(--accent);font-weight:500">'+esc(t.binge?'Stagione '+t.last.s+' completa ('+t.lastSeason.count+' ep.)':epLabel(t.last))+'</b>':esc(t.binge?'Stagione '+t.last.s+' completa ('+t.lastSeason.count+' ep.)':epLabel(t.last)))+'<div style="font-size:12px">'+esc(t.last.date?dShort(t.last.date)+' '+t.last.date.slice(0,4):'')+(x.recent?' · novità':'')+'</div>':'—')+'</td><td class="mut">'+esc(TVST[t.status]||t.status||'')+'</td></tr>'}).join('')+'</table>'+
+      '<div class="note">Nel riquadro compaiono le serie con un episodio in arrivo e, per due settimane, quelle appena uscite (anche le stagioni pubblicate tutte insieme). Date di messa in onda da TMDB: per le serie internazionali possono riferirsi all’uscita originale, non a quella italiana.</div>'},
   sub:'Prossimi episodi delle serie che segui'};
 function favPages(){var A=favAll(),today=new Date().toISOString().slice(0,10),up=A.filter(function(w){return w.date>today}),rec=A.filter(function(w){return w.date<=today}),P=[];
   if(up.length)chunk(up,3).forEach(function(c){P.push({k:'up',t:c})});if(rec.length)chunk(rec.slice(0,12),3).forEach(function(c){P.push({k:'rec',t:c})});return P}
