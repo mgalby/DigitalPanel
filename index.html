@@ -275,6 +275,14 @@ html,body{margin:0}
 .dtbl tr.xh td{font-size:12px;color:var(--text-2);padding:10px 6px 4px;border-bottom:0}
 .cd .i div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .movers .r{padding:2px 0}.movers .r .k{font-size:17px}.movers .r .k small{font-size:11px;margin-top:0}
+.posters .art{background-size:cover!important}
+.er{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid rgba(36,40,48,.6)}
+.er:last-of-type{border-bottom:0}
+.thb{width:54px;height:81px;flex:none;border-radius:6px;background:var(--surface-2);object-fit:cover;display:block}
+.ei{flex:1;min-width:0}.ei b{font-size:17px;font-weight:500}
+.em{font-size:13px;color:var(--text-2);margin-top:3px}
+.eo{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.vt{color:var(--accent);margin-left:6px}
 </style>
 </head>
 <body>
@@ -317,7 +325,8 @@ html,body{margin:0}
         <div class="sect">Liste titoli</div>
         <div class="set" style="margin-bottom:12px"><div class="fld"><label for="sOrder">Ordine dei titoli nel riquadro</label><select id="sOrder"><option value="market">Per borsa (in ordine di apertura), poi per ticker</option><option value="manual">Come inseriti nella lista</option></select></div></div>
         <div id="sLists"></div>
-        <div class="btns" style="margin-top:0;margin-bottom:24px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
+        <div class="btns" style="margin-top:0;margin-bottom:24px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div><div class="sect">Intrattenimento</div><div class="set" style="margin-bottom:24px"><div class="fld" style="grid-column:1 / -1"><span class="lab">Piattaforme in abbonamento</span><div class="chk" id="sProv"></div></div>
+          <div class="fld" style="grid-column:1 / -1"><span class="lab">Serie seguite</span><div class="chips" id="sTv"></div><div class="add"><input type="text" id="sTvQ" placeholder="Cerca una serie per titolo" aria-label="Cerca una serie" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sTvGo">Cerca</button><span class="mut" id="sTvMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sTvRes"></div></div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
 
         <div class="sect">Aggiornamento dati</div>
         <div class="set">
@@ -512,6 +521,36 @@ function newsRow(x,full){var it=x.it;
   return '<div class="nw'+(full?' full':'')+'"><div class="nt">'+(it.earnings?'<span class="ebadge">conti</span>':'')+esc(it.title)+'</div>'+
     (full&&it.summary&&it.summary!==it.title?'<div class="ns">'+esc(it.summary)+'</div>':'')+
     '<div class="nm"><b>'+esc(x.tk.join(' · '))+'</b> · '+esc(ago(it.time))+' · '+esc(srcOf(it))+'</div></div>'}
+/* ---------- intrattenimento (TMDB tramite il ponte dati) ---------- */
+var PROV=[{k:'netflix',l:'Netflix'},{k:'prime',l:'Prime Video'},{k:'sky',l:'Sky / NOW'},{k:'raiplay',l:'RaiPlay'},{k:'apple',l:'Apple TV+'},{k:'disney',l:'Disney+'}];
+function provLabel(k){for(var i=0;i<PROV.length;i++)if(PROV[i].k===k)return PROV[i].l;return k}
+var ENT={cinema:null,stream:null,tv:{},at:null,err:null,loading:false};
+function entCfg(){return S.ent||DEF.ent}
+function refreshEnt(){if(ENT.loading)return;ENT.loading=true;var b=apiBase()+'/tmdb/',c=entCfg(),ids=(c.tv||[]).map(function(t){return t.id});
+  var jobs=[getJSON(b+'cinema').then(function(d){ENT.cinema=d}),
+    getJSON(b+'streaming?p='+encodeURIComponent((c.prov||[]).join(','))).then(function(d){ENT.stream=d})];
+  if(ids.length)jobs.push(getJSON(b+'tv?ids='+ids.join(',')).then(function(d){var T={};(d.tv||[]).forEach(function(x){T[x.id]=x});ENT.tv=T}));
+  Promise.all(jobs.map(function(j){return j.then(function(){return null},function(e){return String((e&&e.message)||e)})})).then(function(errs){
+    var bad=errs.filter(function(e){return e});ENT.err=bad.length?bad[0]:null;if(bad.length<errs.length)ENT.at=new Date();
+  }).then(function(){ENT.loading=false;refreshTiles()})}
+setTimeout(function(){refreshEnt();setInterval(refreshEnt,6*3600000)},1500);
+function img(path,w){return path?'https://image.tmdb.org/t/p/'+(w||'w185')+path:''}
+function entWait(){var m=ENT.err?(/503|token/.test(ENT.err)?'Manca il token TMDB nel ponte dati':'Dati non disponibili'):'In attesa dei dati…';return '<div class="nolive"><span>'+m+'</span></div>'}
+function dShort(iso){if(!iso)return '';var p=iso.split('-');return (+p[2])+' '+MESI[+p[1]-1]}
+function dIsoDiff(iso){var p=iso.split('-');return dayDiff(new Date(+p[0],+p[1]-1,+p[2]).toISOString())}
+function cinemaAll(){var c=ENT.cinema;if(!c)return [];return (c.now||[]).slice(0,6).map(function(m){return {m:m,when:'Al cinema'}}).concat((c.upcoming||[]).slice(0,6).map(function(m){return {m:m,when:'Dal '+dShort(m.date)}}))}
+function streamAll(){var d=ENT.stream;if(!d||!d.items)return [];var today=new Date().toISOString().slice(0,10);
+  return d.items.slice().sort(function(a,b){return b.pop/(1+0.35*b.rank)-a.pop/(1+0.35*a.rank)}).slice(0,16)}
+function streamWhen(x){if(x.type==='tv'){if(!x.date||dIsoDiff(x.date)<-60)return 'nuovi episodi';return 'dal '+dShort(x.date)}return x.date?dShort(x.date):''}
+function tvAll(){var out=[];(entCfg().tv||[]).forEach(function(c){var t=ENT.tv[c.id];out.push({c:c,t:t,g:(t&&t.next&&t.next.date)?dIsoDiff(t.next.date):null})});
+  return out.sort(function(a,b){return (a.g==null?9999:a.g)-(b.g==null?9999:b.g)})}
+var TVST={'Returning Series':'in corso','Ended':'conclusa','Canceled':'cancellata','In Production':'in produzione','Planned':'annunciata','Pilot':'pilota'};
+function epLabel(e){return e?'S'+e.s+' E'+(e.e<10?'0':'')+e.e+(e.name&&!/^(episodio|episode) \d+$/i.test(e.name)?' · '+e.name:''):''}
+function thumb(path){return path?'<img class="thb" src="'+img(path,'w92')+'" alt="" loading="lazy">':'<span class="thb"></span>'}
+function vote(v){return v?'<span class="vt">★ '+fmt(v,1)+'</span>':''}
+function entRow(m,meta){return '<div class="er">'+thumb(m.poster)+'<div class="ei"><b>'+esc(m.title)+'</b>'+(m.original?' <span class="mut" style="font-size:13px">'+esc(m.original)+'</span>':'')+
+  '<div class="em">'+meta+'</div>'+(m.overview?'<div class="eo">'+esc(m.overview)+'</div>':'')+'</div></div>'}
+
 /* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
 function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
   var c=e.currency,isPast=e.nextDate&&dayDiff(e.nextDate)<-1,h='<button class="btn sm" data-earn="" style="margin-bottom:14px">‹ Calendario</button>';
@@ -571,29 +610,6 @@ var D={
     {d:'Mer 25',t:'18:45',m:'Arsenal – Juventus'},
     {d:'Mer 25',t:'21:00',m:'Atalanta – Real Madrid'}
   ],
-  films:[
-    {t:'Il faro d’inverno',d:'In sala 20 nov',c1:'#3A4A5C',c2:'#1B2430'},
-    {t:'Ventimila leghe',d:'In sala 27 nov',c1:'#5C4632',c2:'#241A12'},
-    {t:'La stanza ottica',d:'In sala 4 dic',c1:'#47344F',c2:'#1E1622'},
-    {t:'Rotta polare',d:'In sala 11 dic',c1:'#2F4A48',c2:'#121E1D'},
-    {t:'Gli anni di vetro',d:'In sala 18 dic',c1:'#4F3A3A',c2:'#1F1515'},
-    {t:'Controluce',d:'In sala 25 dic',c1:'#4A4630',c2:'#1C1A10'}
-  ],
-  stream:[
-    {k:'Nebbia sul lago',d:'Netflix · serie, stagione 1',v:'14 nov'},
-    {k:'Grande schermo',d:'Prime Video · documentario',v:'18 nov'},
-    {k:'Archivio 1987',d:'Netflix · film',v:'21 nov'},
-    {k:'Linea gialla',d:'Disney+ · serie, stagione 2',v:'28 nov'},
-    {k:'Il cartografo',d:'Apple TV+ · miniserie',v:'2 dic'},
-    {k:'Sei corde',d:'Netflix · documentario musicale',v:'5 dic'},
-    {k:'Porto franco',d:'Prime Video · serie',v:'9 dic'},
-    {k:'Notte bianca',d:'Netflix · film',v:'12 dic'}
-  ],
-  eps:[
-    {g:1,k:'Serie seguita A',d:'S2 E06 · Apple TV+'},
-    {g:4,k:'Serie seguita B',d:'S4 E01 · Netflix · nuova stagione'},
-    {g:9,k:'Serie seguita C',d:'S1 E08 · HBO Max'}
-  ],
   shows:[
     {k:'Fotografia di paesaggio, retrospettiva',d:'Milano, Palazzo Reale',v:'fino 18 gen'},
     {k:'Reportage anni ’70',d:'Torino, CAMERA',v:'fino 6 dic'},
@@ -612,7 +628,8 @@ var D={
 
 /* ---------- impostazioni ---------- */
 var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','shows'],foto:['photowx','portfolioPh','morning']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
-  lists:[{id:'l1',name:'Lista 1',tickers:[]}]};
+  lists:[{id:'l1',name:'Lista 1',tickers:[]}],
+  ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[]}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
 function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j)return Object.assign(clone(DEF),j)}catch(e){}return clone(DEF)}
@@ -679,15 +696,6 @@ var M={
   ucl:{l:'Champions League',s:'5ª giornata',n:one,c:function(){
       return '<div class="rows">'+D.ucl.map(function(m){return '<div class="r"><span class="k" style="font-size:18px">'+m.m+'</span><span class="v num mut" style="font-size:16px">'+m.d+' · '+m.t+'</span></div>'}).join('')+'</div>'},
     d:function(){return M.ucl.c(0)}, sub:'Partite delle italiane'},
-  cinema:{l:'In sala',s:'Italia',n:function(){return chunk(D.films,3).length},c:function(i){
-      var g=chunk(D.films,3);return '<div class="posters">'+g[i%g.length].map(function(f){return '<div class="poster"><div class="art" style="background:linear-gradient(160deg,'+f.c1+','+f.c2+')">'+esc(f.t.split(' ')[0])+'</div><b>'+esc(f.t)+'</b><span>'+f.d+'</span></div>'}).join('')+'</div>'},
-    d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Uscita</th></tr>'+D.films.map(function(f){return '<tr><td><b>'+esc(f.t)+'</b></td><td>'+f.d+'</td></tr>'}).join('')+'</table>'}, sub:'Titoli inventati per il mock-up'},
-  stream:{l:'Novità streaming',s:'',n:function(){return chunk(D.stream,4).length},c:function(i){
-      var g=chunk(D.stream,4);return '<div class="rows">'+g[i%g.length].map(function(s){return '<div class="r"><span class="k" style="font-size:17px">'+esc(s.k)+'<small>'+esc(s.d)+'</small></span><span class="v num mut" style="font-size:16px">'+s.v+'</span></div>'}).join('')+'</div>'},
-    d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Piattaforma</th><th class="n">Data</th></tr>'+D.stream.map(function(s){return '<tr><td><b>'+esc(s.k)+'</b></td><td class="mut">'+esc(s.d)+'</td><td class="n">'+s.v+'</td></tr>'}).join('')+'</table>'}, sub:'Piattaforme configurabili'},
-  episodes:{l:'Serie seguite',s:'prossimi episodi',n:one,c:function(){
-      return '<div class="rows">'+D.eps.map(function(e,i){return '<div class="cd'+(i===0?' first':'')+'"><div class="g"><b class="num">'+e.g+'</b><span>'+(e.g===1?'giorno':'giorni')+'</span></div><div class="i"><b>'+e.k+'</b><div>'+e.d+'</div></div></div>'}).join('')+'</div>'},
-    d:function(){return M.episodes.c(0)}, sub:'Indicami le tue serie per sostituire i segnaposto'},
   shows:{l:'Mostre fotografiche',s:'',n:one,c:function(){
       return '<div class="rows">'+D.shows.map(function(s){return '<div class="r"><span class="k" style="font-size:17px">'+esc(s.k)+'<small>'+esc(s.d)+'</small></span><span class="v mut" style="font-size:15px">'+s.v+'</span></div>'}).join('')+'</div>'},
     d:function(){return M.shows.c(0)}, sub:'Lista manuale · titoli di esempio'},
@@ -705,6 +713,33 @@ var M={
     d:function(){return '<table class="dtbl"><tr><th>Titolo</th><th>Fonte</th></tr>'+D.news.map(function(n){return '<tr><td>'+esc(n.k)+'</td><td class="mut">'+esc(n.d)+'</td></tr>'}).join('')+'</table>'}, sub:'Tutte le notizie dei feed configurati'}
 };
 
+M.cinema={l:'In sala',s:'Italia',live:true,n:function(){return chunk(cinemaAll(),3).length},c:function(i){var L=cinemaAll();if(!L.length)return entWait();
+    var g=chunk(L,3);return '<div class="posters">'+g[i%g.length].map(function(x){var m=x.m;
+      return '<div class="poster"><div class="art"'+(m.poster?' style="background:#1A1E24 url('+img(m.poster)+') center/cover no-repeat"':' style="background:linear-gradient(160deg,#3A4A5C,#1B2430)"')+'>'+(m.poster?'':esc(m.title))+'</div><b>'+esc(m.title)+'</b><span>'+esc(x.when)+(m.vote&&x.when==='Al cinema'?' · ★ '+fmt(m.vote,1):'')+'</span></div>'}).join('')+'</div>'},
+  d:function(){var c=ENT.cinema;if(!c)return entWait();
+    return '<div class="sect">Al cinema ora</div>'+(c.now||[]).map(function(m){return entRow(m,'Uscito il '+esc(dShort(m.date))+' '+vote(m.vote))}).join('')+
+      '<div class="sect" style="margin-top:18px">Prossime uscite</div>'+((c.upcoming||[]).length?(c.upcoming||[]).map(function(m){return entRow(m,'<b style="color:var(--accent)">Dal '+esc(dLabel(new Date(m.date+'T12:00:00').toISOString()))+'</b>')}).join(''):'<div class="mut">Nessuna uscita annunciata nelle prossime settimane.</div>')+
+      '<div class="note">Uscite nelle sale italiane da TMDB. Questo prodotto usa le API di TMDB ma non è approvato né certificato da TMDB.</div>'},
+  sub:'Film nelle sale italiane e in arrivo'};
+M.stream={l:'Novità streaming',s:'',live:true,n:function(){return chunk(streamAll(),4).length},c:function(i){var L=streamAll();if(!L.length)return ENT.stream&&!ENT.err?'<div class="nolive"><span>Nessuna novità sulle tue piattaforme</span></div>':entWait();
+    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){return '<div class="r"><span class="k" style="font-size:17px">'+esc(x.title)+'<small>'+esc(provLabel(x.provs[0]))+' · '+(x.type==='tv'?'serie':'film')+'</small></span><span class="v num mut" style="font-size:15px">'+esc(streamWhen(x))+'</span></div>'}).join('')+'</div>'},
+  d:function(){var L=streamAll();if(!L.length)return entWait();var d=ENT.stream,miss=(d.providers||[]).filter(function(p){return !p.found});
+    return L.map(function(x){return entRow(x,'<b style="color:var(--accent)">'+esc(x.provs.map(provLabel).join(' · '))+'</b> · '+(x.type==='tv'?'serie':'film')+' · '+esc(streamWhen(x))+' '+vote(x.vote))}).join('')+
+      (miss.length?'<div class="note">Piattaforme non riconosciute su TMDB: '+esc(miss.map(function(p){return p.label}).join(', '))+'.</div>':'')+
+      '<div class="note">Titoli usciti nelle ultime settimane e disponibili in abbonamento sulle tue piattaforme in Italia, ordinati per popolarità e per l’ordine delle piattaforme. Per le serie conta l’uscita di nuovi episodi. Dati TMDB.</div>'},
+  sub:'Film e serie recenti sulle tue piattaforme'};
+M.episodes={l:'Serie seguite',s:'prossimi episodi',live:true,n:function(){return chunk(tvAll().filter(function(x){return x.g!=null&&x.g>=0}),3).length},c:function(i){
+    var all=tvAll();if(!all.length)return '<div class="nolive"><span>Nessuna serie seguita</span><span style="font-size:13px">Aggiungile da Impostazioni › Intrattenimento</span></div>';
+    var L=all.filter(function(x){return x.g!=null&&x.g>=0});if(!L.length)return ENT.at?'<div class="nolive"><span>Nessun episodio in programma</span><span style="font-size:13px">'+all.length+(all.length===1?' serie seguita':' serie seguite')+'</span></div>':entWait();
+    var g=chunk(L,3),pg=g[i%g.length];return '<div class="rows" style="justify-content:'+(pg.length<3?'flex-start':'space-around')+'">'+pg.map(function(x,k){var t=x.t;
+      return '<div class="cd'+(i%g.length===0&&k===0?' first':'')+'"><div class="g">'+gBox(x.g)+'</div><div class="i"><b>'+esc(t.title)+'</b><div>'+esc(epLabel(t.next))+'</div><div>'+esc(dLabel(new Date(t.next.date+'T12:00:00').toISOString()))+(t.next.e===1?' · nuova stagione':'')+'</div></div></div>'}).join('')+'</div>'},
+  d:function(){var all=tvAll();if(!all.length)return '<div class="mut">Nessuna serie seguita. Aggiungile da Impostazioni › Intrattenimento.</div>';
+    return '<table class="dtbl"><tr><th>Serie</th><th>Prossimo episodio</th><th>Ultimo uscito</th><th>Stato</th></tr>'+all.map(function(x){var t=x.t;if(!t||t.error)return '<tr><td><b>'+esc(x.c.name)+'</b></td><td class="mut" colspan="3">'+(t?'dati non disponibili':'in attesa dei dati')+'</td></tr>';
+      return '<tr><td><b>'+esc(t.title)+'</b>'+(t.networks&&t.networks.length?'<div class="mut" style="font-size:12px">'+esc(t.networks.join(' · '))+'</div>':'')+'</td>'+
+        '<td>'+(t.next?esc(epLabel(t.next))+'<div style="font-size:12px;color:var(--accent)">'+esc(dLabel(new Date(t.next.date+'T12:00:00').toISOString()))+(x.g!=null&&x.g>=0?' · '+(x.g===0?'oggi':x.g===1?'domani':'tra '+x.g+' giorni'):'')+'</div>':'<span class="mut">non annunciato</span>')+'</td>'+
+        '<td class="mut">'+(t.last?esc(epLabel(t.last))+'<div style="font-size:12px">'+esc(t.last.date?dShort(t.last.date)+' '+t.last.date.slice(0,4):'')+'</div>':'—')+'</td><td class="mut">'+esc(TVST[t.status]||t.status||'')+'</td></tr>'}).join('')+'</table>'+
+      '<div class="note">Date di messa in onda da TMDB: per le serie internazionali possono riferirsi all’uscita originale, non a quella italiana.</div>'},
+  sub:'Prossimi episodi delle serie che segui'};
 M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
     var top=a.slice(0,3),bot=a.length>3?a.slice(Math.max(3,a.length-2)).reverse():[];
@@ -775,7 +810,7 @@ var grid=$('grid'),bar=$('bar'),prog=$('prog');
 var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
-var DEMO={live:1,table:1,next:1,ucl:1,results:1,ucltable:1,cinema:1,stream:1,episodes:1,shows:1,photowx:1,portfolioPh:1,morning:1,sunweek:1,news:1};
+var DEMO={live:1,table:1,next:1,ucl:1,results:1,ucltable:1,shows:1,photowx:1,portfolioPh:1,morning:1,sunweek:1,news:1};
 function tileHead(m,id){return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+(m.s||'')+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
@@ -855,7 +890,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
-  renderPageMods();renderLists();openOv('settings');
+  if(!W.ent)W.ent=clone(DEF.ent);renderEnt();renderPageMods();renderLists();openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
 var FQB=[1,2,5,10,15,30],FQC=[1,2,3,5,10];
@@ -875,6 +910,18 @@ function budget(){
     '<div class="meter'+(pc>60?' hot':'')+'"><i style="width:'+Math.max(pc,1).toFixed(1)+'%"></i></div>';
 }
 ['sFqB','sFqBoff','sFqC','sFqCscope'].forEach(function(id){$(id).addEventListener('input',budget);$(id).addEventListener('change',budget)});
+function renderEnt(){
+  $('sProv').innerHTML=PROV.map(function(p){return '<label for="pv_'+p.k+'"><input type="checkbox" id="pv_'+p.k+'" data-pv="'+p.k+'"'+(W.ent.prov.indexOf(p.k)>=0?' checked':'')+'>'+p.l+'</label>'}).join('');
+  $('sTv').innerHTML=W.ent.tv.length?W.ent.tv.map(function(t,i){return '<span class="chip">'+esc(t.name)+'<button data-dtv="'+i+'" aria-label="Rimuovi '+esc(t.name)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna serie</span>';
+}
+function searchTv(){var q=($('sTvQ').value||'').trim();if(!q)return;$('sTvMsg').textContent='Ricerca…';$('sTvRes').innerHTML='';
+  getJSON(apiBase()+'/tmdb/search?q='+encodeURIComponent(q)).then(function(d){var R=d.results||[];$('sTvMsg').textContent=R.length?'Tocca per aggiungere':'Nessun risultato';
+    $('sTvRes').innerHTML=R.map(function(r){var had=W.ent.tv.some(function(t){return t.id===r.id});return '<button data-atv="'+r.id+'" data-atn="'+esc(r.title)+'"'+(had?' disabled':'')+'>+ '+esc(r.title)+(r.date?' ('+r.date.slice(0,4)+')':'')+'</button>'}).join('')},
+    function(e){$('sTvMsg').textContent=/503/.test(String(e&&e.message))?'Manca il token TMDB nel ponte dati':'Ricerca non riuscita'})}
+$('sTvGo').addEventListener('click',searchTv);
+$('sTvQ').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();searchTv()}});
+$('sTvRes').addEventListener('click',function(e){var b=e.target.closest('[data-atv]');if(!b||b.disabled)return;W.ent.tv.push({id:+b.getAttribute('data-atv'),name:b.getAttribute('data-atn')});b.disabled=true;renderEnt()});
+$('sTv').addEventListener('click',function(e){var a=e.target.getAttribute('data-dtv');if(a!==null){W.ent.tv.splice(+a,1);renderEnt()}});
 function modName(id){return M[id].l||'Portfolio foto'}
 function renderPageMods(){
   $('sPageMods').innerHTML=PAGES.map(function(p){
@@ -920,10 +967,11 @@ $('sSave').addEventListener('click',function(){
   W.rot=+$('sRot').value;W.sub=+$('sSub').value;W.idle=+$('sIdle').value;W.liveN=+$('sLive').value;
   Array.prototype.forEach.call(document.querySelectorAll('#sPages input'),function(c){W.pages[c.getAttribute('data-p')]=c.checked});
   W.lists.forEach(function(L){if(!L.name.trim())L.name='Lista'});
+  W.ent.prov=PROV.map(function(p){return p.k}).filter(function(k){var c=$('pv_'+k);return c&&c.checked});
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
-  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 $('sReset').addEventListener('click',function(){S=clone(DEF);save();openSettings();refreshQuotes();scheduleQuotes()});
 
