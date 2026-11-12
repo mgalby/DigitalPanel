@@ -599,10 +599,13 @@ function refreshPhotos(){var c=fotoCfg();if(!c.user){PH.items=null;PH.err=null;r
     function(e){PH.err=String((e&&e.message)||e)}).then(function(){PH.loading=false;refreshTiles()})}
 setTimeout(function(){refreshPhotos();setInterval(refreshPhotos,30*60000)},2500);
 function preload(u){if(u){var im=new Image();im.src=u}}
-function phCaption(it,i,n){return '<b>'+esc(it.title||'Senza titolo')+'</b><span>Portfolio · '+(i+1)+' / '+n+(it.taken?' · '+esc(dShort(it.taken.slice(0,10)))+' '+it.taken.slice(0,4):'')+'</span>'}
+/* titoli uguali al nome del file (es. DP2Q4207.jpg) e frasi automatiche di Flickr non si mostrano */
+function phTitle(it){var t=(it.title||'').trim();return /^[\w\-]+\.(jpe?g|tiff?|png|dng|heic|webp)$/i.test(t)||/^(img|dsc|dscf|_?mg|p)\d+$/i.test(t)?'':t}
+function phDesc(it){var d=(it.desc||'').trim();return /ha (postato|pubblicato) una foto|posted a photo/i.test(d)&&d.length<80?'':d}
+function phCaption(it,i,n){var t=phTitle(it);return (t?'<b>'+esc(t)+'</b>':'')+'<span>Portfolio · '+(i+1)+' / '+n+(it.taken?' · '+esc(dShort(it.taken.slice(0,10)))+' '+it.taken.slice(0,4):'')+'</span>'}
 function phSlide(){var L=PH.items||[];if(!L.length)return '<div class="mut">Nessuna foto.</div>';var i=((phIdx%L.length)+L.length)%L.length,it=L[i];preload(L[(i+1)%L.length].img);preload(L[(i-1+L.length)%L.length].img);
-  return '<div class="slide"><img src="'+esc(it.img)+'" alt="'+esc(it.title||'')+'"><button class="sl-nav l" data-ph="prev" aria-label="Foto precedente">‹</button><button class="sl-nav r" data-ph="next" aria-label="Foto successiva">›</button></div>'+
-    '<div class="sl-cap">'+phCaption(it,i,L.length)+(it.desc?'<div class="eo" style="-webkit-line-clamp:2">'+esc(it.desc)+'</div>':'')+'</div>'}
+  return '<div class="slide"><img src="'+esc(it.img)+'" alt="'+esc(phTitle(it))+'"><button class="sl-nav l" data-ph="prev" aria-label="Foto precedente">‹</button><button class="sl-nav r" data-ph="next" aria-label="Foto successiva">›</button></div>'+
+    '<div class="sl-cap">'+phCaption(it,i,L.length)+(phDesc(it)?'<div class="eo" style="-webkit-line-clamp:2">'+esc(phDesc(it))+'</div>':'')+'</div>'}
 
 /* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
 function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
