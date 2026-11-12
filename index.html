@@ -1178,6 +1178,13 @@ function tick(){
 function fit(){var vp=$('viewport');stage.style.transform='scale('+Math.min(vp.clientWidth/1024,vp.clientHeight/768)+')'}
 window.addEventListener('resize',fit);window.addEventListener('orientationchange',function(){setTimeout(fit,200)});
 
+/* ---------- aggiornamento automatico: se è stata pubblicata una versione nuova, ricarica a pannello fermo ---------- */
+var selfSig=null;
+function pageSig(t){var h=0;for(var i=0;i<t.length;i++){h=(h*31+t.charCodeAt(i))|0}return t.length+':'+h}
+function checkUpdate(){if(!window.fetch)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():null}).then(function(t){
+    if(!t)return;var sg=pageSig(t);if(selfSig===null){selfSig=sg;return}
+    if(sg!==selfSig){if(interactive||document.querySelector('.ov.show')){setTimeout(checkUpdate,60000);return}location.reload()}}).catch(function(){})}
+checkUpdate();setInterval(checkUpdate,10*60000);
 tick();setInterval(tick,1000);updateNet();refreshQuotes();scheduleQuotes();
 fit();renderPage();startSub();schedule();
 })();
