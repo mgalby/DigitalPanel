@@ -265,6 +265,10 @@ html,body{margin:0}
 .nw .nm b{color:var(--accent);font-weight:600}
 .nw.full{padding:10px 0}.nw.full .nt{font-size:17px;-webkit-line-clamp:3}
 .nw .ns{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:4px}
+.nw.full[data-read]{cursor:pointer}.nw.full[data-read] .nt::after{content:'  ›';color:var(--text-3)}
+.rd-t{font-size:22px;font-weight:500;margin:0 0 6px;line-height:1.3}
+.rd p{font-size:17px;line-height:1.6;margin:0 0 14px;color:var(--text);-webkit-user-select:text;user-select:text}
+.rd h4{font-size:15px;letter-spacing:.04em;color:var(--accent);margin:18px 0 8px;font-weight:600}
 .ebadge{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(201,161,91,.5);border-radius:4px;padding:0 4px;margin-right:6px;vertical-align:2px}
 .ehd{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -483,7 +487,7 @@ function updateNet(){var dot=$('netDot'),tx=$('netTxt');
 function refreshTiles(){
   Array.prototype.forEach.call(grid.querySelectorAll('.tile[data-mod]'),function(t){var m=M[t.getAttribute('data-mod')];
     if(!m||!m.live)return;var tb=t.querySelector('.tb');if(tb)tb.innerHTML=m.c(subIdx)});
-  if(openMod&&M[openMod]&&M[openMod].live&&$('detail').classList.contains('show')){var b=$('dBody'),st=b.scrollTop;b.innerHTML=M[openMod].d();b.scrollTop=st}
+  if(openMod&&M[openMod]&&M[openMod].live&&!READ&&$('detail').classList.contains('show')){var b=$('dBody'),st=b.scrollTop;b.innerHTML=M[openMod].d();b.scrollTop=st}
 }
 /* ---------- trimestrali e notizie (stesso ponte dati, /earnings e /news) ---------- */
 var E={},ES={at:null,err:null,loading:false},NW={},NS={at:null,err:null,loading:false},earnSel=null;
@@ -546,7 +550,7 @@ function newsAll(onlyTitle){var o=[],seen={};stockTickers().forEach(function(t){
   return o.sort(function(a,b){return (b.it.time||'')<(a.it.time||'')?-1:1})}
 function newsTile(){return newsAll(true).slice(0,12)}
 function newsRow(x,full){var it=x.it;
-  return '<div class="nw'+(full?' full':'')+'"><div class="nt">'+(it.earnings?'<span class="ebadge">conti</span>':'')+esc(it.title)+'</div>'+
+  return '<div class="nw'+(full?' full':'')+'"'+(full&&it.link?' data-read="'+esc(it.link)+'"':'')+'><div class="nt">'+(it.earnings?'<span class="ebadge">conti</span>':'')+esc(it.title)+'</div>'+
     (full&&it.summary&&it.summary!==it.title?'<div class="ns">'+esc(it.summary)+'</div>':'')+
     '<div class="nm"><b>'+esc(x.tk.join(' · '))+'</b> · '+esc(ago(it.time))+' · '+esc(srcOf(it))+'</div></div>'}
 /* ---------- intrattenimento (TMDB tramite il ponte dati) ---------- */
@@ -727,6 +731,17 @@ function moonData(){var p=curPlace(),now=new Date(),il=MOON.illum(now),d0=new Da
   var rs=MOON.riseSet(d0,p.lat,p.lon),rs2=MOON.riseSet(new Date(d0.getTime()+864e5),p.lat,p.lon);
   return {il:il,rise:rs.rise&&rs.rise>now?rs.rise:rs2.rise,set:rs.set&&rs.set>now?rs.set:rs2.set,full:MOON.nextPhase(0.5,now),nw:MOON.nextPhase(0,now),dark:darkWindow()}}
 function dDay(d){if(!d)return '—';var g=dayDiff(d.toISOString());return (g===0?'oggi':g===1?'domani':GGS[d.getDay()]+' '+d.getDate()+' '+MESI[d.getMonth()])}
+
+/* ---------- vista lettura: testo completo di un articolo, estratto dal ponte dati ---------- */
+var READ=null; /* {url, data, err} mentre si legge un articolo */
+function readerHtml(){var r=READ,h='<button class="btn sm" data-readback="1" style="margin-bottom:14px">‹ Notizie</button>';
+  if(!r.data&&!r.err)return h+'<div class="mut">Caricamento dell’articolo…</div>';
+  if(r.err||!r.data.paras||r.data.chars<200)return h+(r.data&&r.data.title?'<h3 class="rd-t">'+esc(r.data.title)+'</h3>':'')+'<div class="mut" style="font-size:15px;line-height:1.5">Il testo completo di questo articolo non è leggibile da qui: probabilmente il sito richiede un abbonamento o blocca la lettura automatica.</div>';
+  var d=r.data;return h+'<h3 class="rd-t">'+esc(d.title||'')+'</h3><div class="nm" style="margin-bottom:12px"><b>'+esc(d.site||srcOf({link:d.url}))+'</b></div><div class="rd">'+
+    d.paras.map(function(p){return p.h?'<h4>'+esc(p.t)+'</h4>':'<p>'+esc(p.t)+'</p>'}).join('')+'</div><div class="note">Testo estratto automaticamente dalla pagina originale per la lettura.</div>'}
+function openReader(url){READ={url:url,data:null,err:null};var b=$('dBody');b.innerHTML=readerHtml();b.scrollTop=0;
+  getJSON(apiBase()+'/read?url='+encodeURIComponent(url)).then(function(d){if(!READ||READ.url!==url)return;READ.data=d},function(e){if(!READ||READ.url!==url)return;READ.err=String((e&&e.message)||e)})
+    .then(function(){if(READ&&READ.url===url&&$('detail').classList.contains('show')){b.innerHTML=readerHtml()}})}
 
 /* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
 function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
@@ -962,7 +977,7 @@ M.news={l:'Novità foto',s:'',live:true,n:function(){return chunk((FN.items||[])
     if(!L.length)return '<div class="nolive"><span>'+(FN.err?'Notizie non disponibili':FN.at?'Nessuna novità':'In attesa delle notizie…')+'</span></div>';
     var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(n){return '<div class="nw"><div class="nt">'+esc(n.title)+'</div><div class="nm"><b>'+esc(n.source)+'</b> · '+esc(ago(n.time))+'</div></div>'}).join('')+'</div>'},
   d:function(){var L=FN.items||[];if(!L.length)return '<div class="mut">Nessuna novità.</div>';
-    return L.map(function(n){return '<div class="nw full"><div class="nt">'+esc(n.title)+'</div>'+(n.summary?'<div class="ns">'+esc(n.summary)+'</div>':'')+'<div class="nm"><b>'+esc(n.source)+'</b> · '+esc(ago(n.time))+'</div></div>'}).join('')+'<div class="note">Fonti scelte in Impostazioni › Fotografia.</div>'},
+    return L.map(function(n){return '<div class="nw full"'+(n.link?' data-read="'+esc(n.link)+'"':'')+'><div class="nt">'+esc(n.title)+'</div>'+(n.summary?'<div class="ns">'+esc(n.summary)+'</div>':'')+'<div class="nm"><b>'+esc(n.source)+'</b> · '+esc(ago(n.time))+'</div></div>'}).join('')+'<div class="note">Fonti scelte in Impostazioni › Fotografia.</div>'},
   sub:'Indiscrezioni e novità dai siti che segui'};
 M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
@@ -1095,7 +1110,7 @@ function endInteractive(){
 /* ---------- overlay ---------- */
 function openOv(id){$(id).classList.add('show')}
 function closeOv(id){$(id).classList.remove('show')}
-function openDetail(mod){openMod=mod;earnSel=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
+function openDetail(mod){openMod=mod;earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
 /* ---------- impostazioni: copia di lavoro ---------- */
 var W=null;
@@ -1319,6 +1334,8 @@ var stage=$('stage'),tx=0,ty=0,lp=null;
 stage.addEventListener('click',function(e){
   var t=e.target;
   var cl=t.closest('[data-close]');if(cl){closeOv(cl.getAttribute('data-close'));touch();return}
+  var rb=t.closest('[data-readback]');if(rb){var st=READ&&READ.st;READ=null;$('dBody').innerHTML=M[openMod].d();if(st)$('dBody').scrollTop=st;touch();return}
+  var rd=t.closest('[data-read]');if(rd){var keep=$('dBody').scrollTop;openReader(rd.getAttribute('data-read'));READ.st=keep;touch();return}
   var pc=t.closest('[data-plc]');if(pc){S.foto.place=+pc.getAttribute('data-plc');save();WX.data=null;$('dBody').innerHTML=M[openMod].d();refreshWx();renderPage();touch();return}
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
