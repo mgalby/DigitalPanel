@@ -946,7 +946,7 @@ M.sunweek={l:'Settimana di luce',s:'tramonti',live:true,n:one,c:function(){if(!W
   sub:'Alba, tramonto e punteggio previsto'};
 M.moon={l:'Luna e cielo notturno',s:'',live:true,n:one,c:function(){var m=moonData(),dk=m.dark,ph=m.il.phase;
     var nextBig=m.full&&m.nw?(m.full<m.nw?['Piena',m.full]:['Nuova',m.nw]):['',null];
-    return '<div class="mn"><div class="mn-ic">'+moonSvg(ph,58)+'<div><b>'+phaseName(ph)+'</b><span class="num">'+Math.round(m.il.fraction*100)+'% illuminata</span></div></div><div class="ph-r">'+
+    return '<div class="mn"><div class="mn-ic">'+moonSvg(ph,58)+'<div><b>'+phaseName(ph,m.il.fraction)+'</b><span class="num">'+Math.round(m.il.fraction*100)+'% illuminata</span></div></div><div class="ph-r">'+
       '<div class="kv"><span>Sorge · tram.</span><b class="num">'+hmx(m.rise)+' · '+hmx(m.set)+'</b></div>'+
       '<div class="kv"><span>Luna '+nextBig[0].toLowerCase()+'</span><b>'+dDay(nextBig[1])+'</b></div>'+
       '<div class="kv"><span>Buio senza luna</span><b class="num">'+(dk?hmx(dk.s)+' – '+hmx(dk.e):'nessuno')+'</b></div>'+
