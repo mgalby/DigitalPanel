@@ -283,6 +283,10 @@ html,body{margin:0}
 .em{font-size:13px;color:var(--text-2);margin-top:3px}
 .eo{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .vt{color:var(--accent);margin-left:6px}
+.poster.fav .art{box-shadow:0 0 0 2px var(--accent)}
+.poster .art{position:relative}
+.fbadge{position:absolute;left:6px;right:6px;bottom:6px;background:rgba(14,16,20,.86);color:var(--accent);font-size:11px;font-weight:600;border-radius:5px;padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fstar{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -326,7 +330,9 @@ html,body{margin:0}
         <div class="set" style="margin-bottom:12px"><div class="fld"><label for="sOrder">Ordine dei titoli nel riquadro</label><select id="sOrder"><option value="market">Per borsa (in ordine di apertura), poi per ticker</option><option value="manual">Come inseriti nella lista</option></select></div></div>
         <div id="sLists"></div>
         <div class="btns" style="margin-top:0;margin-bottom:24px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div><div class="sect">Intrattenimento</div><div class="set" style="margin-bottom:24px"><div class="fld" style="grid-column:1 / -1"><span class="lab">Piattaforme in abbonamento</span><div class="chk" id="sProv"></div></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Serie seguite</span><div class="chips" id="sTv"></div><div class="add"><input type="text" id="sTvQ" placeholder="Cerca una serie per titolo" aria-label="Cerca una serie" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sTvGo">Cerca</button><span class="mut" id="sTvMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sTvRes"></div></div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
+          <div class="fld" style="grid-column:1 / -1"><span class="lab">Serie seguite</span><div class="chips" id="sTv"></div><div class="add"><input type="text" id="sTvQ" placeholder="Cerca una serie per titolo" aria-label="Cerca una serie" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sTvGo">Cerca</button><span class="mut" id="sTvMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sTvRes"></div></div>
+          <div class="fld" style="grid-column:1 / -1"><span class="lab">Registi e attori preferiti</span><div class="chips" id="sPp"></div><div class="add"><input type="text" id="sPpQ" placeholder="Cerca un regista o un attore" aria-label="Cerca un regista o un attore" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPpGo">Cerca</button><span class="mut" id="sPpMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPpRes"></div></div>
+          <div class="fld" style="grid-column:1 / -1"><span class="lab">Generi esclusi dalle novità streaming</span><div class="chk" id="sGen"></div></div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
 
         <div class="sect">Aggiornamento dati</div>
         <div class="set">
@@ -524,16 +530,30 @@ function newsRow(x,full){var it=x.it;
 /* ---------- intrattenimento (TMDB tramite il ponte dati) ---------- */
 var PROV=[{k:'netflix',l:'Netflix'},{k:'prime',l:'Prime Video'},{k:'sky',l:'Sky / NOW'},{k:'raiplay',l:'RaiPlay'},{k:'apple',l:'Apple TV+'},{k:'disney',l:'Disney+'}];
 function provLabel(k){for(var i=0;i<PROV.length;i++)if(PROV[i].k===k)return PROV[i].l;return k}
-var ENT={cinema:null,stream:null,tv:{},at:null,err:null,loading:false};
+var ENT={cinema:null,stream:null,tv:{},people:null,at:null,err:null,loading:false};
+var GEN=[['kids','Bambini e famiglia'],['anim','Animazione'],['reality','Reality'],['talk','Talk show'],['soap','Soap'],['news','Notiziari'],['doc','Documentari'],['horror','Horror'],['romance','Sentimentali'],['music','Musical'],['war','Guerra'],['western','Western'],['scifi','Fantascienza e fantasy'],['comedy','Commedie'],['crime','Crime'],['thriller','Thriller e gialli']];
 function entCfg(){return S.ent||DEF.ent}
 function refreshEnt(){if(ENT.loading)return;ENT.loading=true;var b=apiBase()+'/tmdb/',c=entCfg(),ids=(c.tv||[]).map(function(t){return t.id});
   var jobs=[getJSON(b+'cinema').then(function(d){ENT.cinema=d}),
-    getJSON(b+'streaming?p='+encodeURIComponent((c.prov||[]).join(','))).then(function(d){ENT.stream=d})];
+    getJSON(b+'streaming?p='+encodeURIComponent((c.prov||[]).join(','))+'&ex='+encodeURIComponent((c.ex||[]).join(','))).then(function(d){ENT.stream=d})];
+  var pids=(c.people||[]).map(function(x){return x.id});if(pids.length)jobs.push(getJSON(b+'people?ids='+pids.join(',')).then(function(d){ENT.people=d}));else ENT.people=null;
   if(ids.length)jobs.push(getJSON(b+'tv?ids='+ids.join(',')).then(function(d){var T={};(d.tv||[]).forEach(function(x){T[x.id]=x});ENT.tv=T}));
   Promise.all(jobs.map(function(j){return j.then(function(){return null},function(e){return String((e&&e.message)||e)})})).then(function(errs){
     var bad=errs.filter(function(e){return e});ENT.err=bad.length?bad[0]:null;if(bad.length<errs.length)ENT.at=new Date();
   }).then(function(){ENT.loading=false;refreshTiles()})}
 setTimeout(function(){refreshEnt();setInterval(refreshEnt,6*3600000)},1500);
+/* preferiti: titolo → nomi dei registi/attori coinvolti */
+function favOf(type,id){var P=ENT.people;if(!P||!P.items)return null;for(var i=0;i<P.items.length;i++){var w=P.items[i];if(w.type===type&&w.id===id)return w}return null}
+/* cognome con le particelle ("del Toro", "van Sant", "Di Caprio") */
+function surname(n){var w=n.split(' ');if(w.length<2)return n;var k=w.length-1;while(k>1&&/^(de|del|della|di|da|van|von|der|den|la|le|du|dos|das|mac|st\.?)$/i.test(w[k-1]))k--;return w.slice(k).join(' ')}
+function favNames(w){return w.who.map(function(p){return surname(p.name)}).join(', ')}
+function favWho(w){return w.who.map(function(p){return p.name+' ('+p.roles.join(', ')+')'}).join(' · ')}
+function inCinema(id){var c=ENT.cinema;return !!(c&&(c.now||[]).some(function(m){return m.id===id}))}
+function favWhere(w){var today=new Date().toISOString().slice(0,10);if(w.date>today)return null;if(w.type==='movie'&&inCinema(w.id))return 'al cinema';
+  var my=entCfg().prov||[],pv=(w.provs||[]).slice().sort(function(a,b){var x=my.indexOf(a),y=my.indexOf(b);return (x<0?99:x)-(y<0?99:y)});return pv.length?'su '+provLabel(pv[0]):null}
+function favAll(){var P=ENT.people;if(!P||!P.items)return [];var today=new Date().toISOString().slice(0,10);
+  var up=P.items.filter(function(w){return w.date>today}).sort(function(a,b){return a.date<b.date?-1:1}),rec=P.items.filter(function(w){return w.date<=today}).sort(function(a,b){return a.date>b.date?-1:1});
+  return up.concat(rec)}
 function img(path,w){return path?'https://image.tmdb.org/t/p/'+(w||'w185')+path:''}
 function entWait(){var m=ENT.err?(/503|token/.test(ENT.err)?'Manca il token TMDB nel ponte dati':'Dati non disponibili'):'In attesa dei dati…';return '<div class="nolive"><span>'+m+'</span></div>'}
 function dShort(iso){if(!iso)return '';var p=iso.split('-');return (+p[2])+' '+MESI[+p[1]-1]}
@@ -627,12 +647,15 @@ var D={
 };
 
 /* ---------- impostazioni ---------- */
-var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','shows'],foto:['photowx','portfolioPh','morning']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
+var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'all',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:true,red:true,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
   lists:[{id:'l1',name:'Lista 1',tickers:[]}],
-  ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[]}};
+  ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
-function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j)return Object.assign(clone(DEF),j)}catch(e){}return clone(DEF)}
+function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j){var o=Object.assign(clone(DEF),j);migrate(o);return o}}catch(e){}return clone(DEF)}
+/* impostazioni salvate con versioni precedenti */
+function migrate(o){var I=o.pageMods&&o.pageMods.intr;if(I){var k=I.indexOf('shows');if(k>=0){if(I.indexOf('favs')<0)I[k]='favs';else I.splice(k,1)}} /* le mostre passano alla pagina Fotografia */
+  o.ent=Object.assign(clone(DEF.ent),o.ent||{})}
 function save(){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(S))}catch(e){}}
 
 /* ---------- moduli ----------
@@ -715,16 +738,17 @@ var M={
 
 M.cinema={l:'In sala',s:'Italia',live:true,n:function(){return chunk(cinemaAll(),3).length},c:function(i){var L=cinemaAll();if(!L.length)return entWait();
     var g=chunk(L,3);return '<div class="posters">'+g[i%g.length].map(function(x){var m=x.m;
-      return '<div class="poster"><div class="art"'+(m.poster?' style="background:#1A1E24 url('+img(m.poster)+') center/cover no-repeat"':' style="background:linear-gradient(160deg,#3A4A5C,#1B2430)"')+'>'+(m.poster?'':esc(m.title))+'</div><b>'+esc(m.title)+'</b><span>'+esc(x.when)+(m.vote&&x.when==='Al cinema'?' · ★ '+fmt(m.vote,1):'')+'</span></div>'}).join('')+'</div>'},
+      var fv=favOf('movie',m.id);
+      return '<div class="poster'+(fv?' fav':'')+'"><div class="art"'+(m.poster?' style="background:#1A1E24 url('+img(m.poster)+') center/cover no-repeat"':' style="background:linear-gradient(160deg,#3A4A5C,#1B2430)"')+'>'+(m.poster?'':esc(m.title))+(fv?'<span class="fbadge">★ '+esc(favNames(fv))+'</span>':'')+'</div><b>'+esc(m.title)+'</b><span>'+esc(x.when)+(m.vote&&x.when==='Al cinema'?' · ★ '+fmt(m.vote,1):'')+'</span></div>'}).join('')+'</div>'},
   d:function(){var c=ENT.cinema;if(!c)return entWait();
-    return '<div class="sect">Al cinema ora</div>'+(c.now||[]).map(function(m){return entRow(m,'Uscito il '+esc(dShort(m.date))+' '+vote(m.vote))}).join('')+
-      '<div class="sect" style="margin-top:18px">Prossime uscite</div>'+((c.upcoming||[]).length?(c.upcoming||[]).map(function(m){return entRow(m,'<b style="color:var(--accent)">Dal '+esc(dLabel(new Date(m.date+'T12:00:00').toISOString()))+'</b>')}).join(''):'<div class="mut">Nessuna uscita annunciata nelle prossime settimane.</div>')+
+    return '<div class="sect">Al cinema ora</div>'+(c.now||[]).map(function(m){var fv=favOf('movie',m.id);return entRow(m,(fv?'<b class="fstar">★ '+esc(favWho(fv))+'</b> · ':'')+'Uscito il '+esc(dShort(m.date))+' '+vote(m.vote))}).join('')+
+      '<div class="sect" style="margin-top:18px">Prossime uscite</div>'+((c.upcoming||[]).length?(c.upcoming||[]).map(function(m){var fv=favOf('movie',m.id);return entRow(m,(fv?'<b class="fstar">★ '+esc(favWho(fv))+'</b> · ':'')+'<b style="color:var(--accent)">Dal '+esc(dLabel(new Date(m.date+'T12:00:00').toISOString()))+'</b>')}).join(''):'<div class="mut">Nessuna uscita annunciata nelle prossime settimane.</div>')+
       '<div class="note">Uscite nelle sale italiane da TMDB. Questo prodotto usa le API di TMDB ma non è approvato né certificato da TMDB.</div>'},
   sub:'Film nelle sale italiane e in arrivo'};
 M.stream={l:'Novità streaming',s:'',live:true,n:function(){return chunk(streamAll(),4).length},c:function(i){var L=streamAll();if(!L.length)return ENT.stream&&!ENT.err?'<div class="nolive"><span>Nessuna novità sulle tue piattaforme</span></div>':entWait();
-    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){return '<div class="r"><span class="k" style="font-size:17px">'+esc(x.title)+'<small>'+esc(provLabel(x.provs[0]))+' · '+(x.type==='tv'?'serie':'film')+'</small></span><span class="v num mut" style="font-size:15px">'+esc(streamWhen(x))+'</span></div>'}).join('')+'</div>'},
+    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){return '<div class="r"><span class="k" style="font-size:17px">'+(favOf(x.type,x.id)?'<span class="fstar">★</span> ':'')+esc(x.title)+'<small>'+(favOf(x.type,x.id)?'<span class="fstar">'+esc(favNames(favOf(x.type,x.id)))+'</span> · ':'')+esc(provLabel(x.provs[0]))+' · '+(x.type==='tv'?'serie':'film')+'</small></span><span class="v num mut" style="font-size:15px">'+esc(streamWhen(x))+'</span></div>'}).join('')+'</div>'},
   d:function(){var L=streamAll();if(!L.length)return entWait();var d=ENT.stream,miss=(d.providers||[]).filter(function(p){return !p.found});
-    return L.map(function(x){return entRow(x,'<b style="color:var(--accent)">'+esc(x.provs.map(provLabel).join(' · '))+'</b> · '+(x.type==='tv'?'serie':'film')+' · '+esc(streamWhen(x))+' '+vote(x.vote))}).join('')+
+    return L.map(function(x){var fv=favOf(x.type,x.id);return entRow(x,(fv?'<b class="fstar">★ '+esc(favWho(fv))+'</b> · ':'')+'<b style="color:var(--accent)">'+esc(x.provs.map(provLabel).join(' · '))+'</b> · '+(x.type==='tv'?'serie':'film')+' · '+esc(streamWhen(x))+' '+vote(x.vote))}).join('')+
       (miss.length?'<div class="note">Piattaforme non riconosciute su TMDB: '+esc(miss.map(function(p){return p.label}).join(', '))+'.</div>':'')+
       '<div class="note">Titoli usciti nelle ultime settimane e disponibili in abbonamento sulle tue piattaforme in Italia, ordinati per popolarità e per l’ordine delle piattaforme. Per le serie conta l’uscita di nuovi episodi. Dati TMDB.</div>'},
   sub:'Film e serie recenti sulle tue piattaforme'};
@@ -740,6 +764,19 @@ M.episodes={l:'Serie seguite',s:'prossimi episodi',live:true,n:function(){return
         '<td class="mut">'+(t.last?esc(epLabel(t.last))+'<div style="font-size:12px">'+esc(t.last.date?dShort(t.last.date)+' '+t.last.date.slice(0,4):'')+'</div>':'—')+'</td><td class="mut">'+esc(TVST[t.status]||t.status||'')+'</td></tr>'}).join('')+'</table>'+
       '<div class="note">Date di messa in onda da TMDB: per le serie internazionali possono riferirsi all’uscita originale, non a quella italiana.</div>'},
   sub:'Prossimi episodi delle serie che segui'};
+M.favs={l:'I tuoi preferiti',s:'registi e attori',live:true,n:function(){return chunk(favAll(),3).length},c:function(i){
+    var ppl=entCfg().people||[];if(!ppl.length)return '<div class="nolive"><span>Nessun regista o attore preferito</span><span style="font-size:13px">Aggiungili da Impostazioni › Intrattenimento</span></div>';
+    var L=favAll();if(!L.length)return ENT.people?'<div class="nolive"><span>Nessuna uscita recente o in arrivo</span><span style="font-size:13px">'+ppl.length+(ppl.length===1?' preferito':' preferiti')+'</span></div>':entWait();
+    var g=chunk(L,3),pg=g[i%g.length];return '<div class="rows" style="justify-content:'+(pg.length<3?'flex-start':'space-around')+'">'+pg.map(function(w){var dd=dIsoDiff(w.date),wh=favWhere(w);
+      return '<div class="r"><span class="k" style="font-size:17px">'+esc(w.title)+'<small><span class="fstar">★ '+esc(favNames(w))+'</span> · '+(w.type==='tv'?'serie':'film')+'</small></span><span class="v mut" style="font-size:15px;text-align:right">'+
+        (dd>0?'<b style="color:var(--accent);font-weight:500">'+(dd===1?'domani':dd<=60?'tra '+dd+' gg':esc(dShort(w.date))+' '+w.date.slice(0,4))+'</b>':esc(wh||('uscito '+dShort(w.date))))+'</span></div>'}).join('')+'</div>'},
+  d:function(){var ppl=entCfg().people||[];if(!ppl.length)return '<div class="mut">Aggiungi registi e attori da Impostazioni › Intrattenimento.</div>';var L=favAll(),today=new Date().toISOString().slice(0,10);
+    var up=L.filter(function(w){return w.date>today}),rec=L.filter(function(w){return w.date<=today});
+    var row=function(w){var wh=favWhere(w);return entRow(w,'<b class="fstar">★ '+esc(favWho(w))+'</b> · '+(w.type==='tv'?'serie':'film')+' · '+(w.date>today?'<b style="color:var(--accent)">'+esc(dLabel(new Date(w.date+'T12:00:00').toISOString()))+' '+w.date.slice(0,4)+'</b>':'uscito il '+esc(dShort(w.date))+(wh?' · <b style="color:var(--accent)">'+esc(wh)+'</b>':''))+' '+vote(w.vote))};
+    return '<div class="sect">In arrivo</div>'+(up.length?up.map(row).join(''):'<div class="mut" style="font-size:14px">Nessuna uscita annunciata.</div>')+
+      '<div class="sect" style="margin-top:18px">Usciti di recente</div>'+(rec.length?rec.map(row).join(''):'<div class="mut" style="font-size:14px">Niente negli ultimi 4 mesi.</div>')+
+      '<div class="note">Seguiti: '+esc(ppl.map(function(p){return p.name}).join(', '))+'. Regia, o ruoli principali per gli attori. Le date sono quelle di prima uscita e possono differire da quella italiana; «su …» indica dove il titolo è in abbonamento in Italia. Dati TMDB.</div>'},
+  sub:'Uscite recenti e in arrivo dei registi e attori che segui'};
 M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
     var top=a.slice(0,3),bot=a.length>3?a.slice(Math.max(3,a.length-2)).reverse():[];
@@ -792,7 +829,7 @@ M.sunweek={l:'Settimana di luce',s:'tramonti',n:one,c:function(){return '<table 
 var THEME={
   borsa:['indices','portfolio','fx','earnings','movers','mktnews','commod'],
   sport:['live','table','next','ucl','results','ucltable'],
-  intr:['cinema','stream','episodes','shows'],
+  intr:['cinema','stream','episodes','favs'],
   foto:['photowx','portfolioPh','morning','sunweek','news','shows']
 };
 var PAGES=[
@@ -890,7 +927,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
-  if(!W.ent)W.ent=clone(DEF.ent);renderEnt();renderPageMods();renderLists();openOv('settings');
+  migrate(W);renderEnt();renderEnt2();renderPageMods();renderLists();openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
 var FQB=[1,2,5,10,15,30],FQC=[1,2,3,5,10];
@@ -914,6 +951,19 @@ function renderEnt(){
   $('sProv').innerHTML=PROV.map(function(p){return '<label for="pv_'+p.k+'"><input type="checkbox" id="pv_'+p.k+'" data-pv="'+p.k+'"'+(W.ent.prov.indexOf(p.k)>=0?' checked':'')+'>'+p.l+'</label>'}).join('');
   $('sTv').innerHTML=W.ent.tv.length?W.ent.tv.map(function(t,i){return '<span class="chip">'+esc(t.name)+'<button data-dtv="'+i+'" aria-label="Rimuovi '+esc(t.name)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna serie</span>';
 }
+function renderEnt2(){
+  $('sPp').innerHTML=W.ent.people.length?W.ent.people.map(function(p,i){return '<span class="chip">★ '+esc(p.name)+'<button data-dpp="'+i+'" aria-label="Rimuovi '+esc(p.name)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessun preferito</span>';
+  $('sGen').innerHTML=GEN.map(function(g){return '<label for="gn_'+g[0]+'"><input type="checkbox" id="gn_'+g[0]+'" data-gn="'+g[0]+'"'+(W.ent.ex.indexOf(g[0])>=0?' checked':'')+'>'+g[1]+'</label>'}).join('');
+}
+var DEPT={Directing:'regia',Acting:'attore/attrice',Writing:'sceneggiatura',Production:'produzione'};
+function searchPp(){var q=($('sPpQ').value||'').trim();if(!q)return;$('sPpMsg').textContent='Ricerca…';$('sPpRes').innerHTML='';
+  getJSON(apiBase()+'/tmdb/searchperson?q='+encodeURIComponent(q)).then(function(d){var R=d.results||[];$('sPpMsg').textContent=R.length?'Tocca per aggiungere':'Nessun risultato';
+    $('sPpRes').innerHTML=R.map(function(r){var had=W.ent.people.some(function(p){return p.id===r.id});return '<button data-app="'+r.id+'" data-apn="'+esc(r.name)+'"'+(had?' disabled':'')+'>+ '+esc(r.name)+' <span style="color:var(--text-3)">'+esc([DEPT[r.dept]||'',(r.known||[]).join(', ')].filter(Boolean).join(' · '))+'</span></button>'}).join('')},
+    function(e){$('sPpMsg').textContent=/503/.test(String(e&&e.message))?'Manca il token TMDB nel ponte dati':'Ricerca non riuscita'})}
+$('sPpGo').addEventListener('click',searchPp);
+$('sPpQ').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();searchPp()}});
+$('sPpRes').addEventListener('click',function(e){var b=e.target.closest('[data-app]');if(!b||b.disabled)return;W.ent.people.push({id:+b.getAttribute('data-app'),name:b.getAttribute('data-apn')});b.disabled=true;renderEnt2()});
+$('sPp').addEventListener('click',function(e){var a=e.target.getAttribute('data-dpp');if(a!==null){W.ent.people.splice(+a,1);renderEnt2()}});
 function searchTv(){var q=($('sTvQ').value||'').trim();if(!q)return;$('sTvMsg').textContent='Ricerca…';$('sTvRes').innerHTML='';
   getJSON(apiBase()+'/tmdb/search?q='+encodeURIComponent(q)).then(function(d){var R=d.results||[];$('sTvMsg').textContent=R.length?'Tocca per aggiungere':'Nessun risultato';
     $('sTvRes').innerHTML=R.map(function(r){var had=W.ent.tv.some(function(t){return t.id===r.id});return '<button data-atv="'+r.id+'" data-atn="'+esc(r.title)+'"'+(had?' disabled':'')+'>+ '+esc(r.title)+(r.date?' ('+r.date.slice(0,4)+')':'')+'</button>'}).join('')},
@@ -968,6 +1018,7 @@ $('sSave').addEventListener('click',function(){
   Array.prototype.forEach.call(document.querySelectorAll('#sPages input'),function(c){W.pages[c.getAttribute('data-p')]=c.checked});
   W.lists.forEach(function(L){if(!L.name.trim())L.name='Lista'});
   W.ent.prov=PROV.map(function(p){return p.k}).filter(function(k){var c=$('pv_'+k);return c&&c.checked});
+  W.ent.ex=GEN.map(function(g){return g[0]}).filter(function(k){var c=$('gn_'+k);return c&&c.checked});
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
@@ -994,7 +1045,7 @@ $('sImportFile').addEventListener('change',function(){
     try{var cfg=JSON.parse(r.result);
       if(!cfg||cfg.app!=='DigitalPanel'||!Array.isArray(cfg.lists))throw new Error('formato');
       delete cfg.app;delete cfg.version;delete cfg.saved;
-      S=Object.assign(clone(S),cfg);save();openSettings();refreshQuotes();scheduleQuotes();if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}
+      S=Object.assign(clone(S),cfg);migrate(S);save();openSettings();refreshQuotes();scheduleQuotes();if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}
       subIdx=0;renderPage();startSub();
       var n=0;S.lists.forEach(function(L){n+=L.tickers.length});cfgMsg('Importato: '+S.lists.length+' liste, '+n+' titoli');
     }catch(e){cfgMsg('File non valido')}
