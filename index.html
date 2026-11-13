@@ -1291,18 +1291,19 @@ function corsoRowsWithDivider(L,full){var today=corsoToday(),pastSeen=false,put=
     if(!isPast&&pastSeen&&!put){h+=corsoTodayDivider();put=true}
     h+=corsoRow(x,full)});
   return h}
-function corsoLogo(){return '<img src="img/ops-logo.png" alt="OPS! Orange Photo School" style="height:24px;display:block;margin-top:12px;opacity:.9">'}
+function corsoLogo(h){return '<img src="img/ops-logo.png" alt="OPS! Orange Photo School" style="height:'+(h||24)+'px;vertical-align:middle;margin-left:10px;opacity:.95">'}
+function isCorsoMod(id){return id==='corsoProssimi'||id==='corsoMese'}
 M.corsoProssimi={l:'Prossimi impegni',s:'',n:function(){return Math.max(1,chunk(corsoUpcoming(12),3).length)},c:function(i){
     var L=corsoUpcoming(12);if(!L.length)return '<div class="nolive"><span>Nessun impegno in programma</span></div>';
     var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(x){return corsoRow(x,false)}).join('')+'</div>'},
-  d:function(){var L=corsoUpcoming(40);if(!L.length)return '<div class="mut">Nessun impegno in programma.</div>'+corsoLogo();
-    return L.map(function(x){return corsoRow(x,true)}).join('')+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato. Calendario del programma OPS! Orange Photo School 2026/2027.</div>'+corsoLogo()},
+  d:function(){var L=corsoUpcoming(40);if(!L.length)return '<div class="mut">Nessun impegno in programma.</div>';
+    return L.map(function(x){return corsoRow(x,true)}).join('')+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato. Calendario del programma OPS! Orange Photo School 2026/2027.</div>'},
   sub:'Prossimi appuntamenti del corso · tocca per Iscritto/Pagato/Abbonato'};
 M.corsoMese={l:'Agenda del mese',s:function(){return MESI[new Date().getMonth()]},n:function(){return Math.max(1,chunk(corsoThisMonth(),4).length)},c:function(i){
     var L=corsoThisMonth();if(!L.length)return '<div class="nolive"><span>Nessun impegno questo mese</span></div>';
     var g=chunk(L,4);return '<div class="rows">'+corsoRowsWithDivider(g[i%g.length],false)+'</div>'},
-  d:function(){var L=corsoThisMonth();if(!L.length)return '<div class="mut">Nessun impegno questo mese.</div>'+corsoLogo();
-    return corsoRowsWithDivider(L,true)+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato.</div>'+corsoLogo()},
+  d:function(){var L=corsoThisMonth();if(!L.length)return '<div class="mut">Nessun impegno questo mese.</div>';
+    return corsoRowsWithDivider(L,true)+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato.</div>'},
   sub:'Impegni del mese in corso'};
 
 M.cinema={l:'In sala',s:'Italia',live:true,n:function(){return chunk(cinemaAll(),3).length},c:function(i){var L=cinemaAll();if(!L.length)return entWait();
@@ -1675,7 +1676,7 @@ var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
 var DEMO={};
-function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):esc(typeof m.s==='function'?m.s():(m.s||''));return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),m.si?m.si(subIdx):subIdx)+'</span></span></div>'}
+function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):esc(typeof m.s==='function'?m.s():(m.s||''));return m.raw?'':'<div class="th"><span class="l">'+m.l+(isCorsoMod(id)?corsoLogo(18):'')+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),m.si?m.si(subIdx):subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
   grid.style.gridTemplateColumns='repeat('+L[0]+',1fr)';
@@ -1751,7 +1752,7 @@ function closeOv(id){$(id).classList.remove('show')}
 function focusRow(k){var b=$('dBody'),L=b.querySelectorAll('[data-k]'),el=null;for(var i=0;i<L.length;i++){if(L[i].getAttribute('data-k')===k){el=L[i];break}}if(!el)return;
   var y=0,n=el;while(n&&n!==b){y+=n.offsetTop;n=n.offsetParent}if(n!==b){y=0;n=el;var by=0,m=b;while(n){y+=n.offsetTop;n=n.offsetParent}while(m){by+=m.offsetTop;m=m.offsetParent}y-=by}
   b.scrollTop=Math.max(0,y-8);el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},1600)}
-function openDetail(mod){openMod=mod;earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
+function openDetail(mod){openMod=mod;earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];$('dTitle').innerHTML=esc(m.l||'Portfolio')+(isCorsoMod(mod)?corsoLogo(26):'');$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
 /* ---------- impostazioni: copia di lavoro ---------- */
 var W=null,sTab='gen';
