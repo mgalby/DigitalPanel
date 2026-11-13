@@ -1460,8 +1460,14 @@ function schedule(){
 function touch(){
   if(!interactive){interactive=true;bar.classList.add('show');$('pause').classList.add('show');schedule()}
   clearTimeout(idleTimer);
-  idleTimer=setTimeout(endInteractive,S.idle*1000);
+  idleTimer=setTimeout(endInteractive,idleMs());
 }
+/* in vista lettura (articolo o scheda di un titolo) si legge a lungo senza toccare: almeno 5 minuti prima di riprendere la rotazione */
+function idleMs(){return (READ&&$('detail').classList.contains('show')?Math.max(S.idle,300):S.idle)*1000}
+/* scorrere un dettaglio o le impostazioni conta come attività, come un tocco */
+var scrollT=0;
+function onScrollAct(){var n=Date.now();if(n-scrollT>1000){scrollT=n;if(interactive)touch()}}
+$('dBody').addEventListener('scroll',onScrollAct,{passive:true});$('sBody').addEventListener('scroll',onScrollAct,{passive:true});
 function endInteractive(){
   clearTimeout(idleTimer);interactive=false;bar.classList.remove('show');$('pause').classList.remove('show');
   closeOv('detail');closeOv('settings');schedule();
