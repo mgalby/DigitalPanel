@@ -1,4 +1,6 @@
 // DigitalPanel – ponte dati verso Yahoo Finance (Cloudflare Worker)
+// Versione 4.4 (13 nov 2026): la traduzione si ferma dopo 6 secondi per richiesta (il resto alla successiva),
+//   così la prima lettura non va oltre l'attesa massima del pannello.
 // Versione 4.3 (13 nov 2026): traduzione frase per frase (m2m100 tagliava i testi lunghi), prefissi come RUMOR: non tradotti,
 //   sommari dei blog ripuliti da inviti a iscriversi e da "The post …".
 // Versione 4.2 (13 nov 2026): traduzione in italiano con Workers AI. /news, /rss e /read accettano lang=it:
@@ -519,7 +521,8 @@ const TR_MODEL = "@cf/meta/m2m100-1.2b";
 const TR_CACHE_SECONDS = 30 * 86400;
 const TR_MAX_NEW = 30;       // pezzi nuovi tradotti al massimo per richiesta (/news e /rss)
 const TR_MAX_NEW_READ = 40;  // per un articolo in vista lettura
-const TR_PARALLEL = 6;       // chiamate al modello in contemporanea
+const TR_PARALLEL = 8;       // chiamate al modello in contemporanea
+const TR_TIME_MS = 6000;     // tempo massimo di traduzione per richiesta: il resto alla richiesta successiva
 const TR_CHUNK = 260;        // m2m100 tronca i testi lunghi: si traduce a pezzi di una o due frasi
 
 function wantsIt(url) { return (url.searchParams.get("lang") || "").toLowerCase() === "it"; }
@@ -560,9 +563,10 @@ async function translateList(env, ctx, bucket, texts, budget) {
   const todo = [...new Set(texts.filter((t) => !skipTr(t) && !map[t]))];
   const now = todo.slice(0, Math.max(0, budget.left));
   budget.left -= now.length;
+  if (!budget.until) budget.until = Date.now() + TR_TIME_MS; // vale per tutti i gruppi della richiesta
 
   let changed = false, error = null;
-  for (let k = 0; k < now.length && !error; k += TR_PARALLEL) {
+  for (let k = 0; k < now.length && !error && Date.now() < budget.until; k += TR_PARALLEL) {
     await Promise.all(now.slice(k, k + TR_PARALLEL).map(async (t) => {
       try {
         const r = await env.AI.run(TR_MODEL, { text: t, source_lang: "en", target_lang: "it" });
@@ -1267,7 +1271,7 @@ export default {
     if (path === "/") {
       return json({
         service: "DigitalPanel data bridge",
-        version: "4.3",
+        version: "4.4",
         usage: ["/quotes?symbols=AAPL,ENEL.MI,EURUSD=X", "/earnings?symbols=AAPL,ENEL.MI", "/news?symbols=AAPL,ENEL.MI&days=30", "/spark?symbols=^GSPC,FTSEMIB.MI", "/tmdb/cinema", "/tmdb/streaming?p=netflix,prime", "/tmdb/tv?ids=1399", "/tmdb/search?q=titolo", "/flickr?user=marco_galb&tag=digitalportfolio&ttl=900", "/rss?src=fuji,leica,nikon", "/sport/live", "/sport/fixtures?c=sa", "/sport/table?c=sa", "/sport/italy"],
         tmdb: !!(env && env.TMDB_TOKEN),
         footballData: !!(env && env.FD_TOKEN),

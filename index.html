@@ -595,8 +595,8 @@ function allTickers(){var seen={},o=[];S.lists.forEach(function(L){L.tickers.for
 function moverList(){return allTickers().filter(function(t){return t.t!=='ETF'}).map(function(t){return {t:t,q:Q[ysym(t)]}}).filter(function(o){return okq(o.q)&&o.q.changePct!=null}).sort(function(a,b){return b.q.changePct-a.q.changePct})}
 function borsaSymbols(){var s=[],seen={};function add(y){if(y&&!seen[y]){seen[y]=1;s.push(y)}}
   IDX.forEach(function(i){add(i.y)});FXL.forEach(function(f){add(f.y)});if((S.pageMods.borsa||[]).indexOf('commod')>=0)COM.forEach(function(c){add(c.y)});allTickers().forEach(function(t){add(ysym(t))});return s}
-function getJSON(url){
-  var ctl=window.AbortController?new AbortController():null,tm=ctl?setTimeout(function(){ctl.abort()},15000):null;
+function getJSON(url,ms){
+  var ctl=window.AbortController?new AbortController():null,tm=ctl?setTimeout(function(){ctl.abort()},ms||15000):null;
   var opt={cache:'no-store'};if(ctl)opt.signal=ctl.signal;
   return fetch(url,opt).then(function(r){if(tm)clearTimeout(tm);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()},
     function(e){if(tm)clearTimeout(tm);throw e});
@@ -649,9 +649,9 @@ function trRetry(st,fn,pending){clearTimeout(st.trT);if(pending&&trOn()&&(st.trN
 function refreshNews(){
   var T=stockTickers();if(!T.length||NS.loading)return;NS.loading=true;
   Promise.all(chunk(T,10).map(function(p){return getJSON(apiBase()+'/news?days=30&symbols='+p.map(function(t){return encodeURIComponent(ysym(t))}).join(',')+
-      '&names='+p.map(function(t){return encodeURIComponent(nameOf(t).replace(/\|/g,' '))}).join('|')+trQ()).catch(function(e){return {err:String((e&&e.message)||e)}})})).then(function(res){
+      '&names='+p.map(function(t){return encodeURIComponent(nameOf(t).replace(/\|/g,' '))}).join('|')+trQ(),trOn()?30000:0).catch(function(e){return {err:String((e&&e.message)||e)}})})).then(function(res){
     var bad=0,pend=0;res.forEach(function(d){if(d.err){bad++;return}if(d.tr)pend+=d.tr.pending||0;(d.news||[]).forEach(function(x){NW[x.symbol]=x})});
-    if(bad<res.length)NS.at=new Date();NS.err=bad?'parziale':null;trRetry(NS,refreshNews,pend);
+    if(bad<res.length)NS.at=new Date();NS.err=bad?'parziale':null;trRetry(NS,refreshNews,pend||(bad?1:0));
   }).then(function(){NS.loading=false;refreshTiles()});
 }
 /* prima lettura dopo le quotazioni (servono i nomi per filtrare le notizie), poi a intervalli */
@@ -865,7 +865,7 @@ var MOON=(function(){var PI=Math.PI,rad=PI/180,dayMs=864e5,J1970=2440588,J2000=2
 var FSRC=[['fuji','Fuji Rumors'],['leica','Leica Rumors'],['nikon','Nikon Rumors'],['sony','Sony Alpha Rumors'],['canon','Canon Rumors'],['photo','Photo Rumors'],['petapixel','PetaPixel']];
 var FN={items:null,err:null,at:null,loading:false};
 function refreshFotoNews(){var src=(fotoCfg().src||DEF.foto.src);if(!src.length){FN.items=[];refreshTiles();return}if(FN.loading)return;FN.loading=true;
-  getJSON(apiBase()+'/rss?src='+src.join(',')+trQ()).then(function(d){FN.items=d.items||[];FN.err=null;FN.at=new Date();trRetry(FN,refreshFotoNews,d.tr&&d.tr.pending)},function(e){FN.err=String((e&&e.message)||e)}).then(function(){FN.loading=false;refreshTiles()})}
+  getJSON(apiBase()+'/rss?src='+src.join(',')+trQ(),trOn()?30000:0).then(function(d){FN.items=d.items||[];FN.err=null;FN.at=new Date();trRetry(FN,refreshFotoNews,d.tr&&d.tr.pending)},function(e){trRetry(FN,refreshFotoNews,1);FN.err=String((e&&e.message)||e)}).then(function(){FN.loading=false;refreshTiles()})}
 setTimeout(function(){refreshFotoNews();setInterval(refreshFotoNews,30*60000)},3500);
 /* ---------- luna e cielo notturno (calcolo locale + nuvole da Open-Meteo) ---------- */
 var PHN=['Luna nuova','Luna crescente','Primo quarto','Gibbosa crescente','Luna piena','Gibbosa calante','Ultimo quarto','Luna calante'];
@@ -921,7 +921,7 @@ function openTitle(type,id){var key='t:'+type+':'+id;READ={url:key,kind:'title',
   getJSON(apiBase()+'/tmdb/title?type='+type+'&id='+id).then(function(d){if(READ&&READ.url===key)READ.data=d},function(e){if(READ&&READ.url===key)READ.err=String((e&&e.message)||e)})
     .then(function(){if(READ&&READ.url===key&&$('detail').classList.contains('show'))b.innerHTML=titleHtml()})}
 function openReader(url,orig,tries){var st=READ&&READ.url===url?READ.st:null;READ={url:url,data:READ&&READ.url===url?READ.data:null,err:null,orig:!!orig,st:st};var b=$('dBody');if(!tries){b.innerHTML=readerHtml();b.scrollTop=0}
-  getJSON(apiBase()+'/read?url='+encodeURIComponent(url)+(orig?'':trQ())).then(function(d){if(!READ||READ.url!==url)return;READ.data=d},function(e){if(!READ||READ.url!==url)return;READ.err=String((e&&e.message)||e)})
+  getJSON(apiBase()+'/read?url='+encodeURIComponent(url)+(orig?'':trQ()),30000).then(function(d){if(!READ||READ.url!==url)return;READ.data=d},function(e){if(!READ||READ.url!==url)return;READ.err=String((e&&e.message)||e)})
     .then(function(){if(READ&&READ.url===url&&$('detail').classList.contains('show')){var y=b.scrollTop;b.innerHTML=readerHtml();if(tries)b.scrollTop=y;
       var d=READ.data;if(d&&d.tr&&d.tr.pending&&!READ.orig&&(tries||0)<5)setTimeout(function(){if(READ&&READ.url===url&&!READ.orig)openReader(url,false,(tries||0)+1)},2500)}})}
 
