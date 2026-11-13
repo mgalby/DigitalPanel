@@ -1,4 +1,6 @@
 // DigitalPanel – ponte dati verso Yahoo Finance (Cloudflare Worker)
+// Versione 4.3 (13 nov 2026): traduzione frase per frase (m2m100 tagliava i testi lunghi), prefissi come RUMOR: non tradotti,
+//   sommari dei blog ripuliti da inviti a iscriversi e da "The post …".
 // Versione 4.2 (13 nov 2026): traduzione in italiano con Workers AI. /news, /rss e /read accettano lang=it:
 //   titoli, sommari e testo degli articoli tornano tradotti, gli originali restano in "orig".
 //   Serve il binding Workers AI con nome AI (Settings › Bindings › Add › Workers AI). Senza binding
@@ -515,10 +517,10 @@ async function fetchNews(symbol, days, ctx, name) {
 
 const TR_MODEL = "@cf/meta/m2m100-1.2b";
 const TR_CACHE_SECONDS = 30 * 86400;
-const TR_MAX_NEW = 24;       // testi nuovi tradotti al massimo per richiesta (/news e /rss)
-const TR_MAX_NEW_READ = 36;  // per un articolo in vista lettura
+const TR_MAX_NEW = 30;       // pezzi nuovi tradotti al massimo per richiesta (/news e /rss)
+const TR_MAX_NEW_READ = 40;  // per un articolo in vista lettura
 const TR_PARALLEL = 6;       // chiamate al modello in contemporanea
-const TR_CHUNK = 700;        // i paragrafi più lunghi si traducono a pezzi (per frasi)
+const TR_CHUNK = 260;        // m2m100 tronca i testi lunghi: si traduce a pezzi di una o due frasi
 
 function wantsIt(url) { return (url.searchParams.get("lang") || "").toLowerCase() === "it"; }
 
@@ -528,8 +530,11 @@ function skipTr(t) {
   return /\b(il|lo|gli|della|degli|nel|sono|anche|perché|però|questo|quella)\b/i.test(t) && !/\b(the|and|of|with|for)\b/i.test(t);
 }
 
-// spezza un testo lungo in pezzi di frasi intere
+// spezza un testo in pezzi di frasi intere; un prefisso in maiuscolo (RUMOR:, UPDATE:) resta a parte, non tradotto
+const KEEP_PREFIX = /^((?:[A-Z][A-Z0-9]{2,}[ !]*)+:)\s*/;
 function splitText(t) {
+  const pre = t.match(KEEP_PREFIX);
+  if (pre) return [{ keep: pre[1] }].concat(splitText(t.slice(pre[0].length)));
   if (t.length <= TR_CHUNK) return [t];
   const out = [];
   let cur = "";
@@ -547,7 +552,7 @@ async function translateList(env, ctx, bucket, texts, budget) {
   const out = texts.slice();
   if (!env || !env.AI) return { out, pending: 0, error: "binding AI mancante nel Worker" };
   const cache = caches.default;
-  const key = new Request("https://cache.digitalpanel/tr-it/" + encodeURIComponent(bucket));
+  const key = new Request("https://cache.digitalpanel/tr-it2/" + encodeURIComponent(bucket));
   let map = {};
   const hit = await cache.match(key);
   if (hit) { try { map = await hit.json(); } catch (e) { map = {}; } }
@@ -579,11 +584,26 @@ async function translateList(env, ctx, bucket, texts, budget) {
   return { out, pending: todo.filter((t) => !map[t]).length, error };
 }
 
+// traduce più testi spezzandoli in frasi e li ricompone: { out, pending, error }
+async function translateTexts(env, ctx, bucket, texts, budget) {
+  const pieces = [], owner = [], keep = [];
+  texts.forEach((t, i) => (t ? splitText(t) : []).forEach((s) => {
+    if (typeof s === "object") { keep.push([pieces.length, s.keep]); pieces.push(""); }
+    else pieces.push(s);
+    owner.push(i);
+  }));
+  const r = await translateList(env, ctx, bucket, pieces, budget);
+  keep.forEach(([k, v]) => { r.out[k] = v; });
+  const out = texts.map(() => "");
+  owner.forEach((o, k) => { if (r.out[k]) out[o] += (out[o] ? " " : "") + r.out[k]; });
+  return { out: out.map((t, i) => t || texts[i]), pending: r.pending, error: r.error };
+}
+
 // titolo e sommario di un elenco di notizie
 async function translateItems(env, ctx, bucket, items, budget) {
   const texts = [];
   items.forEach((n) => { texts.push(n.title || ""); texts.push(n.summary || ""); });
-  const r = await translateList(env, ctx, bucket, texts, budget);
+  const r = await translateTexts(env, ctx, bucket, texts, budget);
   return {
     items: items.map((n, i) => {
       const title = r.out[2 * i] || n.title, summary = r.out[2 * i + 1] || n.summary;
@@ -597,12 +617,9 @@ async function translateItems(env, ctx, bucket, items, budget) {
 
 // articolo in vista lettura: titolo e paragrafi (quelli lunghi a pezzi, poi ricomposti)
 async function translateArticle(env, ctx, art) {
-  const pieces = [art.title || ""], owner = [-1];
-  (art.paras || []).forEach((p, i) => splitText(p.t).forEach((s) => { pieces.push(s); owner.push(i); }));
-  const budget = { left: TR_MAX_NEW_READ };
-  const r = await translateList(env, ctx, "read:" + art.url, pieces, budget);
-  const paras = (art.paras || []).map((p) => ({ h: p.h, t: "" }));
-  owner.forEach((o, k) => { if (o >= 0) paras[o].t += (paras[o].t ? " " : "") + r.out[k]; });
+  const texts = [art.title || ""].concat((art.paras || []).map((p) => p.t));
+  const r = await translateTexts(env, ctx, "read:" + art.url, texts, { left: TR_MAX_NEW_READ });
+  const paras = (art.paras || []).map((p, i) => ({ h: p.h, t: r.out[i + 1] }));
   return Object.assign({}, art, { title: r.out[0] || art.title, paras, orig: { title: art.title },
     tr: { lang: "it", pending: r.pending, error: r.error } });
 }
@@ -875,7 +892,14 @@ async function feedItems(key, ctx) {
     if (!r.ok) throw new Error("HTTP " + r.status);
     return JSON.stringify(parseRss(await r.text()).slice(0, 15));
   });
-  return JSON.parse(text).map((it) => Object.assign(it, { src: key, source: f.label, summary: (it.summary || "").replace(/The post .*? appeared first on .*$/i, "").trim() }));
+  return JSON.parse(text).map((it) => Object.assign(it, { src: key, source: f.label, summary: cleanFeedSummary(it.summary) }));
+}
+// toglie dai sommari dei blog le righe ripetute: inviti a iscriversi in testa, "The post … appeared first on …" in coda
+function cleanFeedSummary(s) {
+  return String(s || "")
+    .replace(/^\s*Join (Now|us)\b[^🔥]{0,120}🔥\s*/i, "")
+    .replace(/\s*The post\b[\s\S]*$/, "")
+    .trim();
 }
 
 // ---------------------------------------------------------------- vista lettura degli articoli
@@ -1243,7 +1267,7 @@ export default {
     if (path === "/") {
       return json({
         service: "DigitalPanel data bridge",
-        version: "4.2",
+        version: "4.3",
         usage: ["/quotes?symbols=AAPL,ENEL.MI,EURUSD=X", "/earnings?symbols=AAPL,ENEL.MI", "/news?symbols=AAPL,ENEL.MI&days=30", "/spark?symbols=^GSPC,FTSEMIB.MI", "/tmdb/cinema", "/tmdb/streaming?p=netflix,prime", "/tmdb/tv?ids=1399", "/tmdb/search?q=titolo", "/flickr?user=marco_galb&tag=digitalportfolio&ttl=900", "/rss?src=fuji,leica,nikon", "/sport/live", "/sport/fixtures?c=sa", "/sport/table?c=sa", "/sport/italy"],
         tmdb: !!(env && env.TMDB_TOKEN),
         footballData: !!(env && env.FD_TOKEN),
