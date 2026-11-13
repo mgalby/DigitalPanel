@@ -284,6 +284,7 @@ html,body{margin:0}
 .nw.full{padding:10px 0}.nw.full .nt{font-size:17px;-webkit-line-clamp:3}
 .nw .ns{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:4px}
 .nw.full[data-read]{cursor:pointer}.nw.full[data-read] .nt::after{content:'  ›';color:var(--text-3)}
+.nw.corso .nt{font-size:17px}.nw.corso.full .nt{font-size:19px}.nw.corso .nm{font-size:14px}.nw.corso .ebadge{font-size:11px;padding:1px 6px}
 .rd-t{font-size:22px;font-weight:500;margin:0 0 6px;line-height:1.3}
 .er[data-title]{cursor:pointer}.er[data-title] .ei>b::after{content:'  ›';color:var(--text-3)}
 .tt{display:flex;gap:20px}.tt-p{width:150px;height:225px;object-fit:cover;border-radius:10px;flex:none;background:var(--surface-2)}.tt-i{flex:1;min-width:0}.tt-i .kv{font-size:14px;margin-top:6px;gap:16px}
@@ -1282,7 +1283,7 @@ function corsoThisMonth(){var r=corsoMonthRange();return corsoAll().filter(funct
 function corsoDateLabel(ev){var s=dShort(ev.s),e=ev.e!==ev.s?' – '+dShort(ev.e):'';return s+e}
 function corsoToday(){return new Date().toISOString().slice(0,10)}
 function corsoRow(x,full){var cat=CORSO_CAT[x.ev.c]||{l:'',c:'var(--line)'},st=x.st,past=x.ev.e<corsoToday();
-  return '<div class="nw br'+(full?' full':'')+'" data-corso="'+esc(x.id)+'" style="--br:'+cat.c+';cursor:pointer'+(past?';opacity:.5':'')+'"><div class="nt">'+esc(x.ev.t)+(st?' <span class="ebadge" style="border-color:'+cat.c+';color:'+cat.c+'">'+esc(CORSO_ST_LAB[st].toUpperCase())+'</span>':'')+'</div><div class="nm"><b style="color:'+cat.c+'">'+esc(cat.l)+'</b> · '+esc(corsoDateLabel(x.ev))+'</div></div>'}
+  return '<div class="nw br corso'+(full?' full':'')+'" data-corso="'+esc(x.id)+'" style="--br:'+cat.c+';cursor:pointer'+(past?';opacity:.5':'')+'"><div class="nt">'+esc(x.ev.t)+(st?' <span class="ebadge" style="border-color:'+cat.c+';color:'+cat.c+'">'+esc(CORSO_ST_LAB[st].toUpperCase())+'</span>':'')+'</div><div class="nm"><b style="color:'+cat.c+'">'+esc(cat.l)+'</b> · '+esc(corsoDateLabel(x.ev))+'</div></div>'}
 /* riga divisoria "oggi" tra gli appuntamenti già passati e quelli ancora da venire, solo se nel mese ci sono entrambi */
 function corsoTodayDivider(){return '<div class="spsect" style="margin:10px 0 4px;color:var(--accent);border-top:1px solid var(--line);padding-top:10px">OGGI</div>'}
 function corsoRowsWithDivider(L){var today=corsoToday(),pastSeen=false,put=false,h='';
