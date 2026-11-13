@@ -1,4 +1,6 @@
 // DigitalPanel – ponte dati verso Yahoo Finance (Cloudflare Worker)
+// In corso (non ancora consolidato, resta 4.4): /sport/italy legge ESPN un mese alla volta (gli intervalli
+//   lunghi davano HTTP 400 e la Nazionale risultava senza partite) e restituisce group, il girone di Nations League.
 // Versione 4.4 (13 nov 2026): la traduzione si ferma dopo 6 secondi per richiesta (il resto alla successiva),
 //   così la prima lettura non va oltre l'attesa massima del pannello.
 // Versione 4.3 (13 nov 2026): traduzione frase per frase (m2m100 tagliava i testi lunghi), prefissi come RUMOR: non tradotti,
@@ -66,7 +68,8 @@
 // GET /sport/fixtures?c=sa|cl            calendario e risultati (ultimi 12 giorni, prossimi 35);
 //     football-data, se non va ESPN. Cache 10 min
 // GET /sport/table?c=sa|cl               classifica (football-data, se non va ESPN). Cache 30 min
-// GET /sport/italy                       ultime e prossime partite dell'Italia (ESPN). Cache 3 h
+// GET /sport/italy                       ultime e prossime partite dell'Italia (ESPN) e girone di Nations League
+//     (group: {name, rows}). Cache 3 h, classifica 1 h
 // GET /sport/debug?code=ita.1            diagnostica dei dati ESPN di una competizione
 //   partita: {id, lg, comp, date, state: pre|in|post|off, ht, clock, detail,
 //             home:{n, k, s}, away:{n, k, s}, ev:[{t: goal|pg|og|red|pmiss, m, side: h|a, who}], venue}
@@ -1003,10 +1006,11 @@ const LEAGUES = {
 };
 // competizioni della Nazionale: [codice ESPN, nome, giorni indietro, giorni avanti]
 const NAT_LEAGUES = [
-  ["uefa.nations", "Nations League", 150, 240],
-  ["fifa.friendly", "Amichevole", 90, 150],
-  ["uefa.euroq", "Qualificazioni Euro", 60, 420],
+  ["uefa.nations", "Nations League", 75, 120],
+  ["fifa.friendly", "Amichevole", 75, 90],
+  ["uefa.euroq", "Qualificazioni Euro", 30, 150],
 ];
+const NAT_WINDOW = 30; // ESPN rifiuta (HTTP 400) gli intervalli di date troppo lunghi: si chiede un mese alla volta
 
 // nomi italiani brevi: le due fonti scrivono le squadre in modo diverso
 const TEAM_ALIAS = {
@@ -1229,17 +1233,56 @@ async function sportTable(env, c, ctx) {
 }
 
 // partite dell'Italia: ultime e prossime
+// partite di una competizione in finestre di un mese; errore solo se nessuna finestra risponde
+async function natMatches(n, ctx) {
+  const wins = [];
+  for (let a = -n[2]; a < n[3]; a += NAT_WINDOW) wins.push([a, Math.min(a + NAT_WINDOW - 1, n[3])]);
+  const res = await Promise.all(wins.map((w) =>
+    espnJSON(ESPN_SITE + n[0] + "/scoreboard?dates=" + romeDay(w[0]) + "-" + romeDay(w[1]) + "&limit=300", 3 * 3600, ctx)
+      .then((d) => ({ matches: (d.events || []).map((e) => espnMatch(e, "nat", n[1])).filter(hasItaly) }))
+      .catch((e) => ({ error: String((e && e.message) || e), matches: [] }))));
+  const bad = res.filter((r) => r.error);
+  return { code: n[0], matches: res.flatMap((r) => r.matches), windows: wins.length,
+    error: bad.length === res.length ? bad[0].error : bad.length ? bad.length + " finestre su " + res.length + " non lette" : null };
+}
+
+// girone dell'Italia in Nations League (classifiche ESPN, gironi annidati a più livelli)
+async function natGroup(ctx) {
+  const d = await espnJSON(ESPN_V2 + "uefa.nations/standings", 3600, ctx);
+  const groups = [];
+  (function walk(node) {
+    if (!node || typeof node !== "object") return;
+    if (node.standings && Array.isArray(node.standings.entries) && node.standings.entries.length) groups.push(node);
+    (node.children || []).forEach(walk);
+  })(d);
+  const stat = (en, nm) => { const s = (en.stats || []).find((x) => x.name === nm || x.type === nm); return s ? s.value : null; };
+  for (const g of groups) {
+    const rows = g.standings.entries.map((en) => {
+      const n = teamName(en.team && en.team.displayName, en.team && en.team.shortDisplayName);
+      return { pos: stat(en, "rank"), n, k: teamKey(n), pts: stat(en, "points"), pg: stat(en, "gamesPlayed"), w: stat(en, "wins"),
+        d: stat(en, "ties"), l: stat(en, "losses"), gf: stat(en, "pointsFor"), ga: stat(en, "pointsAgainst"), gd: stat(en, "pointDifferential") };
+    });
+    if (!rows.some((r) => r.k === "italia")) continue;
+    rows.sort((a, b) => (a.pos || 99) - (b.pos || 99));
+    const name = String(g.name || g.abbreviation || "").replace(/^UEFA Nations League,?\s*/i, "")
+      .replace(/League\s+([A-D])/i, "Lega $1").replace(/Group\s+(\d+)/i, "Girone $1").replace(/,\s*/g, " · ");
+    return { name: name || "Girone", rows };
+  }
+  return { name: null, rows: [], groups: groups.length };
+}
+
 async function sportItaly(ctx) {
-  const res = await Promise.all(NAT_LEAGUES.map((n) =>
-    espnJSON(ESPN_SITE + n[0] + "/scoreboard?dates=" + romeDay(-n[2]) + "-" + romeDay(n[3]) + "&limit=1000", 3 * 3600, ctx)
-      .then((d) => ({ code: n[0], matches: (d.events || []).map((e) => espnMatch(e, "nat", n[1])).filter(hasItaly) }))
-      .catch((e) => ({ code: n[0], error: String((e && e.message) || e), matches: [] }))));
+  const [res, group] = await Promise.all([
+    Promise.all(NAT_LEAGUES.map((n) => natMatches(n, ctx))),
+    natGroup(ctx).catch((e) => ({ name: null, rows: [], error: String((e && e.message) || e) })),
+  ]);
   const all = dedupe(res.flatMap((r) => r.matches)).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const now = Date.now();
   return {
-    sources: res.map((r) => ({ code: r.code, n: r.matches.length, error: r.error || null })),
+    sources: res.map((r) => ({ code: r.code, n: r.matches.length, windows: r.windows, error: r.error || null })),
     next: all.filter((m) => m.state !== "post" && Date.parse(m.date) > now - 4 * 3600000).slice(0, 6),
     last: all.filter((m) => m.state === "post").reverse().slice(0, 6),
+    group,
   };
 }
 
