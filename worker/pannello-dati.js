@@ -1,6 +1,7 @@
 // DigitalPanel – ponte dati verso Yahoo Finance (Cloudflare Worker)
-// In corso (non ancora consolidato, resta 4.4): /sport/italy legge ESPN un mese alla volta (gli intervalli
-//   lunghi davano HTTP 400 e la Nazionale risultava senza partite) e restituisce group, il girone di Nations League.
+// In corso (non ancora consolidato, resta 4.4): ESPN non accetta più intervalli di date (HTTP 400, la Nazionale
+//   risultava senza partite). Ora si legge il calendario e poi i singoli giorni di gara; /sport/italy restituisce
+//   anche group, il girone di Nations League. Stesso metodo per la riserva ESPN del calendario di Serie A e Champions.
 // Versione 4.4 (13 nov 2026): la traduzione si ferma dopo 6 secondi per richiesta (il resto alla successiva),
 //   così la prima lettura non va oltre l'attesa massima del pannello.
 // Versione 4.3 (13 nov 2026): traduzione frase per frase (m2m100 tagliava i testi lunghi), prefissi come RUMOR: non tradotti,
@@ -1005,12 +1006,31 @@ const LEAGUES = {
   cl: { espn: "uefa.champions", fd: "CL", label: "Champions League" },
 };
 // competizioni della Nazionale: [codice ESPN, nome, giorni indietro, giorni avanti]
+// [codice, nome, giorni indietro, giorni avanti, giorni di gara letti al massimo]
 const NAT_LEAGUES = [
-  ["uefa.nations", "Nations League", 75, 120],
-  ["fifa.friendly", "Amichevole", 75, 90],
-  ["uefa.euroq", "Qualificazioni Euro", 30, 150],
+  ["uefa.nations", "Nations League", 75, 150, 8],
+  ["fifa.friendly", "Amichevole", 75, 120, 5],
+  ["uefa.euroq", "Qualificazioni Euro", 45, 180, 5],
 ];
-const NAT_WINDOW = 30; // ESPN rifiuta (HTTP 400) gli intervalli di date troppo lunghi: si chiede un mese alla volta
+// ESPN non accetta più gli intervalli di date (dates=AAAAMMGG-AAAAMMGG → HTTP 400): accetta la richiesta
+// senza date, che contiene il calendario dei giorni di gara, e quella su un giorno singolo.
+
+// giorni di gara (AAAAMMGG, ora italiana) dal calendario di una competizione
+function espnCalendarDays(d) {
+  const L = (d && d.leagues && d.leagues[0]) || {};
+  const out = [];
+  const add = (v) => {
+    const iso = typeof v === "string" ? v : v && (v.startDate || v.value || v.date);
+    const t = Date.parse(iso || "");
+    if (isNaN(t)) return;
+    const k = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" })
+      .format(new Date(t)).replace(/-/g, "");
+    if (out.indexOf(k) < 0) out.push(k);
+  };
+  (L.calendar || []).forEach((c) => { if (c && Array.isArray(c.entries)) c.entries.forEach(add); else add(c); });
+  (d && d.events || []).forEach((e) => add(e.date));
+  return out.sort();
+}
 
 // nomi italiani brevi: le due fonti scrivono le squadre in modo diverso
 const TEAM_ALIAS = {
@@ -1200,9 +1220,14 @@ async function sportFixtures(env, c, ctx) {
     const matches = all.filter((m) => { const day = (m.utcDate || "").slice(0, 10); return day >= from && day <= to; }).map((m) => fdMatch(m, c));
     return { src: "football-data", competition: L.label, currentMatchday: cur, matches };
   } catch (e) {
-    const d = await espnJSON(ESPN_SITE + L.espn + "/scoreboard?dates=" + romeDay(-12) + "-" + romeDay(35) + "&limit=400", 900, ctx);
+    // riserva ESPN: giornata corrente più i giorni di gara vicini del calendario (niente intervalli di date)
+    const base = await espnJSON(ESPN_SITE + L.espn + "/scoreboard", 900, ctx);
+    const from = romeDay(-12), to = romeDay(35);
+    const days = espnCalendarDays(base).filter((k) => k >= from && k <= to).slice(0, 10);
+    const extra = await Promise.all(days.map((k) => espnJSON(ESPN_SITE + L.espn + "/scoreboard?dates=" + k, 900, ctx).catch(() => ({ events: [] }))));
+    const evs = [base].concat(extra).flatMap((x) => x.events || []);
     return { src: "espn", warn: String((e && e.message) || e), competition: L.label, currentMatchday: null,
-      matches: (d.events || []).map((ev) => espnMatch(ev, c, L.label)) };
+      matches: dedupe(evs.map((ev) => espnMatch(ev, c, L.label))).sort((a, b) => (a.date || "").localeCompare(b.date || "")) };
   }
 }
 
@@ -1233,17 +1258,24 @@ async function sportTable(env, c, ctx) {
 }
 
 // partite dell'Italia: ultime e prossime
-// partite di una competizione in finestre di un mese; errore solo se nessuna finestra risponde
+// partite dell'Italia in una competizione: calendario (richiesta senza date), poi i giorni di gara
+// più vicini a oggi letti uno per uno (al massimo n[4], metà prima e metà dopo)
 async function natMatches(n, ctx) {
-  const wins = [];
-  for (let a = -n[2]; a < n[3]; a += NAT_WINDOW) wins.push([a, Math.min(a + NAT_WINDOW - 1, n[3])]);
-  const res = await Promise.all(wins.map((w) =>
-    espnJSON(ESPN_SITE + n[0] + "/scoreboard?dates=" + romeDay(w[0]) + "-" + romeDay(w[1]) + "&limit=300", 3 * 3600, ctx)
-      .then((d) => ({ matches: (d.events || []).map((e) => espnMatch(e, "nat", n[1])).filter(hasItaly) }))
-      .catch((e) => ({ error: String((e && e.message) || e), matches: [] }))));
-  const bad = res.filter((r) => r.error);
-  return { code: n[0], matches: res.flatMap((r) => r.matches), windows: wins.length,
-    error: bad.length === res.length ? bad[0].error : bad.length ? bad.length + " finestre su " + res.length + " non lette" : null };
+  let base;
+  try { base = await espnJSON(ESPN_SITE + n[0] + "/scoreboard", 3 * 3600, ctx); }
+  catch (e) { return { code: n[0], matches: [], days: 0, error: String((e && e.message) || e) }; }
+  const from = romeDay(-n[2]), to = romeDay(n[3]), today = romeDay(0);
+  const all = espnCalendarDays(base).filter((k) => k >= from && k <= to);
+  const past = all.filter((k) => k < today), fut = all.filter((k) => k >= today);
+  const half = Math.ceil(n[4] / 2);
+  let pick = past.slice(-Math.max(half, n[4] - fut.length)).concat(fut.slice(0, Math.max(half, n[4] - past.length)));
+  pick = pick.slice(0, n[4]);
+  const res = await Promise.all(pick.map((k) => espnJSON(ESPN_SITE + n[0] + "/scoreboard?dates=" + k, 3 * 3600, ctx)
+    .then((d) => ({ events: d.events || [] })).catch((e) => ({ events: [], error: String((e && e.message) || e) }))));
+  const evs = (base.events || []).concat(res.flatMap((r) => r.events));
+  const bad = res.filter((r) => r.error).length;
+  return { code: n[0], matches: evs.map((e) => espnMatch(e, "nat", n[1])).filter(hasItaly), days: pick.length,
+    error: bad && bad === res.length ? res[0].error : bad ? bad + " giorni su " + res.length + " non letti" : null };
 }
 
 // girone dell'Italia in Nations League (classifiche ESPN, gironi annidati a più livelli)
@@ -1279,7 +1311,7 @@ async function sportItaly(ctx) {
   const all = dedupe(res.flatMap((r) => r.matches)).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const now = Date.now();
   return {
-    sources: res.map((r) => ({ code: r.code, n: r.matches.length, windows: r.windows, error: r.error || null })),
+    sources: res.map((r) => ({ code: r.code, n: r.matches.length, days: r.days, error: r.error || null })),
     next: all.filter((m) => m.state !== "post" && Date.parse(m.date) > now - 4 * 3600000).slice(0, 6),
     last: all.filter((m) => m.state === "post").reverse().slice(0, 6),
     group,
@@ -1288,11 +1320,11 @@ async function sportItaly(ctx) {
 
 // diagnostica: forma dei dati ESPN per una competizione
 async function sportDebug(code, ctx) {
-  const d = await espnJSON(ESPN_SITE + code + "/scoreboard?dates=" + romeDay(-3) + "-" + romeDay(3), 60, ctx);
+  const d = await espnJSON(ESPN_SITE + code + "/scoreboard", 60, ctx);
   const e = (d.events || [])[0];
   const c = e && e.competitions && e.competitions[0];
   return {
-    code, events: (d.events || []).length, topKeys: Object.keys(d),
+    code, events: (d.events || []).length, topKeys: Object.keys(d), calendarDays: espnCalendarDays(d).slice(0, 40),
     sample: e ? { id: e.id, date: e.date, name: e.name, status: e.status, competitorKeys: c ? (c.competitors || []).map((t) => ({
       homeAway: t.homeAway, score: t.score, team: t.team && { id: t.team.id, displayName: t.team.displayName, shortDisplayName: t.team.shortDisplayName } })) : null,
       details: c ? (c.details || []).slice(0, 4) : null } : null,

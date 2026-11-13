@@ -1366,19 +1366,27 @@ M.ucltable={l:'Classifica Champions',live:true,s:function(){var d=SP.tb.cl;retur
   d:function(){return spTableDetail('cl')}, sub:'Classifica della fase campionato'};
 function spUclPages(){var R=spTb('cl');if(!R.length)return [{r:[]}];var P=[],F=R.filter(function(r){return spLevel(r.k)>0});
   if(F.length)P.push({k:'Le tue squadre',r:F.slice(0,8)});chunk(R.slice(0,24),8).forEach(function(c){P.push({r:c})});return P}
-M.italy={l:'Nazionale',live:true,s:function(){var lv=spItLive(),n=lv||spItNext();return n?(n.comp||''):''},n:one,
-  c:function(){var lv=spItLive();
+/* girone di Nations League dell'Italia (dal ponte dati, insieme alle partite) */
+function spGroup(){var g=SP.it&&SP.it.group;return g&&g.rows&&g.rows.length?g:null}
+function spGroupTable(g,cls){return '<table class="'+cls+'">'+g.rows.map(function(r){return '<tr'+(r.k==='italia'?' class="me"':'')+'><td class="p num">'+(r.pos==null?'':r.pos)+'</td><td>'+esc(r.n)+'</td><td class="g num">'+(r.pg==null?'':r.pg+' g')+'</td><td class="g num">'+spSgn(r.gd)+'</td><td class="pt num">'+(r.pts==null?'':r.pts)+'</td></tr>'}).join('')+'</table>'}
+M.italy={l:'Nazionale',live:true,s:function(){var lv=spItLive(),n=lv||spItNext();return n?(n.comp||''):''},n:function(){return !spItLive()&&spGroup()?2:1},
+  c:function(i){var lv=spItLive();
     if(lv){var g=spVm(lv);return '<div class="live"><span class="badge">LIVE</span><div class="score"><span class="tm">'+spNm(g.h,g.hk)+'</span><span class="sc num">'+g.sh+'–'+g.sa+'</span><span class="tm">'+spNm(g.a,g.ak)+'</span></div><span class="mins num">'+esc(g.m)+'</span><span class="ev">'+esc(g.ev||'')+'</span></div>'}
-    if(!SP.it)return spWait('it');var n=spItNext(),l=(SP.it.last||[])[0],h='';
+    if(!SP.it)return spWait('it');var gr=spGroup();
+    if(gr&&i%2===1)return '<div class="spsect" style="margin-top:0">Nations League · '+esc(gr.name||'girone')+'</div>'+spGroupTable(gr,'tbl');
+    var n=spItNext(),l=(SP.it.last||[])[0],h='';
     if(n)h+='<div class="nat"><span class="lab">Prossima partita</span><b>'+esc(n.home.n)+' – '+esc(n.away.n)+'</b><span class="num">'+esc(spWhen(n.date))+'</span>'+(n.venue?'<span class="mut" style="font-size:13px">'+esc(n.venue)+'</span>':'')+'<span class="cdn num">'+esc(spCount(n.date))+'</span></div>';
     else h+='<div class="nat"><span class="lab">Prossima partita</span><b class="mut" style="font-weight:400;font-size:18px">Non ancora in calendario</b></div>';
     if(l)h+='<div class="nat-l"><span class="lab">Ultima partita · '+esc(l.comp||'')+'</span><span>'+esc(l.home.n)+' <b class="num">'+l.home.s+'–'+l.away.s+'</b> '+esc(l.away.n)+'</span><span class="mut num" style="font-size:13px">'+esc(spWhen(l.date))+'</span></div>';
     return '<div class="natw">'+h+'</div>'},
   d:function(){if(!SP.it)return spWait('it');var N=SP.it.next||[],L=SP.it.last||[];
     function rows(A,res){return A.map(function(m){return '<tr><td class="mut num" style="width:150px">'+esc(spWhen(m.date))+'</td><td class="mut">'+esc(m.comp||'')+'</td><td class="n">'+esc(m.home.n)+'</td><td class="num" style="text-align:center;width:80px">'+(res?m.home.s+'–'+m.away.s:'–')+'</td><td>'+esc(m.away.n)+'</td></tr>'}).join('')}
-    return (N.length?'<div class="sect">Prossime partite</div><table class="dtbl">'+rows(N,false)+'</table>':'<div class="mut">Nessuna partita dell’Italia ancora in calendario.</div>')+
+    var gr=spGroup();
+    return (gr?'<div class="sect">Nations League · '+esc(gr.name||'girone')+'</div><table class="dtbl"><tr><th>#</th><th>Squadra</th><th class="n">G</th><th class="n">V</th><th class="n">N</th><th class="n">P</th><th class="n">GF</th><th class="n">GS</th><th class="n">DR</th><th class="n">Punti</th></tr>'+
+      gr.rows.map(function(r){var v=function(x){return x==null?'':x};return '<tr'+(r.k==='italia'?' class="me"':'')+'><td class="num">'+v(r.pos)+'</td><td>'+esc(r.n)+'</td><td class="n num">'+v(r.pg)+'</td><td class="n num">'+v(r.w)+'</td><td class="n num">'+v(r.d)+'</td><td class="n num">'+v(r.l)+'</td><td class="n num">'+v(r.gf)+'</td><td class="n num">'+v(r.ga)+'</td><td class="n num">'+spSgn(r.gd)+'</td><td class="n num"><b>'+v(r.pts)+'</b></td></tr>'}).join('')+'</table><div style="height:18px"></div>':'')+
+      (N.length?'<div class="sect">Prossime partite</div><table class="dtbl">'+rows(N,false)+'</table>':'<div class="mut">Nessuna partita dell’Italia ancora in calendario.</div>')+
       (L.length?'<div class="sect" style="margin-top:18px">Ultime partite</div><table class="dtbl">'+rows(L,true)+'</table>':'')+
-      '<div class="note">Nations League, amichevoli e qualificazioni europee da ESPN.</div>'},
+      '<div class="note">Nations League (partite e girone), amichevoli e qualificazioni europee da ESPN.</div>'},
   sub:'Partite dell’Italia'};
 setTimeout(function(){refreshSportLive();refreshSportFx();refreshSportTables();refreshItaly();
   setInterval(refreshSportFx,30*60000);setInterval(refreshSportTables,30*60000);setInterval(refreshItaly,3*3600000)},4500);
