@@ -77,6 +77,8 @@ svg.spark{display:block}
 .r .v small{display:block;font-size:13px}
 .seg{display:flex;gap:6px;margin:-4px 0 6px}
 .seg span{font-size:11px;padding:2px 8px;border-radius:10px;color:var(--text-3);border:1px solid var(--line);white-space:nowrap}
+.seg span[data-plist]{cursor:pointer;font-size:12px;padding:5px 12px;border-radius:14px}
+.nw.br{border-left:3px solid var(--br);padding-left:12px!important}.nw .nm b.bl{color:var(--br)}
 .seg span.segk{margin-left:auto;border:0;padding:2px 0;color:var(--text-2);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
 .seg span.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
 
@@ -1011,6 +1013,14 @@ function save(x){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(x||S))}catc
 /* ---------- moduli ----------
    ogni modulo: l (etichetta), s (nota), n() = numero sotto-pagine, c(i) = vista compatta della sotto-pagina i, d() = dettaglio */
 function isEtf(t){return t.t==='ETF'}
+/* liste titoli: toccando il nome di una lista si salta alla sua prima pagina (un altro tocco: pagina successiva della stessa lista);
+   il riquadro resta fermo su quella lista finché il pannello è in uso */
+var portOff=0,portHold=false;
+function portIdx(i){var n=Math.max(1,portPages().length);return (((i+portOff)%n)+n)%n}
+function portJump(id){var P=portPages();if(!P.length)return;var cur=portIdx(subIdx),mine=[];P.forEach(function(pg,k){if(pg.L.id===id)mine.push(k)});if(!mine.length)return;
+  var j=P[cur].L.id===id?mine[(mine.indexOf(cur)+1)%mine.length]:mine[0];portOff=j-subIdx;portHold=true;
+  var t=grid.querySelector('.tile[data-mod="portfolio"]');if(!t)return;var tb=t.querySelector('.tb'),sd=t.querySelector('[data-sd]');
+  tb.innerHTML=M.portfolio.c(subIdx);if(sd)sd.innerHTML=dotsHtml(M.portfolio.n(),portIdx(subIdx))}
 function portPages(){var p=[];S.lists.forEach(function(L){var all=sortedTickers(L);[['Azioni',all.filter(function(t){return !isEtf(t)})],['ETF',all.filter(isEtf)]].forEach(function(g){if(g[1].length)chunk(g[1],5).forEach(function(ch){p.push({L:L,t:ch,k:g[0]})})})});return p}
 function rowTicker(t){var q=Q[ysym(t)],nm=t.n||(q&&q.name)||t.s;
   var left='<span class="k">'+esc(t.s)+(t.t==='ETF'?' <span class="etf">ETF</span>':'')+'<small>'+mkDot(t.x)+esc(XNAME[t.x]||t.x)+' · '+esc(nm)+'</small></span>',right;
@@ -1029,10 +1039,10 @@ var M={
       IDX.map(function(i){var q=Q[i.y]||{};return '<tr><td>'+mkDot(i.x)+'<b>'+esc(i.n)+'</b></td><td class="n num">'+fmt(q.price,2)+'</td><td class="n num">'+fmtSigned(q.change,2)+'</td><td class="n num">'+pct(q.changePct)+'</td><td>'+(SPK[i.y]?sparkLine(SPK[i.y],34,(q.changePct||0)>=0):'<span class="mut">—</span>')+'</td><td class="n num mut">'+whenStr(q.marketTime)+'</td></tr>'}).join('')+'</table>'+
       '<div class="note">Il grafico mostra la seduta in corso, o l’ultima se la borsa è chiusa, a intervalli di 5 minuti; la linea tratteggiata è la chiusura precedente.</div>'},
     sub:'Yahoo Finance · i valori possono avere fino a 15 minuti di ritardo'},
-  portfolio:{l:'Liste titoli',s:'',live:true,n:function(){return Math.max(1,portPages().length)},c:function(i){
+  portfolio:{l:'Liste titoli',s:'',live:true,n:function(){return Math.max(1,portPages().length)},si:portIdx,c:function(i){
       var P=portPages();if(!P.length)return '<div class="nolive"><span>Nessun titolo nelle liste</span></div>';
-      var pg=P[i%P.length];
-      return '<div class="seg">'+S.lists.map(function(L){return '<span class="'+(L.id===pg.L.id?'on':'')+'">'+esc(L.name)+'</span>'}).join('')+'<span class="segk">'+pg.k+'</span></div><div class="rows">'+pg.t.map(rowTicker).join('')+'</div>'},
+      var pg=P[portIdx(i)%P.length];
+      return '<div class="seg">'+S.lists.map(function(L){return '<span data-plist="'+esc(L.id)+'" class="'+(L.id===pg.L.id?'on':'')+'">'+esc(L.name)+'</span>'}).join('')+'<span class="segk">'+pg.k+'</span></div><div class="rows">'+pg.t.map(rowTicker).join('')+'</div>'},
     d:function(){var h='',byX=S.order!=='manual';S.lists.forEach(function(L){
       h+='<table class="dtbl" style="margin-bottom:18px"><tr><th>'+esc(L.name)+'</th><th>Nome</th>'+(byX?'':'<th>Borsa</th>')+'<th class="n">Prezzo</th><th class="n">Var. giorno</th><th class="n">Ultimo</th></tr>';
       var a=sortedTickers(L),az=a.filter(function(t){return !isEtf(t)}),et=a.filter(isEtf),G=az.length&&et.length?[['Azioni',az],['ETF',et]]:[['',a]],cols=byX?5:6;
@@ -1141,11 +1151,21 @@ M.moon={l:'Luna e cielo notturno',s:'',live:true,n:one,c:function(){var m=moonDa
       '<div class="sect" style="margin-top:18px">Prossimi giorni</div><table class="dtbl"><tr><th>Giorno</th><th></th><th>Fase</th><th class="n">Illuminata</th><th class="n">Sorge</th><th class="n">Tramonta</th></tr>'+rows+'</table>'+
       '<div class="note">«Buio senza luna»: sole oltre 18° sotto l’orizzonte e luna tramontata, le condizioni migliori per stelle e Via Lattea. Calcoli astronomici locali (precisione di qualche minuto); nuvole da Open-Meteo.</div>'},
   sub:'Fasi, orari della luna e finestre di buio per la località attiva'};
+/* marca di cui parla una notizia: dal titolo, altrimenti dal sito (i siti di indiscrezioni sono per marca) */
+var BRANDS=[['fuji','Fujifilm',/\bfuji(film)?\b|\bgfx\b|\binstax\b|\bx-?(t|h|e|s|m|pro|half)\d/i,'#4CC38A'],['nikon','Nikon',/\bnikon\b|\bnikkor\b/i,'#F2C230'],['leica','Leica',/\bleica\b/i,'#E5584F'],
+  ['sony','Sony',/\bsony\b/i,'#F08A3C'],['canon','Canon',/\bcanon\b/i,'#D96BA0'],['panasonic','Panasonic',/\bpanasonic\b|\blumix\b/i,'#5B9BE8'],['om','OM System',/\bom system\b|\bolympus\b/i,'#8FC7E8'],
+  ['hasselblad','Hasselblad',/\bhasselblad\b/i,'#B8BDC6'],['ricoh','Ricoh / Pentax',/\bricoh\b|\bpentax\b/i,'#C9A15B']];
+var SRC_BRAND={fuji:'fuji',nikon:'nikon',leica:'leica',sony:'sony',canon:'canon'};
+function brandOf(n){var t=(n.title||'')+' '+((n.orig&&n.orig.title)||'');for(var i=0;i<BRANDS.length;i++){if(BRANDS[i][2].test(t))return BRANDS[i]}
+  var k=SRC_BRAND[n.src];for(var j=0;j<BRANDS.length;j++){if(BRANDS[j][0]===k)return BRANDS[j]}return null}
+function fnRow(n,full){var b=brandOf(n);
+  return '<div class="nw br'+(full?' full':'')+'" style="--br:'+(b?b[3]:'var(--line)')+'"'+(full&&n.link?' data-read="'+esc(n.link)+'"':'')+'><div class="nt">'+esc(n.title)+'</div>'+(full&&n.summary?'<div class="ns">'+esc(n.summary)+'</div>':'')+
+    '<div class="nm">'+(b?'<b class="bl">'+esc(b[1])+'</b> · '+esc(n.source):'<b>'+esc(n.source)+'</b>')+' · '+esc(ago(n.time))+'</div></div>'}
 M.news={l:'Novità foto',s:'',live:true,n:function(){return chunk((FN.items||[]).slice(0,12),3).length},c:function(i){var L=(FN.items||[]).slice(0,12);
     if(!L.length)return '<div class="nolive"><span>'+(FN.err?'Notizie non disponibili':FN.at?'Nessuna novità':'In attesa delle notizie…')+'</span></div>';
-    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(n){return '<div class="nw"><div class="nt">'+esc(n.title)+'</div><div class="nm"><b>'+esc(n.source)+'</b> · '+esc(ago(n.time))+'</div></div>'}).join('')+'</div>'},
+    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(n){return fnRow(n,false)}).join('')+'</div>'},
   d:function(){var L=FN.items||[];if(!L.length)return '<div class="mut">Nessuna novità.</div>';
-    return L.map(function(n){return '<div class="nw full"'+(n.link?' data-read="'+esc(n.link)+'"':'')+'><div class="nt">'+esc(n.title)+'</div>'+(n.summary?'<div class="ns">'+esc(n.summary)+'</div>':'')+'<div class="nm"><b>'+esc(n.source)+'</b> · '+esc(ago(n.time))+'</div></div>'}).join('')+'<div class="note">Fonti scelte in Impostazioni › Fotografia.</div>'},
+    return L.map(function(n){return fnRow(n,true)}).join('')+'<div class="note">Il colore indica la marca di cui parla la notizia (dal titolo o, se non è citata, dal sito). Fonti scelte in Impostazioni › Fotografia.</div>'},
   sub:'Indiscrezioni e novità dai siti che segui'};
 M.movers={l:'Più mossi',s:'azioni delle liste',live:true,n:one,c:function(){
     var a=moverList();if(!a.length)return nodata();
@@ -1413,7 +1433,7 @@ var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
 var DEMO={shows:1};
-function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):esc(typeof m.s==='function'?m.s():(m.s||''));return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),subIdx)+'</span></span></div>'}
+function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):esc(typeof m.s==='function'?m.s():(m.s||''));return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),m.si?m.si(subIdx):subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
   grid.style.gridTemplateColumns='repeat('+L[0]+',1fr)';
@@ -1433,9 +1453,10 @@ function advanceSub(){
   subIdx++;
   Array.prototype.forEach.call(grid.querySelectorAll('.tile[data-mod]'),function(t){
     var id=t.getAttribute('data-mod'),m=M[id],n=m.n();if(n<2)return;
+    if(id==='portfolio'&&portHold){portOff--;return} /* lista scelta a mano: resta ferma */
     var tb=t.querySelector('.tb'),sd=t.querySelector('[data-sd]');
     tb.classList.add('fade');
-    setTimeout(function(){tb.innerHTML=m.c(subIdx);if(sd)sd.innerHTML=dotsHtml(n,subIdx);tb.classList.remove('fade')},250);
+    setTimeout(function(){tb.innerHTML=m.c(subIdx);if(sd)sd.innerHTML=dotsHtml(n,m.si?m.si(subIdx):subIdx);tb.classList.remove('fade')},250);
   });
 }
 function startSub(){clearInterval(subTimer);subTimer=setInterval(advanceSub,S.sub*1000)}
@@ -1477,7 +1498,7 @@ var scrollT=0;
 function onScrollAct(){var n=Date.now();if(n-scrollT>1000){scrollT=n;if(interactive)touch()}}
 $('dBody').addEventListener('scroll',onScrollAct,{passive:true});$('sBody').addEventListener('scroll',onScrollAct,{passive:true});
 function endInteractive(){
-  clearTimeout(idleTimer);interactive=false;bar.classList.remove('show');$('pause').classList.remove('show');
+  portHold=false;clearTimeout(idleTimer);interactive=false;bar.classList.remove('show');$('pause').classList.remove('show');
   closeOv('detail');closeOv('settings');schedule();
 }
 
@@ -1760,6 +1781,7 @@ stage.addEventListener('click',function(e){
   if(t.closest('#bResume')){endInteractive();return}
   if(t.closest('#bSet')){openSettings();touch();return}
   if(t.closest('#bNight')){setNight(true);return}
+  var pl=t.closest('[data-plist]');if(pl){portJump(pl.getAttribute('data-plist'));touch();return}
   var tile=t.closest('.tile[data-mod]');
   if(tile&&interactive){openDetail(tile.getAttribute('data-mod'));touch();return}
   touch(); // primo tocco: ferma la rotazione e mostra la barra
