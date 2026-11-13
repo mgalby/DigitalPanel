@@ -373,7 +373,7 @@ html,body{margin:0}
     </div>
     <div id="grid"></div>
     <div id="prog"></div>
-    
+
     <div id="bar"></div>
 
     <div class="ov" id="detail"><div class="panel"><button class="x" data-close="detail" aria-label="Chiudi">✕</button><h2 id="dTitle"></h2><div class="psub" id="dSub"></div><div class="pbody" id="dBody"></div></div></div>
@@ -388,6 +388,8 @@ html,body{margin:0}
         <button data-tab="sport">Sport<small>squadre, avvisi, frequenze</small></button>
         <button data-tab="intr">Intrattenimento<small>piattaforme, serie, preferiti</small></button>
         <button data-tab="foto">Fotografia<small>portfolio, meteo, novità</small></button>
+        <button data-tab="eventi">Eventi<small>mostre, fiere, concerti</small></button>
+        <button data-tab="corso">Corso<small>calendario OPS! Photo School</small></button>
       </nav>
       <div class="pbody" id="sBody">
 
@@ -525,6 +527,50 @@ html,body{margin:0}
           </div>
           <div class="fixed"><div><span>Meteo fotografico, luce e luna</span><b>ogni 30 minuti</b></div><div><span>Novità foto</span><b>ogni 30 minuti</b></div></div>
         </section>
+
+        <!-- ===== Eventi ===== -->
+        <section class="spane" data-tab="eventi">
+          <div class="sect">Riquadri</div>
+          <div class="pmx" id="sPM_eventi"></div>
+
+          <div class="sect">Mostre · sedi da seguire</div>
+          <div class="set" style="margin-bottom:0">
+            <div class="fld" style="grid-column:1 / -1"><div class="chips" id="sVenues"></div>
+              <div class="add"><input type="text" id="sVenN" placeholder="Nome sede, es. Palazzo Reale" aria-label="Nome sede" maxlength="60" style="width:220px;text-transform:none"><input type="text" id="sVenC" placeholder="Città" aria-label="Città" maxlength="40" style="width:140px;text-transform:none"><button class="btn sm" id="sVenAdd">Aggiungi</button></div>
+              <div class="note" style="margin-top:8px">Nessuna fonte online copre bene le mostre di fotografia e pittura in Italia: qui si tiene un elenco manuale delle sedi che segui. Il riquadro mostra l’elenco come promemoria; aggiorna il campo «nota» con la mostra in corso quando lo sai.</div></div>
+          </div>
+
+          <div class="sect" style="margin-top:20px">Fiere e mercatini ricorrenti</div>
+          <div class="set" style="margin-bottom:0">
+            <div class="fld" style="grid-column:1 / -1"><div id="sFairs"></div>
+              <div class="add"><input type="text" id="sFrN" placeholder="Nome, es. Mercatone dell’Antiquariato" aria-label="Nome fiera" maxlength="60" style="width:260px;text-transform:none"><select id="sFrType"><option value="monthly">Ogni mese, il giorno…</option><option value="weekly">Ogni settimana, di…</option></select><select id="sFrDom"></select><select id="sFrWd"><option value="0">domenica</option><option value="1">lunedì</option><option value="2">martedì</option><option value="3">mercoledì</option><option value="4">giovedì</option><option value="5">venerdì</option><option value="6">sabato</option></select><button class="btn sm" id="sFrAdd">Aggiungi</button></div>
+              <div class="note" style="margin-top:8px">Per fiere con un calendario diverso (es. terza domenica del mese) scegli il giorno più vicino: il conto alla rovescia resta indicativo.</div></div>
+          </div>
+
+          <div class="sect" style="margin-top:20px">Concerti</div>
+          <div class="set" style="margin-bottom:0">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Artisti preferiti</span><div class="chips" id="sArtists"></div><div class="add"><input type="text" id="sArtN" placeholder="Nome artista o gruppo" aria-label="Nome artista" maxlength="60" style="width:260px;text-transform:none"><button class="btn sm" id="sArtAdd">Aggiungi</button></div>
+              <div class="note" style="margin-top:8px">Evidenziati nell’elenco dei concerti entro il raggio scelto. Fonte: Ticketmaster (chiave gratuita salvata nel ponte dati).</div></div>
+          </div>
+
+          <div class="sect" style="margin-top:20px">Località e raggio</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Località</span><div class="chips" id="sEvPl"></div><div class="add"><input type="text" id="sEvPlQ" placeholder="Cerca una località" aria-label="Cerca una località" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sEvPlGo">Cerca</button><span class="mut" id="sEvPlMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sEvPlRes"></div></div>
+            <div class="fld"><label for="sEvRad">Raggio dei concerti</label><div class="rng"><input type="range" id="sEvRad" min="10" max="200" step="10"><output id="oEvRad" class="num"></output></div></div>
+          </div>
+
+          <div class="sect">Aggiornamento</div>
+          <div class="fixed"><div><span>Concerti (Ticketmaster)</span><b>ogni 6 ore</b></div></div>
+        </section>
+
+        <!-- ===== Corso di fotografia (OPS! Orange Photo School) ===== -->
+        <section class="spane" data-tab="corso">
+          <div class="sect">Riquadri</div>
+          <div class="pmx" id="sPM_corso"></div>
+          <div class="note" style="margin:-12px 0 24px">Il calendario del programma annuale è fisso (caricato da Claude a inizio anno scolastico); qui scegli solo quali riquadri mostrare. Nel dettaglio di ogni riquadro puoi segnare ogni appuntamento come Iscritto, Pagato o Abbonato toccandolo.</div>
+          <div class="sect">Aggiornamento</div>
+          <div class="fixed"><div><span>Calendario del corso</span><b>dati fissi, nessun aggiornamento online</b></div></div>
+        </section>
       </div>
       </div>
       <div class="btns"><button class="btn pri" id="sSave">Salva e chiudi</button><button class="btn" id="sReset">Ripristina predefiniti di questa scheda</button><span class="mut" id="sResetMsg" style="font-size:13px;align-self:center"></span></div>
@@ -553,8 +599,7 @@ function spark(arr,w,h,up,fill){
   for(var i=0;i<arr.length;i++){pts.push((i/(arr.length-1)*w).toFixed(1)+','+(h-2-(arr[i]-mn)/r*(h-4)).toFixed(1))}
   var c=up?'var(--up)':'var(--down)',last=pts[pts.length-1].split(',');
   var area=fill?'<polygon points="0,'+h+' '+pts.join(' ')+' '+w+','+h+'" fill="'+c+'" fill-opacity=".10"/>':'';
-  return '<svg class="spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">'+area+'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="1.5" stroke-linejoin="round"/><circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.5" fill="'+c+'"/></svg>';
-}
+  return '<svg class="spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">'+area+'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="1.5" stroke-linejoin="round"/><circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.5" fill="'+c+'"/></svg>'}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
 /* ---------- dati di esempio ---------- */
@@ -956,6 +1001,7 @@ function scheduleQuotes(){clearTimeout(qTimer);var min=anyOpen()?FQB[S.fqB]:+S.f
   if(!min){qTimer=setTimeout(scheduleQuotes,300000);return}
   qTimer=setTimeout(function(){refreshQuotes();scheduleQuotes()},min*60000)}
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&(!QS.at||Date.now()-QS.at.getTime()>60000))refreshQuotes()});
+
 var D={
   results:[
     {h:'Inter',a:'Lazio',sh:2,sa:0},{h:'Napoli',a:'Torino',sh:1,sa:1},{h:'Roma',a:'Milan',sh:0,sa:2},
@@ -985,29 +1031,32 @@ var D={
     {d:'Mar 24',t:'21:00',m:'Napoli – PSG'},
     {d:'Mer 25',t:'18:45',m:'Arsenal – Juventus'},
     {d:'Mer 25',t:'21:00',m:'Atalanta – Real Madrid'}
-  ],
-  shows:[
-    {k:'Fotografia di paesaggio, retrospettiva',d:'Milano, Palazzo Reale',v:'fino 18 gen'},
-    {k:'Reportage anni ’70',d:'Torino, CAMERA',v:'fino 6 dic'},
-    {k:'Ritratti in pellicola',d:'Milano, Fondazione Stelline',v:'fino 31 gen'}
   ]
 };
 
 /* ---------- impostazioni ---------- */
-var DEF={api:'https://pannello-dati.marco-foto.workers.dev',tr:true,order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'follow',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl','italy'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:false,red:false,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
+var DEF={api:'https://pannello-dati.marco-foto.workers.dev',tr:true,order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'follow',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl','italy'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news'],eventi:['mostre','fiere','concerti'],corso:['corsoProssimi','corsoMese']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:false,red:false,end:true},pages:{borsa:true,sport:true,intr:true,foto:true,eventi:true,corso:true},liveN:0,
   lists:[{id:'l1',name:'Lista 1',tickers:[]}],
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
   foto:{user:'',tag:'digitalportfolio',ph:15,places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
-  sport:{fav:{k:'inter',n:'Inter'},follow:null}};
+  sport:{fav:{k:'inter',n:'Inter'},follow:null},
+  eventi:{venues:[],fairs:[],artists:[],places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
+  corso:{status:{}}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
 function load(){try{var j=JSON.parse(localStorage.getItem('dp.cfg.v1')||'null');if(j){var first=!j.sport,o=Object.assign(clone(DEF),j);migrate(o);if(first)sportFirst(o);return o}}catch(e){}return clone(DEF)}
 /* prima apertura con la pagina Sport reale: avvisi scelti da Marco (gol, inizio e fine) e riquadro Nazionale */
 function sportFirst(o){o.alerts=Object.assign({},o.alerts,{pen:false,red:false});var P=o.pageMods&&o.pageMods.sport;if(P&&P.join()==='live,table,next,ucl')P.push('italy');save.call(null,o)}
 /* impostazioni salvate con versioni precedenti */
-function migrate(o){var I=o.pageMods&&o.pageMods.intr;if(I){var k=I.indexOf('shows');if(k>=0){if(I.indexOf('favs')<0)I[k]='favs';else I.splice(k,1)}} /* le mostre passano alla pagina Fotografia */
+function migrate(o){var I=o.pageMods&&o.pageMods.intr;if(I){var k=I.indexOf('shows');if(k>=0){if(I.indexOf('favs')<0)I[k]='favs';else I.splice(k,1)}} /* le mostre passano alla pagina Eventi */
   o.ent=Object.assign(clone(DEF.ent),o.ent||{});o.foto=Object.assign(clone(DEF.foto),o.foto||{});
   o.sport=Object.assign(clone(DEF.sport),o.sport||{});if(o.fqCscope==='it')o.fqCscope='follow';
+  o.eventi=Object.assign(clone(DEF.eventi),o.eventi||{});
+  o.corso=Object.assign(clone(DEF.corso),o.corso||{});if(!o.corso.status)o.corso.status={};
+  if(!o.pageMods.eventi)o.pageMods.eventi=clone(DEF.pageMods.eventi);
+  if(!o.pageMods.corso)o.pageMods.corso=clone(DEF.pageMods.corso);
+  if(o.pages&&o.pages.eventi===undefined)o.pages.eventi=true;
+  if(o.pages&&o.pages.corso===undefined)o.pages.corso=true;
   var F=o.pageMods&&o.pageMods.foto;if(F){var j=F.indexOf('shows');if(j>=0)F.splice(j,1);if(F.join()==='photowx,portfolioPh,morning')o.pageMods.foto=['photowx','portfolioPh','morning','moon','news']}}
 function save(x){try{localStorage.setItem('dp.cfg.v1',JSON.stringify(x||S))}catch(e){}}
 
@@ -1061,12 +1110,188 @@ var M={
       return '<div class="rows">'+FXL.map(function(f){var q=Q[f.y],ok=okq(q);return '<div class="r"><span class="k">'+f.k+'</span><span class="v num" style="font-size:26px">'+(ok?fmt(q.price,f.dg):'—')+'<small>'+(ok?pct(q.changePct):'&nbsp;')+'</small></span></div>'}).join('')+'</div>'},
     d:function(){return '<table class="dtbl"><tr><th>Cambio</th><th class="n">Valore</th><th class="n">Var. %</th><th class="n">Ultimo</th></tr>'+
       FXL.map(function(f){var q=Q[f.y]||{};return '<tr><td><b>'+f.k+'</b></td><td class="n num">'+fmt(q.price,f.dg)+'</td><td class="n num">'+pct(q.changePct)+'</td><td class="n num mut">'+whenStr(q.marketTime)+'</td></tr>'}).join('')+'</table>'},
-    sub:'Cambi dell’euro intraday da Yahoo Finance'},
-  shows:{l:'Mostre fotografiche',s:'',n:one,c:function(){
-      return '<div class="rows">'+D.shows.map(function(s){return '<div class="r"><span class="k" style="font-size:17px">'+esc(s.k)+'<small>'+esc(s.d)+'</small></span><span class="v mut" style="font-size:15px">'+s.v+'</span></div>'}).join('')+'</div>'},
-    d:function(){return M.shows.c(0)}, sub:'Lista manuale · titoli di esempio'},
-
+    sub:'Cambi dell’euro intraday da Yahoo Finance'}
 };
+
+/* ---------- Eventi: mostre (elenco manuale), fiere ricorrenti, concerti (Ticketmaster) ---------- */
+function eventiCfg(){return S.eventi||DEF.eventi}
+function evPlaces(){var c=eventiCfg();return (c.places&&c.places.length)?c.places:DEF.eventi.places}
+function curEvPlace(){var P=evPlaces(),i=eventiCfg().place||0;return P[Math.min(i,P.length-1)]}
+function evPlaceChips(){var P=evPlaces(),cur=eventiCfg().place||0;return '<div class="pchips">'+P.map(function(p,i){return '<button data-evplc="'+i+'" class="'+(i===cur?'on':'')+'">'+esc(p.n)+'</button>'}).join('')+'</div>'}
+var FRGG=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+/* prossima data di una fiera ricorrente: mensile (giorno del mese) o settimanale (giorno della settimana) */
+function fairNext(f){var now=new Date();now.setHours(0,0,0,0);
+  if(f.type==='weekly'){var wd=+f.wd,d=new Date(now);var diff=(wd-d.getDay()+7)%7;d.setDate(d.getDate()+diff);return d}
+  var dom=Math.max(1,Math.min(31,+f.dom||1)),d2=new Date(now.getFullYear(),now.getMonth(),dom);
+  if(d2<now)d2=new Date(now.getFullYear(),now.getMonth()+1,dom);return d2}
+function fairList(){return (eventiCfg().fairs||[]).map(function(f){return {f:f,d:fairNext(f)}}).sort(function(a,b){return a.d-b.d})}
+M.mostre={l:'Mostre',s:'sedi da seguire',n:function(){return Math.max(1,chunk(eventiCfg().venues||[],5).length)},c:function(i){
+    var V=eventiCfg().venues||[];if(!V.length)return '<div class="nolive"><span>Nessuna sede in elenco</span><span style="font-size:13px">Aggiungile da Impostazioni › Eventi</span></div>';
+    var g=chunk(V,5);return '<div class="rows">'+g[i%g.length].map(function(v){return '<div class="r"><span class="k" style="font-size:17px">'+esc(v.n)+(v.c?'<small>'+esc(v.c)+'</small>':'')+'</span></div>'}).join('')+'</div>'},
+  d:function(){var V=eventiCfg().venues||[];if(!V.length)return '<div class="mut">Nessuna sede in elenco. Aggiungile da Impostazioni › Eventi.</div>';
+    return '<div class="rows">'+V.map(function(v){return '<div class="r"><span class="k" style="font-size:17px">'+esc(v.n)+(v.c?'<small>'+esc(v.c)+'</small>':'')+'</span></div>'}).join('')+'</div>'+
+      '<div class="note">Elenco manuale: nessuna fonte online copre bene le mostre di fotografia e pittura in Italia. Aggiorna qui le sedi che segui, da Impostazioni › Eventi.</div>'},
+  sub:'Sedi di mostre da tenere d’occhio · elenco manuale'};
+M.fiere={l:'Fiere e mercatini',s:'ricorrenti',n:function(){return Math.max(1,chunk(fairList(),4).length)},c:function(i){
+    var L=fairList();if(!L.length)return '<div class="nolive"><span>Nessuna fiera in elenco</span><span style="font-size:13px">Aggiungile da Impostazioni › Eventi</span></div>';
+    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){var g2=dayDiff(x.d.toISOString());return '<div class="cd"><div class="g">'+gBox(g2)+'</div><div class="i"><b>'+esc(x.f.n)+'</b><div>'+(x.f.type==='weekly'?'Ogni '+FRGG[+x.f.wd]:'Il '+x.f.dom+' di ogni mese')+'</div><div>'+esc(dLabel(x.d.toISOString()))+'</div></div></div>'}).join('')+'</div>'},
+  d:function(){var L=fairList();if(!L.length)return '<div class="mut">Nessuna fiera in elenco. Aggiungile da Impostazioni › Eventi.</div>';
+    return '<table class="dtbl"><tr><th>Fiera</th><th>Ricorrenza</th><th class="n">Prossima data</th></tr>'+L.map(function(x){return '<tr><td><b>'+esc(x.f.n)+'</b></td><td class="mut">'+(x.f.type==='weekly'?'Ogni '+FRGG[+x.f.wd]:'Il '+x.f.dom+' di ogni mese')+'</td><td class="n num">'+esc(dLabel(x.d.toISOString()))+'</td></tr>'}).join('')+'</table>'+
+      '<div class="note">Per fiere con un calendario diverso (es. terza domenica del mese) scegli il giorno più vicino: il conto alla rovescia resta indicativo.</div>'},
+  sub:'Mercatini dell’antiquariato, fiere del fumetto e della fotografia · conto alla rovescia'};
+var CN={items:null,err:null,at:null,loading:false};
+function refreshConcerts(){var p=curEvPlace();if(!p||CN.loading)return;CN.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
+  getJSON(apiBase()+'/events/concerts?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&days=90').then(function(d){CN.items=d.events||[];CN.err=null;CN.at=new Date()},function(e){CN.err=String((e&&e.message)||e)}).then(function(){CN.loading=false;refreshTiles()})}
+setTimeout(function(){refreshConcerts();setInterval(refreshConcerts,6*3600000)},5000);
+function concertFav(c){var A=eventiCfg().artists||[];if(!A.length)return false;var n=(c.artist||c.title||'').toLowerCase();return A.some(function(a){return n.indexOf(String(a).toLowerCase())>=0})}
+function concertWait(){return '<div class="nolive"><span>'+(CN.err?(/chiave/.test(CN.err)?'Manca la chiave Ticketmaster nel ponte dati':'Dati non disponibili'):'In attesa dei dati…')+'</span></div>'}
+M.concerti={l:'Concerti',s:function(){return eventiCfg().radius+' km'},live:true,n:function(){return Math.max(1,chunk(CN.items||[],4).length)},c:function(i){
+    var L=CN.items;if(L==null)return concertWait();if(!L.length)return '<div class="nolive"><span>Nessun concerto nel raggio scelto</span></div>';
+    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(c){var fv=concertFav(c);return '<div class="r"><span class="k" style="font-size:17px">'+(fv?'<span class="fstar">★</span> ':'')+esc(c.title||c.artist)+'<small>'+esc(c.venue||'')+'</small></span><span class="v mut" style="font-size:15px">'+esc(dShort((c.date||'').slice(0,10)))+'</span></div>'}).join('')+'</div>'},
+  d:function(){var L=CN.items;if(L==null)return concertWait();if(!L.length)return '<div class="mut">Nessun concerto nel raggio scelto nei prossimi mesi.</div>';
+    return L.map(function(c){var fv=concertFav(c);return '<div class="er">'+(c.image?'<img class="thb" src="'+esc(c.image)+'" alt="" loading="lazy">':'<span class="thb"></span>')+'<div class="ei"><b>'+(fv?'<span class="fstar">★</span> ':'')+esc(c.title||c.artist)+'</b><div class="em">'+esc(c.venue||'')+' · '+esc(dLabel((c.date||'').slice(0,10)+'T12:00:00'))+(c.time?' · '+esc(c.time):'')+'</div></div></div>'}).join('')+
+      '<div class="note">Dati Ticketmaster entro il raggio scelto dalla località attiva. Gli artisti preferiti sono evidenziati con ★.</div>'},
+  sub:'Concerti entro il raggio scelto · Ticketmaster'};
+
+/* ---------- Corso di fotografia: calendario annuale OPS! Orange Photo School (dati fissi) ---------- */
+var CORSO_CAT={
+  usc:{l:'Uscita',c:'#2BA7A0'},
+  ape:{l:'Aperitivo',c:'#F2994A'},
+  mas:{l:'Masterclass',c:'#3C6E9F'},
+  rit:{l:'Ritratto',c:'#C9638A'},
+  col:{l:'Camera oscura',c:'#B08968'},
+  sto:{l:'Storyclass',c:'#8E6FB0'},
+  for:{l:'Photo Forum',c:'#4CAF7D'},
+  mar:{l:'Maratona',c:'#E0584F'},
+  ops:{l:'OPS! Days',c:'#D9A32B'},
+  exh:{l:'Exhibition',c:'var(--accent)'},
+  fot:{l:'Fotoritocco',c:'#6E7A8A'}
+};
+/* programma 2026/2027 (settembre–luglio), trascritto dal volantino OPS!; s/e = data inizio/fine (ISO) */
+var CORSO_EVENTS=[
+  {s:'2026-09-01',e:'2026-09-01',c:'mas',t:"Elementi di direzione della fotografia nel cinema e nella televisione"},
+  {s:'2026-09-07',e:'2026-09-08',c:'ape',t:"Tecnica e composizione fotografica vs ricerca del soggetto perfetto"},
+  {s:'2026-09-10',e:'2026-09-12',c:'usc',t:"Il parco dell'Idroscalo: fotografare il mare di Milano"},
+  {s:'2026-09-15',e:'2026-09-16',c:'rit',t:"La luce Rembrandt e il lato caravaggesco del ritratto fotografico"},
+  {s:'2026-09-20',e:'2026-09-20',c:'usc',t:"Storytelling tra auto d'epoca e atmosfere vintage"},
+  {s:'2026-09-21',e:'2026-09-22',c:'ape',t:"Leggere le fotografie (per essere fotografi più consapevoli)"},
+  {s:'2026-09-24',e:'2026-09-26',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2026-09-29',e:'2026-09-29',c:'mas',t:"Il flash: tecniche e metodologie di scatto"},
+  {s:'2026-10-05',e:'2026-10-06',c:'ape',t:"Fotografia analogica vs fotografia digitale"},
+  {s:'2026-10-09',e:'2026-10-10',c:'rit',t:"Tecniche di ritratto in esterni con luce flash"},
+  {s:'2026-10-13',e:'2026-10-14',c:'usc',t:"Intentional Camera Movement: panning, zooming e scie luminose"},
+  {s:'2026-10-17',e:'2026-10-17',c:'col',t:"Laboratorio pratico di fotografia analogica e camera oscura"},
+  {s:'2026-10-19',e:'2026-10-20',c:'ape',t:"Tutto quello che hai sempre voluto sapere sulle ottiche fotografiche"},
+  {s:'2026-10-22',e:'2026-10-22',c:'fot',t:"Esercitati sui tuoi scatti sotto la guida di un docente esperto"},
+  {s:'2026-10-23',e:'2026-10-24',c:'usc',t:"4 fotografie X 4 stagioni (autunno)"},
+  {s:'2026-10-27',e:'2026-10-27',c:'sto',t:"Falsi fotografici e falsi miti nella storia della fotografia"},
+  {s:'2026-10-29',e:'2026-10-31',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2026-11-02',e:'2026-11-03',c:'ape',t:"La ricerca dello stile fotografico"},
+  {s:'2026-11-06',e:'2026-11-07',c:'usc',t:"Fotografare l'arte al Cimitero Monumentale di Milano"},
+  {s:'2026-11-10',e:'2026-11-11',c:'rit',t:"Laboratorio pratico di nudo maschile in studio"},
+  {s:'2026-11-13',e:'2026-11-14',c:'usc',t:"Spazi e architetture allo stadio Giuseppe Meazza (San Siro)"},
+  {s:'2026-11-16',e:'2026-11-17',c:'ape',t:"La fotografia sportiva dietro e davanti all'obiettivo"},
+  {s:'2026-11-19',e:'2026-11-19',c:'fot',t:"Esercitati sui tuoi scatti sotto la guida di un docente esperto"},
+  {s:'2026-11-21',e:'2026-11-21',c:'col',t:"Laboratorio pratico di fotografia analogica e camera oscura"},
+  {s:'2026-11-24',e:'2026-11-24',c:'mas',t:"Dalla fotocamera alla stampa: calibrazione dello schermo e profili colore"},
+  {s:'2026-11-26',e:'2026-11-29',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2026-11-30',e:'2026-12-01',c:'ape',t:"Progettare una fotografia"},
+  {s:'2026-12-09',e:'2026-12-10',c:'rit',t:"Mosso creativo e gestione del tempo di scatto nel ritratto"},
+  {s:'2026-12-14',e:'2026-12-15',c:'ape',t:"Pensare, scattare e gestire il bianco e nero in analogico e digitale"},
+  {s:'2026-12-17',e:'2026-12-17',c:'for',t:"Edizione speciale: OPS! Christmas Party"},
+  {s:'2026-12-18',e:'2026-12-19',c:'usc',t:"Street Photography nel quadrilatero della moda"},
+  {s:'2027-01-07',e:'2027-01-07',c:'mas',t:"Composizione fotografica ed elementi di linguaggio visivo"},
+  {s:'2027-01-08',e:'2027-01-09',c:'usc',t:"Fotografare spazi e riflessi alla Fondazione Prada"},
+  {s:'2027-01-10',e:'2027-01-10',c:'usc',t:"4 fotografie X 4 stagioni (inverno)"},
+  {s:'2027-01-11',e:'2027-01-12',c:'ape',t:"L'errore fotografico"},
+  {s:'2027-01-16',e:'2027-01-16',c:'usc',t:"Il falò di Sant'Antonio"},
+  {s:'2027-01-19',e:'2027-01-20',c:'rit',t:"Laboratorio di ritratto fotografico… senza volto!"},
+  {s:'2027-01-22',e:'2027-01-24',c:'ops',t:"Tre giorni di Photo Experience inedite per festeggiare 12 anni di OPS!"},
+  {s:'2027-01-25',e:'2027-01-26',c:'ape',t:"I grandi ritrattisti della storia della fotografia"},
+  {s:'2027-01-28',e:'2027-01-30',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2027-02-02',e:'2027-02-02',c:'sto',t:"Le origini della fotografia dalla camera obscura al negativo"},
+  {s:'2027-02-06',e:'2027-02-07',c:'usc',t:"Fotografiamo l'alba sul Mar Adriatico"},
+  {s:'2027-02-09',e:'2027-02-10',c:'rit',t:"La gestione della luce continua in studio"},
+  {s:'2027-02-13',e:'2027-02-13',c:'col',t:"Laboratorio pratico di fotografia analogica e camera oscura"},
+  {s:'2027-02-15',e:'2027-02-16',c:'ape',t:"L'uso del colore in fotografia"},
+  {s:'2027-02-18',e:'2027-02-18',c:'fot',t:"Esercitati sui tuoi scatti sotto la guida di un docente esperto"},
+  {s:'2027-02-19',e:'2027-02-20',c:'usc',t:"Fotografiamo al Pirelli Hangar Bicocca"},
+  {s:'2027-02-22',e:'2027-02-23',c:'ape',t:"I grandi maestri dello Still Life"},
+  {s:'2027-02-25',e:'2027-02-27',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2027-03-02',e:'2027-03-02',c:'mas',t:"Trucchi, metodi e vantaggi del ragionare in stop"},
+  {s:'2027-03-05',e:'2027-03-06',c:'usc',t:"La Rotonda della Besana"},
+  {s:'2027-03-09',e:'2027-03-10',c:'ape',t:"Fotografia e Arte (Fotografia è Arte)"},
+  {s:'2027-03-13',e:'2027-03-13',c:'col',t:"Laboratorio pratico di fotografia analogica e camera oscura"},
+  {s:'2027-03-16',e:'2027-03-17',c:'rit',t:"Laboratorio pratico di nudo femminile in studio"},
+  {s:'2027-03-19',e:'2027-03-20',c:'usc',t:"La fotografia d'architettura: impariamo a usare gli obiettivi tilt-shift"},
+  {s:'2027-03-23',e:'2027-03-24',c:'ape',t:"Fotografia e autori fotografici dell'Africa"},
+  {s:'2027-03-25',e:'2027-03-27',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2027-03-30',e:'2027-03-30',c:'sto',t:"Fotografia, potere e propaganda politica"},
+  {s:'2027-04-03',e:'2027-04-03',c:'mar',t:"Fotografa, impara e vinci"},
+  {s:'2027-04-05',e:'2027-04-06',c:'ape',t:"Leggi e fotografia: dallo scatto alla pubblicazione sui social"},
+  {s:'2027-04-10',e:'2027-04-10',c:'col',t:"Laboratorio pratico di fotografia analogica e camera oscura"},
+  {s:'2027-04-11',e:'2027-04-11',c:'usc',t:"4 fotografie X 4 stagioni (primavera)"},
+  {s:'2027-04-13',e:'2027-04-14',c:'rit',t:"Laboratorio pratico di ritratto emozionale e fotografia emotiva"},
+  {s:'2027-04-17',e:'2027-04-17',c:'usc',t:"Come si fotografa (bene) il Fuorisalone?"},
+  {s:'2027-04-19',e:'2027-04-20',c:'ape',t:"Dal singolo scatto alla costruzione di un progetto fotografico"},
+  {s:'2027-04-22',e:'2027-04-22',c:'fot',t:"Esercitati sui tuoi scatti sotto la guida di un docente esperto"},
+  {s:'2027-04-24',e:'2027-04-29',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2027-04-26',e:'2027-04-27',c:'usc',t:"Tecniche, trucchi e segreti del flash"},
+  {s:'2027-05-03',e:'2027-05-04',c:'ape',t:"Tavola rotonda sul fotoritocco"},
+  {s:'2027-05-07',e:'2027-05-08',c:'rit',t:"Tecniche di ritratto ambientato con luce naturale"},
+  {s:'2027-05-11',e:'2027-05-11',c:'mas',t:"Gestione dell'archivio fotografico e strumenti di selezione degli scatti"},
+  {s:'2027-05-14',e:'2027-05-15',c:'usc',t:"Regole e tecniche per la fotografia macro tra le fioriture urbane"},
+  {s:'2027-05-17',e:'2027-05-18',c:'ape',t:"Il portfolio fotografico: dalla selezione degli scatti alla presentazione"},
+  {s:'2027-05-20',e:'2027-05-20',c:'fot',t:"Esercitati sui tuoi scatti sotto la guida di un docente esperto"},
+  {s:'2027-05-22',e:'2027-05-22',c:'col',t:"Laboratorio pratico di fotografia analogica e camera oscura"},
+  {s:'2027-05-24',e:'2027-05-25',c:'usc',t:"Tramonto e controluce in piazza Gae Aulenti"},
+  {s:'2027-05-27',e:'2027-05-29',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2027-06-03',e:'2027-06-03',c:'sto',t:"200 anni di reportage fotografico: da Roger Fenton a Getty Images"},
+  {s:'2027-06-04',e:'2027-06-05',c:'usc',t:"Comunicare con il colore tra il Mudec e via Tortona"},
+  {s:'2027-06-07',e:'2027-06-08',c:'ape',t:"Il mosso in fotografia: tecniche, errori e scelte stilistiche"},
+  {s:'2027-06-10',e:'2027-06-10',c:'exh',t:"OPS! Photo Exhibition 2027: mostra finale degli studenti + Open Day"},
+  {s:'2027-06-12',e:'2027-06-12',c:'col',t:"Laboratorio pratico di fotografia analogica e camera oscura"},
+  {s:'2027-06-15',e:'2027-06-16',c:'rit',t:"Tecniche di ritratto beauty"},
+  {s:'2027-06-19',e:'2027-06-19',c:'usc',t:"Dal Tramonto all'Alba"},
+  {s:'2027-06-21',e:'2027-06-22',c:'ape',t:"Questa foto la potevo fare anch'io: storie di fotografie da milioni di dollari"},
+  {s:'2027-06-24',e:'2027-06-26',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"},
+  {s:'2027-06-29',e:'2027-06-29',c:'fot',t:"Esercitati sui tuoi scatti sotto la guida di un docente esperto"},
+  {s:'2027-07-01',e:'2027-07-01',c:'mas',t:"Progettare, creare e pubblicare una fanzine fotografica"},
+  {s:'2027-07-04',e:'2027-07-04',c:'usc',t:"4 fotografie X 4 stagioni (estate)"},
+  {s:'2027-07-05',e:'2027-07-06',c:'ape',t:"Linguaggi tecnici e compositivi per la Street Photography"},
+  {s:'2027-07-09',e:'2027-07-10',c:'usc',t:"Il parco delle Cave"},
+  {s:'2027-07-13',e:'2027-07-14',c:'rit',t:"Tecniche di ritratto fotografico con luci hi-key e low-key"},
+  {s:'2027-07-19',e:'2027-07-20',c:'ape',t:"Trucchi, attrezzatura e consigli per la fotografia di viaggio"},
+  {s:'2027-07-23',e:'2027-07-24',c:'usc',t:"Raccontare la vita quotidiana: Street Photography nel quartiere Ortica"},
+  {s:'2027-07-27',e:'2027-07-27',c:'fot',t:"Esercitati sui tuoi scatti sotto la guida di un docente esperto"},
+  {s:'2027-07-29',e:'2027-07-31',c:'for',t:"Partecipazione gratuita riservata agli studenti di Orange Photo School"}
+];
+function corsoCfg(){return S.corso||DEF.corso}
+var CORSO_ST=['','iscritto','pagato','abbonato'];
+var CORSO_ST_LAB={'':'Non iscritto',iscritto:'Iscritto',pagato:'Pagato',abbonato:'Abbonato'};
+function corsoId(ev){return ev.s+'|'+ev.t.slice(0,24)}
+function corsoStatus(id){return (corsoCfg().status||{})[id]||''}
+function corsoCycle(id){var cur=corsoStatus(id),i=CORSO_ST.indexOf(cur),nx=CORSO_ST[(i+1)%CORSO_ST.length];S.corso.status=S.corso.status||{};if(nx)S.corso.status[id]=nx;else delete S.corso.status[id];save()}
+function corsoAll(){return CORSO_EVENTS.map(function(ev){var id=corsoId(ev);return {ev:ev,id:id,st:corsoStatus(id)}})}
+function corsoUpcoming(n){var today=new Date().toISOString().slice(0,10);return corsoAll().filter(function(x){return x.ev.e>=today}).slice(0,n||1000)}
+function pad2(n){return n<10?'0'+n:''+n}
+function corsoMonthRange(){var d=new Date(),y=d.getFullYear(),m=d.getMonth();return {s:y+'-'+pad2(m+1)+'-01',e:new Date(y,m+1,0).toISOString().slice(0,10)}}
+function corsoThisMonth(){var r=corsoMonthRange();return corsoAll().filter(function(x){return x.ev.s<=r.e&&x.ev.e>=r.s})}
+function corsoDateLabel(ev){var s=dShort(ev.s),e=ev.e!==ev.s?' – '+dShort(ev.e):'';return s+e}
+function corsoRow(x,full){var cat=CORSO_CAT[x.ev.c]||{l:'',c:'var(--line)'},st=x.st;
+  return '<div class="nw br'+(full?' full':'')+'" data-corso="'+esc(x.id)+'" style="--br:'+cat.c+';cursor:pointer"><div class="nt">'+esc(x.ev.t)+(st?' <span class="ebadge" style="border-color:'+cat.c+';color:'+cat.c+'">'+esc(CORSO_ST_LAB[st].toUpperCase())+'</span>':'')+'</div><div class="nm"><b style="color:'+cat.c+'">'+esc(cat.l)+'</b> · '+esc(corsoDateLabel(x.ev))+'</div></div>'}
+M.corsoProssimi={l:'Prossimi impegni',s:'',n:function(){return Math.max(1,chunk(corsoUpcoming(12),3).length)},c:function(i){
+    var L=corsoUpcoming(12);if(!L.length)return '<div class="nolive"><span>Nessun impegno in programma</span></div>';
+    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(x){return corsoRow(x,false)}).join('')+'</div>'},
+  d:function(){var L=corsoUpcoming(40);if(!L.length)return '<div class="mut">Nessun impegno in programma.</div>';
+    return L.map(function(x){return corsoRow(x,true)}).join('')+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato. Calendario del programma OPS! Orange Photo School 2026/2027.</div>'},
+  sub:'Prossimi appuntamenti del corso · tocca per Iscritto/Pagato/Abbonato'};
+M.corsoMese={l:'Agenda del mese',s:function(){return MESI[new Date().getMonth()]},n:function(){return Math.max(1,chunk(corsoThisMonth(),4).length)},c:function(i){
+    var L=corsoThisMonth();if(!L.length)return '<div class="nolive"><span>Nessun impegno questo mese</span></div>';
+    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){return corsoRow(x,false)}).join('')+'</div>'},
+  d:function(){var L=corsoThisMonth();if(!L.length)return '<div class="mut">Nessun impegno questo mese.</div>';
+    return L.map(function(x){return corsoRow(x,true)}).join('')+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato.</div>'},
+  sub:'Impegni del mese in corso'};
 
 M.cinema={l:'In sala',s:'Italia',live:true,n:function(){return chunk(cinemaAll(),3).length},c:function(i){var L=cinemaAll();if(!L.length)return entWait();
     var g=chunk(L,3);return '<div class="posters">'+g[i%g.length].map(function(x){var m=x.m;
@@ -1416,13 +1641,17 @@ var THEME={
   borsa:['indices','portfolio','fx','earnings','movers','mktnews','commod'],
   sport:['live','table','next','ucl','results','ucltable','italy'],
   intr:['cinema','stream','episodes','favs'],
-  foto:['photowx','portfolioPh','morning','moon','news','sunweek']
+  foto:['photowx','portfolioPh','morning','moon','news','sunweek'],
+  eventi:['mostre','fiere','concerti'],
+  corso:['corsoProssimi','corsoMese']
 };
 var PAGES=[
   {id:'borsa',t:'Borsa'},
   {id:'sport',t:'Sport'},
   {id:'intr',t:'Intrattenimento'},
-  {id:'foto',t:'Fotografia'}
+  {id:'foto',t:'Fotografia'},
+  {id:'eventi',t:'Eventi'},
+  {id:'corso',t:'Corso'}
 ];
 
 /* ---------- stato ---------- */
@@ -1433,7 +1662,7 @@ var grid=$('grid'),bar=$('bar'),prog=$('prog');
 var LAYOUT={1:[1,1,0],2:[2,1,0],3:[2,2,1],4:[2,2,0],5:[3,2,1],6:[3,2,0]};
 function visibleMods(){return (S.pageMods[PAGES[cur].id]||[]).filter(function(id){return M[id]}).slice(0,6)}
 function dotsHtml(n,i){if(n<2)return '';var h='<span class="sub">';for(var k=0;k<n;k++)h+='<i class="'+(k===i%n?'on':'')+'"></i>';return h+'</span>'}
-var DEMO={shows:1};
+var DEMO={};
 function tileHead(m,id){var sx=(id==='photowx'||id==='morning'||id==='sunweek'||id==='moon')?esc(shortPlace(curPlace().n))+(id==='morning'?' · alba':id==='sunweek'?' · tramonti':''):esc(typeof m.s==='function'?m.s():(m.s||''));return m.raw?'':'<div class="th"><span class="l">'+m.l+'</span><span class="rt"><span class="s">'+sx+(DEMO[id]?'<span class="demo-tag">esempio</span>':'')+'</span><span class="sd" data-sd="'+id+'">'+dotsHtml(m.n(),m.si?m.si(subIdx):subIdx)+'</span></span></div>'}
 function renderPage(){
   var P=PAGES[cur],mods=visibleMods(),L=LAYOUT[mods.length]||LAYOUT[4];
@@ -1530,7 +1759,9 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sTr').checked=W.tr!==false;$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
-  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
+  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));
+  renderVenues();renderFairs();renderArtists();renderEvPl();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
+  renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
 var FQB=[1,2,5,10,15,30],FQC=[0.5,1,2,3,5];
@@ -1585,6 +1816,28 @@ $('sTvQ').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDe
 $('sTvRes').addEventListener('click',function(e){var b=e.target.closest('[data-atv]');if(!b||b.disabled)return;W.ent.tv.push({id:+b.getAttribute('data-atv'),name:b.getAttribute('data-atn')});b.disabled=true;renderEnt()});
 $('sTv').addEventListener('click',function(e){var a=e.target.getAttribute('data-dtv');if(a!==null){W.ent.tv.splice(+a,1);renderEnt()}});
 function modName(id){return M[id].l||'Portfolio foto'}
+/* ---------- Eventi: impostazioni (sedi, fiere, artisti, località e raggio) ---------- */
+function renderVenues(){var V=W.eventi.venues;$('sVenues').innerHTML=V.length?V.map(function(v,i){return '<span class="chip">'+esc(v.n)+(v.c?' <span class="mut" style="font-weight:400;font-size:12px">'+esc(v.c)+'</span>':'')+'<button data-dven="'+i+'" aria-label="Rimuovi '+esc(v.n)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna sede</span>'}
+$('sVenAdd').addEventListener('click',function(){var n=($('sVenN').value||'').trim();if(!n)return;W.eventi.venues.push({n:n,c:($('sVenC').value||'').trim()});$('sVenN').value='';$('sVenC').value='';renderVenues()});
+$('sVenues').addEventListener('click',function(e){var a=e.target.getAttribute('data-dven');if(a!==null){W.eventi.venues.splice(+a,1);renderVenues()}});
+function renderFairs(){var F=W.eventi.fairs;$('sFairs').innerHTML=F.length?F.map(function(f,i){return '<div class="r"><span class="k" style="font-size:15px">'+esc(f.n)+'<small>'+(f.type==='weekly'?'Ogni '+FRGG[+f.wd]:'Il '+f.dom+' di ogni mese')+'</small></span><button class="btn sm del" data-dfr="'+i+'">Rimuovi</button></div>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna fiera</span>'}
+$('sFrType').addEventListener('change',function(){var m=this.value==='weekly';$('sFrDom').style.display=m?'none':'';$('sFrWd').style.display=m?'':'none'});
+$('sFrAdd').addEventListener('click',function(){var n=($('sFrN').value||'').trim();if(!n)return;var type=$('sFrType').value;W.eventi.fairs.push(type==='weekly'?{n:n,type:'weekly',wd:$('sFrWd').value}:{n:n,type:'monthly',dom:$('sFrDom').value});$('sFrN').value='';renderFairs()});
+$('sFairs').addEventListener('click',function(e){var a=e.target.getAttribute('data-dfr');if(a!==null){W.eventi.fairs.splice(+a,1);renderFairs()}});
+function renderArtists(){var A=W.eventi.artists;$('sArtists').innerHTML=A.length?A.map(function(a,i){return '<span class="chip">'+esc(a)+'<button data-dart="'+i+'" aria-label="Rimuovi '+esc(a)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessun artista</span>'}
+$('sArtAdd').addEventListener('click',function(){var n=($('sArtN').value||'').trim();if(!n)return;W.eventi.artists.push(n);$('sArtN').value='';renderArtists()});
+$('sArtists').addEventListener('click',function(e){var a=e.target.getAttribute('data-dart');if(a!==null){W.eventi.artists.splice(+a,1);renderArtists()}});
+function renderEvPl(){var P=W.eventi.places;$('sEvPl').innerHTML=P.map(function(p,i){return '<span class="chip">'+(i===W.eventi.place?'● ':'')+esc(p.n)+(P.length>1?'<button data-devpl="'+i+'" aria-label="Rimuovi '+esc(p.n)+'">✕</button>':'')+'</span>'}).join('')}
+function searchEvPl(){var q=($('sEvPlQ').value||'').trim();if(!q)return;$('sEvPlMsg').textContent='Ricerca…';$('sEvPlRes').innerHTML='';
+  getJSON('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=8&language=it&format=json').then(function(d){var R=d.results||[];$('sEvPlMsg').textContent=R.length?'Tocca per aggiungere':'Nessun risultato';
+    $('sEvPlRes').innerHTML=R.map(function(r){var sub=[r.admin2||r.admin1,r.country_code&&r.country_code!=='IT'?r.country:''].filter(Boolean).join(', ');var had=W.eventi.places.some(function(p){return Math.abs(p.lat-r.latitude)<0.02&&Math.abs(p.lon-r.longitude)<0.02});return '<button data-aevpl="'+r.latitude+','+r.longitude+'" data-aevpln="'+esc(r.name)+'"'+(had?' disabled':'')+'>+ '+esc(r.name)+(sub?' <span style="color:var(--text-3)">'+esc(sub)+'</span>':'')+'</button>'}).join('')},
+    function(){$('sEvPlMsg').textContent='Ricerca non riuscita'})}
+$('sEvPlGo').addEventListener('click',searchEvPl);
+$('sEvPlQ').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();searchEvPl()}});
+$('sEvPlRes').addEventListener('click',function(e){var b=e.target.closest('[data-aevpl]');if(!b||b.disabled)return;var c=b.getAttribute('data-aevpl').split(',');W.eventi.places.push({n:b.getAttribute('data-aevpln'),lat:+c[0],lon:+c[1]});b.disabled=true;renderEvPl()});
+$('sEvPl').addEventListener('click',function(e){var a=e.target.getAttribute('data-devpl');if(a!==null){W.eventi.places.splice(+a,1);if(W.eventi.place>=W.eventi.places.length)W.eventi.place=0;else if(+a<W.eventi.place)W.eventi.place--;renderEvPl()}});
+$('sEvRad').addEventListener('input',function(){$('oEvRad').textContent=this.value+' km'});
+
 /* squadre: preferita (tra quelle di Serie A) e seguite (tra Serie A e Champions) */
 function spTeams(){var o={},A=[];spTb('sa').concat(spTb('cl')).forEach(function(r){if(!o[r.k]){o[r.k]=1;A.push({k:r.k,n:r.n})}});return A.sort(function(a,b){return a.n.localeCompare(b.n,'it')})}
 function renderSp(){var sa=spTb('sa').map(function(r){return {k:r.k,n:r.n}});if(!sa.length)sa=SPKNOWN.map(function(n){return {k:spKey(n),n:n}});
@@ -1649,22 +1902,25 @@ function collect(){
   W.ent.ex=GEN.map(function(g){return g[0]}).filter(function(k){var c=$('gn_'+k);return c&&c.checked});
   W.foto.user=($('sFkUser').value||'').trim().replace(/^.*flickr\.com\/photos\//i,'').replace(/[\/?#].*$/,'');W.foto.tag=($('sFkTag').value||'').trim().toLowerCase().replace(/[^a-z0-9_\-]/g,'')||DEF.foto.tag;
   W.foto.src=FSRC.map(function(f){return f[0]}).filter(function(k){var c=$('fs_'+k);return c&&c.checked});W.foto.ph=+$('sFkFq').value||DEF.foto.ph;
+  W.eventi.radius=Math.max(10,Math.min(300,+$('sEvRad').value||DEF.eventi.radius));
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   var fo=$('sFav').options[$('sFav').selectedIndex];W.sport.fav=$('sFav').value?{k:$('sFav').value,n:fo.textContent}:null;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
   W.tr=$('sTr').checked;W.api=($('sApi').value||'').trim()||DEF.api}
 $('sSave').addEventListener('click',function(){
-  collect();S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);schedulePhotos();WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  collect();S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);schedulePhotos();WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);CN.items=null;setTimeout(refreshConcerts,3500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 var RESET={
   gen:function(D){W.rot=D.rot;W.sub=D.sub;W.idle=D.idle;W.pages=clone(D.pages);W.api=D.api;W.tr=D.tr},
   borsa:function(D){W.pageMods.borsa=clone(D.pageMods.borsa);W.order=D.order;W.fqB=D.fqB;W.fqBoff=D.fqBoff},
   sport:function(D){W.pageMods.sport=clone(D.pageMods.sport);W.fqC=D.fqC;W.fqCscope=D.fqCscope;W.alerts=clone(D.alerts);W.alertSec=D.alertSec;W.alertNight=D.alertNight;W.liveN=D.liveN},
   intr:function(D){W.pageMods.intr=clone(D.pageMods.intr);W.ent.prov=clone(D.ent.prov);W.ent.ex=clone(D.ent.ex)},
-  foto:function(D){W.pageMods.foto=clone(D.pageMods.foto);W.foto.tag=D.foto.tag;W.foto.ph=D.foto.ph;W.foto.src=clone(D.foto.src)}
+  foto:function(D){W.pageMods.foto=clone(D.pageMods.foto);W.foto.tag=D.foto.tag;W.foto.ph=D.foto.ph;W.foto.src=clone(D.foto.src)},
+  eventi:function(D){W.pageMods.eventi=clone(D.pageMods.eventi);W.eventi.radius=D.eventi.radius},
+  corso:function(D){W.pageMods.corso=clone(D.pageMods.corso)}
 };
-var RESET_KEEP={gen:'',borsa:'Le liste titoli restano.',sport:'Squadra preferita e seguite restano.',intr:'Serie e preferiti restano.',foto:'Profilo Flickr e località restano.'};
+var RESET_KEEP={gen:'',borsa:'Le liste titoli restano.',sport:'Squadra preferita e seguite restano.',intr:'Serie e preferiti restano.',foto:'Profilo Flickr e località restano.',eventi:'Sedi, fiere, artisti e località restano.',corso:'Lo stato Iscritto/Pagato/Abbonato degli appuntamenti resta.'};
 /* riporta ai predefiniti solo la scheda aperta, sulla copia di lavoro: diventa effettivo con «Salva e chiudi» */
 $('sReset').addEventListener('click',function(){var t=sTab,s0=S;collect();RESET[t](clone(DEF));S=W;openSettings(t);S=s0;
   $('sResetMsg').textContent='Predefiniti ripristinati in questa scheda. '+RESET_KEEP[t]+' Premi «Salva e chiudi» per confermare.'});
@@ -1777,6 +2033,8 @@ stage.addEventListener('click',function(e){
   var ro=t.closest('[data-readorig]');if(ro&&READ){openReader(READ.url,ro.getAttribute('data-readorig')==='1');touch();return}
   var rd=t.closest('[data-read]');if(rd){var keep=$('dBody').scrollTop;openReader(rd.getAttribute('data-read'));READ.st=keep;touch();return}
   var pc=t.closest('[data-plc]');if(pc){S.foto.place=+pc.getAttribute('data-plc');save();WX.data=null;$('dBody').innerHTML=M[openMod].d();refreshWx();renderPage();touch();return}
+  var epc=t.closest('[data-evplc]');if(epc){S.eventi.place=+epc.getAttribute('data-evplc');save();CN.items=null;$('dBody').innerHTML=M[openMod].d();refreshConcerts();renderPage();touch();return}
+  var cso=t.closest('[data-corso]');if(cso){corsoCycle(cso.getAttribute('data-corso'));if(openMod&&M[openMod]&&M[openMod].d)$('dBody').innerHTML=M[openMod].d();renderPage();touch();return}
   if(t.closest('[data-phr]')){if(!PH.loading)refreshPhotos(true);touch();return}
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
