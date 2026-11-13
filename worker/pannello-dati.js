@@ -1,4 +1,9 @@
 // DigitalPanel – ponte dati verso Yahoo Finance (Cloudflare Worker)
+// Versione 4.2 (13 nov 2026): traduzione in italiano con Workers AI. /news, /rss e /read accettano lang=it:
+//   titoli, sommari e testo degli articoli tornano tradotti, gli originali restano in "orig".
+//   Serve il binding Workers AI con nome AI (Settings › Bindings › Add › Workers AI). Senza binding
+//   tutto funziona come prima, in inglese. Le traduzioni si conservano 30 giorni: ogni testo si traduce una volta.
+//   Al massimo TR_MAX_NEW testi nuovi per richiesta: il resto arriva alla richiesta successiva (tr.pending).
 // Versione 4.1 (13 nov 2026): /flickr accetta ttl (durata della copia salvata, 60–3600 s) e fresh=1
 //   (pulsante «Aggiorna» del pannello: rilegge Flickr senza usare la copia salvata).
 // Versione 4.0 (12 nov 2026): /sport/* per la pagina Sport (serve il segreto FD_TOKEN, vedi sotto);
@@ -501,6 +506,105 @@ async function fetchNews(symbol, days, ctx, name) {
     .sort((a, b) => b.rel - a.rel || (b.time || "").localeCompare(a.time || ""))
     .slice(0, 15);
   return { symbol, via: data.via, items };
+}
+
+// ---------------------------------------------------------------- traduzione in italiano (Workers AI)
+// Modello di traduzione dedicato (m2m100, Meta): rapido ed economico. Le traduzioni di ogni gruppo
+// (le notizie di un titolo, i feed di fotografia, un articolo) stanno in un'unica voce della cache:
+// una lettura e una scrittura per gruppo, qualunque sia il numero di testi.
+
+const TR_MODEL = "@cf/meta/m2m100-1.2b";
+const TR_CACHE_SECONDS = 30 * 86400;
+const TR_MAX_NEW = 24;       // testi nuovi tradotti al massimo per richiesta (/news e /rss)
+const TR_MAX_NEW_READ = 36;  // per un articolo in vista lettura
+const TR_PARALLEL = 6;       // chiamate al modello in contemporanea
+const TR_CHUNK = 700;        // i paragrafi più lunghi si traducono a pezzi (per frasi)
+
+function wantsIt(url) { return (url.searchParams.get("lang") || "").toLowerCase() === "it"; }
+
+// testo già in italiano o senza parole da tradurre: si lascia com'è
+function skipTr(t) {
+  if (!t || t.length < 3 || !/[a-z]{2}/i.test(t)) return true;
+  return /\b(il|lo|gli|della|degli|nel|sono|anche|perché|però|questo|quella)\b/i.test(t) && !/\b(the|and|of|with|for)\b/i.test(t);
+}
+
+// spezza un testo lungo in pezzi di frasi intere
+function splitText(t) {
+  if (t.length <= TR_CHUNK) return [t];
+  const out = [];
+  let cur = "";
+  (t.match(/[^.!?]+[.!?]+["»”')\]]*\s*|[^.!?]+$/g) || [t]).forEach((s) => {
+    if (cur && (cur + s).length > TR_CHUNK) { out.push(cur.trim()); cur = ""; }
+    cur += s;
+  });
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+// traduce un elenco di testi; budget = { left } condiviso tra i gruppi di una stessa richiesta.
+// Restituisce { out (stesso ordine, originale dove la traduzione manca), pending, error }
+async function translateList(env, ctx, bucket, texts, budget) {
+  const out = texts.slice();
+  if (!env || !env.AI) return { out, pending: 0, error: "binding AI mancante nel Worker" };
+  const cache = caches.default;
+  const key = new Request("https://cache.digitalpanel/tr-it/" + encodeURIComponent(bucket));
+  let map = {};
+  const hit = await cache.match(key);
+  if (hit) { try { map = await hit.json(); } catch (e) { map = {}; } }
+
+  const todo = [...new Set(texts.filter((t) => !skipTr(t) && !map[t]))];
+  const now = todo.slice(0, Math.max(0, budget.left));
+  budget.left -= now.length;
+
+  let changed = false, error = null;
+  for (let k = 0; k < now.length && !error; k += TR_PARALLEL) {
+    await Promise.all(now.slice(k, k + TR_PARALLEL).map(async (t) => {
+      try {
+        const r = await env.AI.run(TR_MODEL, { text: t, source_lang: "en", target_lang: "it" });
+        const tr = r && typeof r.translated_text === "string" ? r.translated_text.trim() : "";
+        if (tr && !/^ERROR/i.test(tr)) { map[t] = tr; changed = true; }
+      } catch (e) { error = String((e && e.message) || e); }
+    }));
+  }
+
+  texts.forEach((t, i) => { if (map[t]) out[i] = map[t]; });
+  if (changed) {
+    // si conservano solo le traduzioni dei testi attuali: la voce non cresce all'infinito
+    const keep = {};
+    texts.forEach((t) => { if (map[t]) keep[t] = map[t]; });
+    ctx.waitUntil(cache.put(key, new Response(JSON.stringify(keep), {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=" + TR_CACHE_SECONDS },
+    })));
+  }
+  return { out, pending: todo.filter((t) => !map[t]).length, error };
+}
+
+// titolo e sommario di un elenco di notizie
+async function translateItems(env, ctx, bucket, items, budget) {
+  const texts = [];
+  items.forEach((n) => { texts.push(n.title || ""); texts.push(n.summary || ""); });
+  const r = await translateList(env, ctx, bucket, texts, budget);
+  return {
+    items: items.map((n, i) => {
+      const title = r.out[2 * i] || n.title, summary = r.out[2 * i + 1] || n.summary;
+      if (title === n.title && summary === n.summary) return n;
+      return Object.assign({}, n, { title, summary, orig: { title: n.title, summary: n.summary } });
+    }),
+    pending: r.pending,
+    error: r.error,
+  };
+}
+
+// articolo in vista lettura: titolo e paragrafi (quelli lunghi a pezzi, poi ricomposti)
+async function translateArticle(env, ctx, art) {
+  const pieces = [art.title || ""], owner = [-1];
+  (art.paras || []).forEach((p, i) => splitText(p.t).forEach((s) => { pieces.push(s); owner.push(i); }));
+  const budget = { left: TR_MAX_NEW_READ };
+  const r = await translateList(env, ctx, "read:" + art.url, pieces, budget);
+  const paras = (art.paras || []).map((p) => ({ h: p.h, t: "" }));
+  owner.forEach((o, k) => { if (o >= 0) paras[o].t += (paras[o].t ? " " : "") + r.out[k]; });
+  return Object.assign({}, art, { title: r.out[0] || art.title, paras, orig: { title: art.title },
+    tr: { lang: "it", pending: r.pending, error: r.error } });
 }
 
 // ---------------------------------------------------------------- router
@@ -1139,10 +1243,11 @@ export default {
     if (path === "/") {
       return json({
         service: "DigitalPanel data bridge",
-        version: "4.1",
+        version: "4.2",
         usage: ["/quotes?symbols=AAPL,ENEL.MI,EURUSD=X", "/earnings?symbols=AAPL,ENEL.MI", "/news?symbols=AAPL,ENEL.MI&days=30", "/spark?symbols=^GSPC,FTSEMIB.MI", "/tmdb/cinema", "/tmdb/streaming?p=netflix,prime", "/tmdb/tv?ids=1399", "/tmdb/search?q=titolo", "/flickr?user=marco_galb&tag=digitalportfolio&ttl=900", "/rss?src=fuji,leica,nikon", "/sport/live", "/sport/fixtures?c=sa", "/sport/table?c=sa", "/sport/italy"],
         tmdb: !!(env && env.TMDB_TOKEN),
         footballData: !!(env && env.FD_TOKEN),
+        translate: !!(env && env.AI),
       });
     }
 
@@ -1172,8 +1277,20 @@ export default {
       // names facoltativo, nello stesso ordine dei simboli e separato da | (es. names=Apple Inc.|Enel SpA)
       const names = (url.searchParams.get("names") || "").split("|").map((n) => n.trim().slice(0, 60));
       const nameOf = (s) => names[(url.searchParams.get("symbols") || "").split(",").map((x) => x.trim()).indexOf(s)] || "";
-      const news = await Promise.all(p.symbols.map((s) => fetchNews(s, days, ctx, nameOf(s)).catch((e) => errOf(s, e))));
-      return json({ updated: new Date().toISOString(), news }, 200, { "Cache-Control": "public, max-age=300" });
+      let news = await Promise.all(p.symbols.map((s) => fetchNews(s, days, ctx, nameOf(s)).catch((e) => errOf(s, e))));
+      let tr = null;
+      if (wantsIt(url)) {
+        const budget = { left: TR_MAX_NEW };
+        tr = { lang: "it", pending: 0, error: null };
+        news = await Promise.all(news.map(async (n) => {
+          if (!n.items || !n.items.length) return n;
+          const r = await translateItems(env, ctx, "news:" + n.symbol, n.items, budget);
+          tr.pending += r.pending; tr.error = tr.error || r.error;
+          return Object.assign({}, n, { items: r.items });
+        }));
+      }
+      return json({ updated: new Date().toISOString(), news, tr }, 200,
+        { "Cache-Control": tr && tr.pending ? "no-store" : "public, max-age=300" });
     }
 
     if (path === "/spark") {
@@ -1275,7 +1392,9 @@ export default {
         return json({ error: "indirizzo non ammesso" }, 400);
       }
       try {
-        return json(await readArticle(u.toString(), ctx), 200, { "Cache-Control": "public, max-age=3600" });
+        let art = await readArticle(u.toString(), ctx);
+        if (wantsIt(url) && art.paras && art.paras.length) art = await translateArticle(env, ctx, art);
+        return json(art, 200, { "Cache-Control": art.tr && art.tr.pending ? "no-store" : "public, max-age=3600" });
       } catch (e) {
         return json({ error: String((e && e.message) || e) }, 502);
       }
@@ -1284,9 +1403,16 @@ export default {
     if (path === "/rss") {
       const keys = [...new Set((url.searchParams.get("src") || "fuji").split(",").map((k) => k.trim().toLowerCase()).filter((k) => FEEDS[k]))].slice(0, 7);
       const res = await Promise.all(keys.map((k) => feedItems(k, ctx).then((items) => ({ k, items })).catch((e) => ({ k, error: String((e && e.message) || e) }))));
-      const items = res.flatMap((r) => r.items || []).sort((a, b) => (b.time || "").localeCompare(a.time || "")).slice(0, 40);
-      return json({ updated: new Date().toISOString(), sources: res.map((r) => ({ key: r.k, label: FEEDS[r.k].label, error: r.error || null })), items },
-        200, { "Cache-Control": "public, max-age=300" });
+      let items = res.flatMap((r) => r.items || []).sort((a, b) => (b.time || "").localeCompare(a.time || "")).slice(0, 40);
+      let tr = null;
+      if (wantsIt(url) && items.length) {
+        // le più recenti per prime: sono quelle che il pannello mostra nel riquadro
+        const r = await translateItems(env, ctx, "rss:" + keys.slice().sort().join(","), items, { left: TR_MAX_NEW });
+        items = r.items;
+        tr = { lang: "it", pending: r.pending, error: r.error };
+      }
+      return json({ updated: new Date().toISOString(), sources: res.map((r) => ({ key: r.k, label: FEEDS[r.k].label, error: r.error || null })), items, tr },
+        200, { "Cache-Control": tr && tr.pending ? "no-store" : "public, max-age=300" });
     }
 
     if (path === "/flickr") {

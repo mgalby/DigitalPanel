@@ -400,6 +400,11 @@ html,body{margin:0}
           </div>
           <div class="note" style="margin:-12px 0 24px">I riquadri di ogni pagina, i contenuti e le frequenze di aggiornamento si scelgono nella scheda della pagina.</div>
 
+          <div class="sect">Lingua</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Notizie e articoli in inglese</span><label class="tog" for="sTr"><input type="checkbox" id="sTr">Traduci in italiano</label><div class="note" style="margin-top:0">Vale per le notizie di Borsa, le novità di Fotografia e la vista lettura degli articoli. Traduzione automatica fatta dal ponte dati (Cloudflare Workers AI): ogni testo si traduce una volta sola, le notizie nuove possono comparire in inglese per qualche minuto. Nel dettaglio di una notizia resta disponibile il titolo originale.</div></div>
+          </div>
+
           <div class="sect">Ponte dati</div>
           <div class="set">
             <div class="fld" style="grid-column:1 / -1"><label for="sApi">Indirizzo del ponte dati (Cloudflare Worker)</label><input type="text" id="sApi" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></div>
@@ -637,12 +642,16 @@ function refreshEarnings(){
     if(bad<res.length)ES.at=new Date();ES.err=bad?'parziale':null;
   }).then(function(){ES.loading=false;refreshTiles()});
 }
+/* traduzione: parametro per il ponte dati; se restano testi da tradurre si richiede di nuovo dopo poco (al massimo 6 volte) */
+function trOn(){return S.tr!==false}
+function trQ(){return trOn()?'&lang=it':''}
+function trRetry(st,fn,pending){clearTimeout(st.trT);if(pending&&trOn()&&(st.trN||0)<6){st.trN=(st.trN||0)+1;st.trT=setTimeout(fn,45000)}else if(!pending)st.trN=0}
 function refreshNews(){
   var T=stockTickers();if(!T.length||NS.loading)return;NS.loading=true;
   Promise.all(chunk(T,10).map(function(p){return getJSON(apiBase()+'/news?days=30&symbols='+p.map(function(t){return encodeURIComponent(ysym(t))}).join(',')+
-      '&names='+p.map(function(t){return encodeURIComponent(nameOf(t).replace(/\|/g,' '))}).join('|')).catch(function(e){return {err:String((e&&e.message)||e)}})})).then(function(res){
-    var bad=0;res.forEach(function(d){if(d.err){bad++;return}(d.news||[]).forEach(function(x){NW[x.symbol]=x})});
-    if(bad<res.length)NS.at=new Date();NS.err=bad?'parziale':null;
+      '&names='+p.map(function(t){return encodeURIComponent(nameOf(t).replace(/\|/g,' '))}).join('|')+trQ()).catch(function(e){return {err:String((e&&e.message)||e)}})})).then(function(res){
+    var bad=0,pend=0;res.forEach(function(d){if(d.err){bad++;return}if(d.tr)pend+=d.tr.pending||0;(d.news||[]).forEach(function(x){NW[x.symbol]=x})});
+    if(bad<res.length)NS.at=new Date();NS.err=bad?'parziale':null;trRetry(NS,refreshNews,pend);
   }).then(function(){NS.loading=false;refreshTiles()});
 }
 /* prima lettura dopo le quotazioni (servono i nomi per filtrare le notizie), poi a intervalli */
@@ -686,7 +695,7 @@ function newsAll(onlyTitle){var o=[],seen={};stockTickers().forEach(function(t){
 function newsTile(){return newsAll(true).slice(0,12)}
 function newsRow(x,full){var it=x.it;
   return '<div class="nw'+(full?' full':'')+'"'+(full&&it.link?' data-read="'+esc(it.link)+'"':'')+'><div class="nt">'+(it.earnings?'<span class="ebadge">conti</span>':'')+esc(it.title)+'</div>'+
-    (full&&it.summary&&it.summary!==it.title?'<div class="ns">'+esc(it.summary)+'</div>':'')+
+    (full&&it.summary&&it.summary!==it.title?'<div class="ns">'+esc(it.summary)+'</div>':'')+(full&&it.orig&&it.orig.title&&it.orig.title!==it.title?'<div class="nm" style="font-style:italic">'+esc(it.orig.title)+'</div>':'')+
     '<div class="nm"><b>'+esc(x.tk.join(' · '))+'</b> · '+esc(ago(it.time))+' · '+esc(srcOf(it))+'</div></div>'}
 /* ---------- intrattenimento (TMDB tramite il ponte dati) ---------- */
 var PROV=[{k:'netflix',l:'Netflix'},{k:'prime',l:'Prime Video'},{k:'sky',l:'Sky / NOW'},{k:'raiplay',l:'RaiPlay'},{k:'apple',l:'Apple TV+'},{k:'disney',l:'Disney+'}];
@@ -856,7 +865,7 @@ var MOON=(function(){var PI=Math.PI,rad=PI/180,dayMs=864e5,J1970=2440588,J2000=2
 var FSRC=[['fuji','Fuji Rumors'],['leica','Leica Rumors'],['nikon','Nikon Rumors'],['sony','Sony Alpha Rumors'],['canon','Canon Rumors'],['photo','Photo Rumors'],['petapixel','PetaPixel']];
 var FN={items:null,err:null,at:null,loading:false};
 function refreshFotoNews(){var src=(fotoCfg().src||DEF.foto.src);if(!src.length){FN.items=[];refreshTiles();return}if(FN.loading)return;FN.loading=true;
-  getJSON(apiBase()+'/rss?src='+src.join(',')).then(function(d){FN.items=d.items||[];FN.err=null;FN.at=new Date()},function(e){FN.err=String((e&&e.message)||e)}).then(function(){FN.loading=false;refreshTiles()})}
+  getJSON(apiBase()+'/rss?src='+src.join(',')+trQ()).then(function(d){FN.items=d.items||[];FN.err=null;FN.at=new Date();trRetry(FN,refreshFotoNews,d.tr&&d.tr.pending)},function(e){FN.err=String((e&&e.message)||e)}).then(function(){FN.loading=false;refreshTiles()})}
 setTimeout(function(){refreshFotoNews();setInterval(refreshFotoNews,30*60000)},3500);
 /* ---------- luna e cielo notturno (calcolo locale + nuvole da Open-Meteo) ---------- */
 var PHN=['Luna nuova','Luna crescente','Primo quarto','Gibbosa crescente','Luna piena','Gibbosa calante','Ultimo quarto','Luna calante'];
@@ -885,7 +894,9 @@ function readerHtml(){var r=READ,h='<button class="btn sm" data-readback="1" sty
   if(!r.data&&!r.err)return h+'<div class="mut">Caricamento dell’articolo…</div>';
   if(r.err||!r.data.paras||r.data.chars<200)return h+(r.data&&r.data.title?'<h3 class="rd-t">'+esc(r.data.title)+'</h3>':'')+'<div class="mut" style="font-size:15px;line-height:1.5">Il testo completo di questo articolo non è leggibile da qui: probabilmente il sito richiede un abbonamento o blocca la lettura automatica.</div>';
   var d=r.data;return h+'<h3 class="rd-t">'+esc(d.title||'')+'</h3><div class="nm" style="margin-bottom:12px"><b>'+esc(d.site||srcOf({link:d.url}))+'</b></div><div class="rd">'+
-    d.paras.map(function(p){return p.h?'<h4>'+esc(p.t)+'</h4>':'<p>'+esc(p.t)+'</p>'}).join('')+'</div><div class="note">Testo estratto automaticamente dalla pagina originale per la lettura.</div>'}
+    d.paras.map(function(p){return p.h?'<h4>'+esc(p.t)+'</h4>':'<p>'+esc(p.t)+'</p>'}).join('')+'</div><div class="note">Testo estratto automaticamente dalla pagina originale per la lettura.'+readerTrNote(d)+'</div>'}
+function readerTrNote(d){if(d.tr){var p=d.tr.pending;return ' Traduzione automatica in italiano'+(p?' · ancora '+p+(p===1?' parte':' parti')+' in traduzione…':'')+'. <button class="btn sm" data-readorig="1" style="margin-left:6px">Testo originale</button>'}
+  return READ&&READ.orig&&trOn()?' <button class="btn sm" data-readorig="0" style="margin-left:6px">Traduci in italiano</button>':''}
 function titleHtml(){var r=READ,h='<button class="btn sm" data-readback="1" style="margin-bottom:14px">‹ Indietro</button>';
   if(!r.data&&!r.err)return h+'<div class="mut">Caricamento della scheda…</div>';
   if(r.err)return h+'<div class="mut">Scheda non disponibile.</div>';
@@ -909,9 +920,10 @@ function titleHtml(){var r=READ,h='<button class="btn sm" data-readback="1" styl
 function openTitle(type,id){var key='t:'+type+':'+id;READ={url:key,kind:'title',data:null,err:null};var b=$('dBody');b.innerHTML=titleHtml();b.scrollTop=0;
   getJSON(apiBase()+'/tmdb/title?type='+type+'&id='+id).then(function(d){if(READ&&READ.url===key)READ.data=d},function(e){if(READ&&READ.url===key)READ.err=String((e&&e.message)||e)})
     .then(function(){if(READ&&READ.url===key&&$('detail').classList.contains('show'))b.innerHTML=titleHtml()})}
-function openReader(url){READ={url:url,data:null,err:null};var b=$('dBody');b.innerHTML=readerHtml();b.scrollTop=0;
-  getJSON(apiBase()+'/read?url='+encodeURIComponent(url)).then(function(d){if(!READ||READ.url!==url)return;READ.data=d},function(e){if(!READ||READ.url!==url)return;READ.err=String((e&&e.message)||e)})
-    .then(function(){if(READ&&READ.url===url&&$('detail').classList.contains('show')){b.innerHTML=readerHtml()}})}
+function openReader(url,orig,tries){var st=READ&&READ.url===url?READ.st:null;READ={url:url,data:READ&&READ.url===url?READ.data:null,err:null,orig:!!orig,st:st};var b=$('dBody');if(!tries){b.innerHTML=readerHtml();b.scrollTop=0}
+  getJSON(apiBase()+'/read?url='+encodeURIComponent(url)+(orig?'':trQ())).then(function(d){if(!READ||READ.url!==url)return;READ.data=d},function(e){if(!READ||READ.url!==url)return;READ.err=String((e&&e.message)||e)})
+    .then(function(){if(READ&&READ.url===url&&$('detail').classList.contains('show')){var y=b.scrollTop;b.innerHTML=readerHtml();if(tries)b.scrollTop=y;
+      var d=READ.data;if(d&&d.tr&&d.tr.pending&&!READ.orig&&(tries||0)<5)setTimeout(function(){if(READ&&READ.url===url&&!READ.orig)openReader(url,false,(tries||0)+1)},2500)}})}
 
 /* dettaglio di un titolo: consuntivi, stime, notizie sui conti */
 function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mut">Dati non disponibili.</div>';
@@ -933,7 +945,7 @@ function earnDetail(y){var t=tickerBy(y),e=E[y];if(!t||!e)return '<div class="mu
   var n=(NW[y]&&NW[y].items)||[],ne=n.filter(function(it){return it.earnings}),no=n.filter(function(it){return !it.earnings&&it.rel===2}).slice(0,Math.max(0,5-ne.length));
   h+='<div class="sect" style="margin-top:18px">Dai conti e dalla call · notizie</div>'+
     (ne.length||no.length?ne.concat(no).map(function(it){return newsRow({it:it,tk:[t.s]},true)}).join(''):'<div class="mut" style="font-size:14px">Nessuna notizia recente su '+esc(t.s)+'. Gli articoli sui risultati compaiono nei giorni dei conti e restano disponibili per qualche settimana.</div>')+
-    '<div class="note">Notizie da Yahoo Finance, in genere in inglese. Quelle con l’etichetta «conti» parlano di risultati, guidance o call.</div>';
+    '<div class="note">Notizie da Yahoo Finance'+(trOn()?', tradotte automaticamente in italiano':', in genere in inglese')+'. Quelle con l’etichetta «conti» parlano di risultati, guidance o call.</div>';
   return h}
 function anyOpen(){var xs={};IDX.forEach(function(i){xs[i.x]=1});allTickers().forEach(function(t){xs[t.x]=1});
   for(var x in xs){if(isOpen(x))return true}return false}
@@ -979,7 +991,7 @@ var D={
 };
 
 /* ---------- impostazioni ---------- */
-var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'follow',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl','italy'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:false,red:false,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
+var DEF={api:'https://pannello-dati.marco-foto.workers.dev',tr:true,order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'follow',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl','italy'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:false,red:false,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
   lists:[{id:'l1',name:'Lista 1',tickers:[]}],
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
   foto:{user:'',tag:'digitalportfolio',ph:15,places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
@@ -1167,7 +1179,7 @@ M.mktnews={l:'Notizie',s:'titoli delle liste',live:true,n:function(){return chun
     var L=newsTile();if(!L.length)return '<div class="nolive"><span>'+(NS.at?'Nessuna notizia recente sui titoli delle liste':NS.err?'Dati non disponibili':stockTickers().length?'In attesa delle notizie…':'Nessuna azione nelle liste')+'</span></div>';
     var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(x){return newsRow(x,false)}).join('')+'</div>'},
   d:function(){var L=newsAll(false);if(!L.length)return '<div class="mut">Nessuna notizia recente.</div>';
-    return L.map(function(x){return newsRow(x,true)}).join('')+'<div class="note">Ultimi 30 giorni, solo notizie che citano la società. Fonte Yahoo Finance, in genere in inglese.</div>'},
+    return L.map(function(x){return newsRow(x,true)}).join('')+'<div class="note">Ultimi 30 giorni, solo notizie che citano la società. Fonte Yahoo Finance'+(trOn()?', tradotte automaticamente in italiano (sotto ogni titolo, in corsivo, l’originale).':', in genere in inglese.')+'</div>'},
   sub:'Notizie sulle azioni delle liste · Yahoo Finance'};
 M.commod={l:'Materie prime e cripto',s:'Yahoo',live:true,n:one,c:function(){return '<div class="rows">'+COM.map(function(c){var q=Q[c.y],ok=okq(q);
     return '<div class="r"><span class="k">'+c.k+'<small>'+c.d+'</small></span><span class="v num" style="font-size:24px">'+(ok?fmt(q.price,c.dg):'—')+'<small>'+(ok?pct(q.changePct):'&nbsp;')+'</small></span></div>'}).join('')+'</div>'},
@@ -1477,7 +1489,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlerts').innerHTML=EVT_KEYS.map(function(k){return '<label for="al_'+k+'"><input type="checkbox" id="al_'+k+'" data-al="'+k+'"'+(W.alerts[k]?' checked':'')+'>'+EVT[k].lab+'</label>'}).join('');
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
-  $('sApi').value=W.api||'';$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
+  $('sApi').value=W.api||'';$('sTr').checked=W.tr!==false;$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
   migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
@@ -1601,12 +1613,12 @@ function collect(){
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   var fo=$('sFav').options[$('sFav').selectedIndex];W.sport.fav=$('sFav').value?{k:$('sFav').value,n:fo.textContent}:null;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
-  W.api=($('sApi').value||'').trim()||DEF.api}
+  W.tr=$('sTr').checked;W.api=($('sApi').value||'').trim()||DEF.api}
 $('sSave').addEventListener('click',function(){
   collect();S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);schedulePhotos();WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 var RESET={
-  gen:function(D){W.rot=D.rot;W.sub=D.sub;W.idle=D.idle;W.pages=clone(D.pages);W.api=D.api},
+  gen:function(D){W.rot=D.rot;W.sub=D.sub;W.idle=D.idle;W.pages=clone(D.pages);W.api=D.api;W.tr=D.tr},
   borsa:function(D){W.pageMods.borsa=clone(D.pageMods.borsa);W.order=D.order;W.fqB=D.fqB;W.fqBoff=D.fqBoff},
   sport:function(D){W.pageMods.sport=clone(D.pageMods.sport);W.fqC=D.fqC;W.fqCscope=D.fqCscope;W.alerts=clone(D.alerts);W.alertSec=D.alertSec;W.alertNight=D.alertNight;W.liveN=D.liveN},
   intr:function(D){W.pageMods.intr=clone(D.pageMods.intr);W.ent.prov=clone(D.ent.prov);W.ent.ex=clone(D.ent.ex)},
@@ -1722,6 +1734,7 @@ stage.addEventListener('click',function(e){
   var rb=t.closest('[data-readback]');if(rb){var st=READ&&READ.st;READ=null;$('dBody').innerHTML=M[openMod].d();if(st)$('dBody').scrollTop=st;touch();return}
   var rx=t.closest('[data-revx]');if(rx){var el=$('rv'+rx.getAttribute('data-revx'));if(el){el.classList.toggle('cut');rx.textContent=el.classList.contains('cut')?'Leggi tutta':'Riduci'}touch();return}
   var tt=t.closest('[data-title]');if(tt){var kp=$('dBody').scrollTop,q=tt.getAttribute('data-title').split(':');openTitle(q[0],q[1]);READ.st=kp;touch();return}
+  var ro=t.closest('[data-readorig]');if(ro&&READ){openReader(READ.url,ro.getAttribute('data-readorig')==='1');touch();return}
   var rd=t.closest('[data-read]');if(rd){var keep=$('dBody').scrollTop;openReader(rd.getAttribute('data-read'));READ.st=keep;touch();return}
   var pc=t.closest('[data-plc]');if(pc){S.foto.place=+pc.getAttribute('data-plc');save();WX.data=null;$('dBody').innerHTML=M[openMod].d();refreshWx();renderPage();touch();return}
   if(t.closest('[data-phr]')){if(!PH.loading)refreshPhotos(true);touch();return}
