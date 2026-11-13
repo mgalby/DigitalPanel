@@ -1006,11 +1006,11 @@ const LEAGUES = {
   cl: { espn: "uefa.champions", fd: "CL", label: "Champions League" },
 };
 // competizioni della Nazionale: [codice ESPN, nome, giorni indietro, giorni avanti]
-// [codice, nome, giorni indietro, giorni avanti, giorni di gara letti al massimo]
+// [codice, nome, giorni indietro, giorni avanti, giorni di gara letti al massimo, giorni attorno a oggi letti comunque]
 const NAT_LEAGUES = [
-  ["uefa.nations", "Nations League", 75, 150, 8],
-  ["fifa.friendly", "Amichevole", 75, 120, 5],
-  ["uefa.euroq", "Qualificazioni Euro", 45, 180, 5],
+  ["uefa.nations", "Nations League", 75, 150, 8, 4],
+  ["fifa.friendly", "Amichevole", 75, 120, 5, 0],
+  ["uefa.euroq", "Qualificazioni Euro", 45, 180, 5, 0],
 ];
 // ESPN non accetta più gli intervalli di date (dates=AAAAMMGG-AAAAMMGG → HTTP 400): accetta la richiesta
 // senza date, che contiene il calendario dei giorni di gara, e quella su un giorno singolo.
@@ -1019,13 +1019,16 @@ const NAT_LEAGUES = [
 function espnCalendarDays(d) {
   const L = (d && d.leagues && d.leagues[0]) || {};
   const out = [];
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" });
+  const put = (t) => { const k = fmt.format(new Date(t)).replace(/-/g, ""); if (out.indexOf(k) < 0) out.push(k); };
   const add = (v) => {
     const iso = typeof v === "string" ? v : v && (v.startDate || v.value || v.date);
     const t = Date.parse(iso || "");
     if (isNaN(t)) return;
-    const k = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" })
-      .format(new Date(t)).replace(/-/g, "");
-    if (out.indexOf(k) < 0) out.push(k);
+    // voce con inizio e fine (una giornata di più giorni): tutti i giorni, se il periodo è breve
+    const e = v && typeof v === "object" ? Date.parse(v.endDate || "") : NaN;
+    if (!isNaN(e) && e > t && e - t <= 10 * 86400000) { for (let x = t; x <= e; x += 86400000) put(x); return; }
+    put(t);
   };
   (L.calendar || []).forEach((c) => { if (c && Array.isArray(c.entries)) c.entries.forEach(add); else add(c); });
   (d && d.events || []).forEach((e) => add(e.date));
@@ -1270,11 +1273,15 @@ async function natMatches(n, ctx) {
   const half = Math.ceil(n[4] / 2);
   let pick = past.slice(-Math.max(half, n[4] - fut.length)).concat(fut.slice(0, Math.max(half, n[4] - past.length)));
   pick = pick.slice(0, n[4]);
+  // rete di sicurezza: i giorni attorno a oggi si leggono comunque (se il calendario di ESPN non li riporta)
+  for (let k = -n[5]; k <= n[5]; k++) { const d = romeDay(k); if (pick.indexOf(d) < 0) pick.push(d); }
   const res = await Promise.all(pick.map((k) => espnJSON(ESPN_SITE + n[0] + "/scoreboard?dates=" + k, 3 * 3600, ctx)
     .then((d) => ({ events: d.events || [] })).catch((e) => ({ events: [], error: String((e && e.message) || e) }))));
   const evs = (base.events || []).concat(res.flatMap((r) => r.events));
   const bad = res.filter((r) => r.error).length;
-  return { code: n[0], matches: evs.map((e) => espnMatch(e, "nat", n[1])).filter(hasItaly), days: pick.length,
+  const L0 = (base.leagues && base.leagues[0]) || {};
+  return { code: n[0], matches: evs.map((e) => espnMatch(e, "nat", n[1])).filter(hasItaly), days: pick.length, cal: all.length,
+    calSample: (L0.calendar || []).slice(0, 2), events: evs.length,
     error: bad && bad === res.length ? res[0].error : bad ? bad + " giorni su " + res.length + " non letti" : null };
 }
 
@@ -1311,7 +1318,7 @@ async function sportItaly(ctx) {
   const all = dedupe(res.flatMap((r) => r.matches)).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const now = Date.now();
   return {
-    sources: res.map((r) => ({ code: r.code, n: r.matches.length, days: r.days, error: r.error || null })),
+    sources: res.map((r) => ({ code: r.code, n: r.matches.length, days: r.days, cal: r.cal, events: r.events, calSample: r.calSample, error: r.error || null })),
     next: all.filter((m) => m.state !== "post" && Date.parse(m.date) > now - 4 * 3600000).slice(0, 6),
     last: all.filter((m) => m.state === "post").reverse().slice(0, 6),
     group,
