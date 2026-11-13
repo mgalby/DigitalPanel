@@ -1280,8 +1280,16 @@ function pad2(n){return n<10?'0'+n:''+n}
 function corsoMonthRange(){var d=new Date(),y=d.getFullYear(),m=d.getMonth();return {s:y+'-'+pad2(m+1)+'-01',e:new Date(y,m+1,0).toISOString().slice(0,10)}}
 function corsoThisMonth(){var r=corsoMonthRange();return corsoAll().filter(function(x){return x.ev.s<=r.e&&x.ev.e>=r.s})}
 function corsoDateLabel(ev){var s=dShort(ev.s),e=ev.e!==ev.s?' – '+dShort(ev.e):'';return s+e}
-function corsoRow(x,full){var cat=CORSO_CAT[x.ev.c]||{l:'',c:'var(--line)'},st=x.st;
-  return '<div class="nw br'+(full?' full':'')+'" data-corso="'+esc(x.id)+'" style="--br:'+cat.c+';cursor:pointer"><div class="nt">'+esc(x.ev.t)+(st?' <span class="ebadge" style="border-color:'+cat.c+';color:'+cat.c+'">'+esc(CORSO_ST_LAB[st].toUpperCase())+'</span>':'')+'</div><div class="nm"><b style="color:'+cat.c+'">'+esc(cat.l)+'</b> · '+esc(corsoDateLabel(x.ev))+'</div></div>'}
+function corsoToday(){return new Date().toISOString().slice(0,10)}
+function corsoRow(x,full){var cat=CORSO_CAT[x.ev.c]||{l:'',c:'var(--line)'},st=x.st,past=x.ev.e<corsoToday();
+  return '<div class="nw br'+(full?' full':'')+'" data-corso="'+esc(x.id)+'" style="--br:'+cat.c+';cursor:pointer'+(past?';opacity:.5':'')+'"><div class="nt">'+esc(x.ev.t)+(st?' <span class="ebadge" style="border-color:'+cat.c+';color:'+cat.c+'">'+esc(CORSO_ST_LAB[st].toUpperCase())+'</span>':'')+'</div><div class="nm"><b style="color:'+cat.c+'">'+esc(cat.l)+'</b> · '+esc(corsoDateLabel(x.ev))+'</div></div>'}
+/* riga divisoria "oggi" tra gli appuntamenti già passati e quelli ancora da venire, solo se nel mese ci sono entrambi */
+function corsoTodayDivider(){return '<div class="spsect" style="margin:10px 0 4px;color:var(--accent);border-top:1px solid var(--line);padding-top:10px">OGGI</div>'}
+function corsoRowsWithDivider(L){var today=corsoToday(),pastSeen=false,put=false,h='';
+  L.forEach(function(x){var isPast=x.ev.e<today;if(isPast)pastSeen=true;
+    if(!isPast&&pastSeen&&!put){h+=corsoTodayDivider();put=true}
+    h+=corsoRow(x,true)});
+  return h}
 function corsoLogo(){return '<img src="img/ops-logo.png" alt="OPS! Orange Photo School" style="height:24px;display:block;margin-top:12px;opacity:.9">'}
 M.corsoProssimi={l:'Prossimi impegni',s:'',n:function(){return Math.max(1,chunk(corsoUpcoming(12),3).length)},c:function(i){
     var L=corsoUpcoming(12);if(!L.length)return '<div class="nolive"><span>Nessun impegno in programma</span></div>';
@@ -1293,7 +1301,7 @@ M.corsoMese={l:'Agenda del mese',s:function(){return MESI[new Date().getMonth()]
     var L=corsoThisMonth();if(!L.length)return '<div class="nolive"><span>Nessun impegno questo mese</span></div>';
     var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){return corsoRow(x,false)}).join('')+'</div>'},
   d:function(){var L=corsoThisMonth();if(!L.length)return '<div class="mut">Nessun impegno questo mese.</div>'+corsoLogo();
-    return L.map(function(x){return corsoRow(x,true)}).join('')+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato.</div>'+corsoLogo()},
+    return corsoRowsWithDivider(L)+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato.</div>'+corsoLogo()},
   sub:'Impegni del mese in corso'};
 
 M.cinema={l:'In sala',s:'Italia',live:true,n:function(){return chunk(cinemaAll(),3).length},c:function(i){var L=cinemaAll();if(!L.length)return entWait();
@@ -2098,4 +2106,3 @@ fit();renderPage();startSub();schedule();
 </script>
 </body>
 </html>
-<!-- redeploy trigger 2026-11-13T16:37:25Z -->
