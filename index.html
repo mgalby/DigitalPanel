@@ -222,6 +222,21 @@ input[type=text]:focus,select:focus{outline:2px solid var(--accent);outline-offs
 .pm-av button{border:1px dashed var(--line);background:transparent;color:var(--text-2);border-radius:16px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
 .pm-av button:disabled{opacity:.35;cursor:default}
 /* Stima chiamate */
+/* impostazioni a schede: a sinistra le pagine, a destra il blocco della pagina */
+.spanel{width:920px}
+.sbox{flex:1;min-height:0;display:flex;gap:20px}
+.stabs{flex:none;width:176px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--line);padding-right:16px;overflow:auto}
+.stabs button{text-align:left;background:transparent;border:1px solid transparent;border-radius:10px;color:var(--text-2);font:inherit;font-size:16px;font-weight:500;padding:10px 12px;cursor:pointer}
+.stabs button small{display:block;font-size:11px;font-weight:400;color:var(--text-3);margin-top:2px;line-height:1.3}
+.stabs button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+.stabs button.on small{color:var(--text-2)}
+.spane{display:none}.spane.on{display:block}
+.pmx{margin-bottom:24px}
+.fixed{display:flex;flex-direction:column;gap:0;margin:-8px 0 24px;border-top:1px solid var(--line)}
+.fixed > div{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.fixed span{color:var(--text-2)}.fixed b{font-weight:500;color:var(--text);text-align:right}
+.set + .fixed{margin-top:-8px}
+.ph-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;font-size:13px;color:var(--text-2)}
 .budget{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .budget > div{background:var(--surface-2);border-radius:10px;padding:10px 12px}
 .budget span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
@@ -300,7 +315,7 @@ html,body{margin:0}
 .seg span.segk .fr-reg,.seg span.segk .fr-att{border:0;padding:0;letter-spacing:0;text-transform:none;font-weight:500}
 .seg span.segk .fr-reg,.poster .fbadge .fr-reg{color:var(--accent)}.seg span.segk .fr-att,.poster .fbadge .fr-att{color:#7DB4E8}.poster .fbadge span{font-size:11px;font-weight:600}
 .cd.new .g b{color:var(--up)}
-.slide{position:relative;height:470px;background:#0B0D10;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.slide{position:relative;height:430px;background:#0B0D10;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .slide img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 .sl-nav{position:absolute;top:0;bottom:0;width:90px;border:0;background:transparent;color:rgba(232,234,237,.75);font-size:44px;cursor:pointer}
 .sl-nav.l{left:0}.sl-nav.r{right:0}
@@ -360,63 +375,151 @@ html,body{margin:0}
 
     <div class="ov" id="detail"><div class="panel"><button class="x" data-close="detail" aria-label="Chiudi">✕</button><h2 id="dTitle"></h2><div class="psub" id="dSub"></div><div class="pbody" id="dBody"></div></div></div>
 
-    <div class="ov" id="settings"><div class="panel">
+    <div class="ov" id="settings"><div class="panel spanel">
       <button class="x" data-close="settings" aria-label="Chiudi">✕</button>
-      <h2>Impostazioni</h2><div class="psub">Salvate su questo dispositivo</div>
-      <div class="pbody">
-        <div class="sect">Rotazione e aspetto</div>
-        <div class="set">
-          <div class="fld"><label for="sRot">Durata minima pagina</label><div class="rng"><input type="range" id="sRot" min="8" max="120" step="1"><output id="oRot" class="num"></output></div></div>
-          <div class="fld"><label for="sSub">Durata sotto-pagina nei riquadri</label><div class="rng"><input type="range" id="sSub" min="4" max="30" step="1"><output id="oSub" class="num"></output></div></div>
-          <div class="fld"><label for="sIdle">Ripresa rotazione dopo inattività</label><div class="rng"><input type="range" id="sIdle" min="5" max="300" step="5"><output id="oIdle" class="num"></output></div></div>
-          <div class="fld"><span class="lab">Pagine in rotazione</span><div class="chk" id="sPages"></div></div>
-          <div class="fld"><span class="lab">Modalità notte</span><label class="tog" for="sNight"><input type="checkbox" id="sNight">Anteprima ora (un tocco per uscire)</label></div>
-        </div>
+      <h2>Impostazioni</h2><div class="psub">Salvate su questo dispositivo · le modifiche valgono dopo «Salva e chiudi»</div>
+      <div class="sbox">
+      <nav class="stabs" id="sTabs" aria-label="Sezioni delle impostazioni">
+        <button data-tab="gen">Generale<small>rotazione, schermo, dati</small></button>
+        <button data-tab="borsa">Borsa<small>riquadri, liste, frequenze</small></button>
+        <button data-tab="sport">Sport<small>squadre, avvisi, frequenze</small></button>
+        <button data-tab="intr">Intrattenimento<small>piattaforme, serie, preferiti</small></button>
+        <button data-tab="foto">Fotografia<small>portfolio, meteo, novità</small></button>
+      </nav>
+      <div class="pbody" id="sBody">
 
-        <div class="sect">Riquadri per pagina</div>
-        <div class="note" style="margin:-4px 0 12px">Ogni pagina usa solo moduli del suo tema, da 2 a 6. Lo schema si adatta al numero: 3 = uno grande e due piccoli, 4 = 2×2, 5 = uno grande e quattro piccoli, 6 = 3×2. Il primo modulo prende il posto grande.</div>
-        <div id="sPageMods" style="margin-bottom:24px"></div>
+        <!-- ===== Generale: solo impostazioni che valgono per tutto il pannello ===== -->
+        <section class="spane" data-tab="gen">
+          <div class="sect">Pagine e rotazione</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Pagine in rotazione</span><div class="chk" id="sPages"></div></div>
+            <div class="fld"><label for="sRot">Durata minima pagina</label><div class="rng"><input type="range" id="sRot" min="8" max="120" step="1"><output id="oRot" class="num"></output></div></div>
+            <div class="fld"><label for="sSub">Durata sotto-pagina nei riquadri</label><div class="rng"><input type="range" id="sSub" min="4" max="30" step="1"><output id="oSub" class="num"></output></div></div>
+            <div class="fld"><label for="sIdle">Ripresa rotazione dopo inattività</label><div class="rng"><input type="range" id="sIdle" min="5" max="300" step="5"><output id="oIdle" class="num"></output></div></div>
+            <div class="fld"><span class="lab">Modalità notte</span><label class="tog" for="sNight"><input type="checkbox" id="sNight">Anteprima ora (un tocco per uscire)</label></div>
+          </div>
+          <div class="note" style="margin:-12px 0 24px">I riquadri di ogni pagina, i contenuti e le frequenze di aggiornamento si scelgono nella scheda della pagina.</div>
 
-        <div class="sect">Liste titoli</div>
-        <div class="set" style="margin-bottom:12px"><div class="fld"><label for="sOrder">Ordine dei titoli nel riquadro</label><select id="sOrder"><option value="market">Per borsa (in ordine di apertura), poi per ticker</option><option value="manual">Come inseriti nella lista</option></select></div></div>
-        <div id="sLists"></div>
-        <div class="btns" style="margin-top:0;margin-bottom:24px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div><div class="sect">Intrattenimento</div><div class="set" style="margin-bottom:24px"><div class="fld" style="grid-column:1 / -1"><span class="lab">Piattaforme in abbonamento</span><div class="chk" id="sProv"></div></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Serie seguite</span><div class="chips" id="sTv"></div><div class="add"><input type="text" id="sTvQ" placeholder="Cerca una serie per titolo" aria-label="Cerca una serie" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sTvGo">Cerca</button><span class="mut" id="sTvMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sTvRes"></div></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Registi e attori preferiti</span><div class="chips" id="sPp"></div><div class="add"><input type="text" id="sPpQ" placeholder="Cerca un regista o un attore" aria-label="Cerca un regista o un attore" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPpGo">Cerca</button><span class="mut" id="sPpMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPpRes"></div></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Generi esclusi dalle novità streaming</span><div class="chk" id="sGen"></div></div></div><div class="sect">Fotografia</div><div class="set" style="margin-bottom:24px"><div class="fld"><label for="sFkUser">Profilo Flickr (alias o codice)</label><input type="text" id="sFkUser" placeholder="es. il nome in flickr.com/photos/…" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
-          <div class="fld"><label for="sFkTag">Tag delle foto del portfolio</label><input type="text" id="sFkTag" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Località per il meteo fotografico</span><div class="chips" id="sPl"></div><div class="add"><input type="text" id="sPlQ" placeholder="Cerca una località" aria-label="Cerca una località" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPlGo">Cerca</button><span class="mut" id="sPlMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPlRes"></div></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Fonti di Novità foto</span><div class="chk" id="sFsrc"></div></div>
-          <div class="note" style="grid-column:1 / -1;margin-top:0">Compaiono le foto pubbliche del profilo con questo tag (le ultime 20 caricate). In Lightroom Classic basta aggiungere la parola chiave e ripubblicare.</div></div><div class="sect">Sport</div><div class="set" style="margin-bottom:24px"><div class="fld"><label for="sFav">Squadra preferita</label><select id="sFav"></select></div>
-          <div class="fld"><span class="lab">&nbsp;</span><div class="note" style="margin:0">Colore pieno, sempre in cima alle dirette e nel riquadro «In diretta» quando non si gioca.</div></div>
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Squadre seguite</span><div class="chips" id="sFol"></div><div class="add"><button class="btn sm" id="sFolAuto">Ripristina: italiane in Champions</button><span class="mut" id="sFolMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sFolAv"></div></div>
-          <div class="note" style="grid-column:1 / -1;margin-top:0">Le squadre seguite sono in grassetto con un pallino in classifiche e partite, e in Champions vengono mostrate per prime. L’Italia è sempre seguita. Tocca una squadra dell’elenco per aggiungerla.</div></div><div class="sect">Configurazione</div><div class="set" style="margin-bottom:8px"><div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div></div>
+          <div class="sect">Ponte dati</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><label for="sApi">Indirizzo del ponte dati (Cloudflare Worker)</label><input type="text" id="sApi" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Chiamate stimate al giorno</span><div class="budget" id="budget"></div><div class="note" style="margin-top:0">Calcolate dalle frequenze di Borsa e Sport impostate nelle rispettive schede.</div></div>
+          </div>
 
-        <div class="sect">Aggiornamento dati</div>
-        <div class="set">
-          <div class="fld"><label for="sFqB">Borsa · a mercato aperto</label><div class="rng"><input type="range" id="sFqB" min="0" max="5" step="1"><output id="oFqB" class="num"></output></div></div>
-          <div class="fld"><label for="sFqBoff">Borsa · a mercato chiuso</label><select id="sFqBoff"><option value="30">Ogni 30 minuti</option><option value="60">Ogni ora</option><option value="0">Nessun aggiornamento</option></select></div>
-          <div class="fld"><label for="sFqC">Calcio · durante le partite</label><div class="rng"><input type="range" id="sFqC" min="0" max="4" step="1"><output id="oFqC" class="num"></output></div></div>
-          <div class="fld"><label for="sFqCscope">Calcio · partite che attivano avvisi e priorità</label><select id="sFqCscope"><option value="follow">Squadra preferita, squadre seguite e Italia</option><option value="fav">Solo la squadra preferita e l’Italia</option><option value="all">Tutte (Serie A, Champions, Nazionale)</option></select></div>
-          <div class="fld" style="grid-column:1 / -1"><label for="sApi">Indirizzo del ponte dati (Cloudflare Worker)</label><input type="text" id="sApi" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></div><div class="fld" style="grid-column:1 / -1"><div class="budget" id="budget"></div></div>
-        </div>
+          <div class="sect">Configurazione</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><div class="sim"><button class="btn sm" id="sExport">Esporta su file</button><button class="btn sm" id="sImport">Importa da file…</button><input type="file" id="sImportFile" accept=".json,application/json" style="display:none"><span class="mut" id="cfgMsg" style="font-size:13px"></span></div><div class="note">Le impostazioni restano solo su questo dispositivo. Per portarle su un altro, esportale qui e importa il file là. Il file contiene le tue liste: tienilo per te.</div></div>
+          </div>
+        </section>
 
-        <div class="sect">Avvisi a schermo intero · calcio</div>
-        <div class="set">
-          <div class="fld" style="grid-column:1 / -1"><span class="lab">Eventi che attivano l’avviso</span><div class="chk" id="sAlerts"></div></div>
-          <div class="fld"><label for="sAlSec">Durata avviso</label><div class="rng"><input type="range" id="sAlSec" min="4" max="20" step="1"><output id="oAlSec" class="num"></output></div></div>
-          <div class="fld"><label for="sAlNight">Durante la modalità notte</label><select id="sAlNight"><option value="off">Nessun avviso</option><option value="dim">Avviso tenue</option></select></div>
-        </div>
+        <!-- ===== Borsa ===== -->
+        <section class="spane" data-tab="borsa">
+          <div class="sect">Riquadri</div>
+          <div class="pmx" id="sPM_borsa"></div>
 
-        <div class="sect">Simulazioni</div>
-        <div class="set">
-          <div class="fld"><label for="sLive">Partite in diretta</label><select id="sLive"><option value="0">Nessuna</option><option value="1">1 partita (tabellone)</option><option value="4">4 partite (lista)</option><option value="7">7 partite (2 sotto-pagine)</option></select></div>
-          <div class="fld"><label for="sSimEv">Simula un evento</label><div class="sim"><select id="sSimEv"></select><button class="btn sm" id="sSimGo">Simula</button><button class="btn sm" id="sSimBurst">Raffica di 3</button></div></div>
-        </div>
-        <div class="note">La simulazione chiude le impostazioni e lancia l’avviso come se il pannello fosse a riposo. Se un evento arriva mentre stai usando il pannello, compare solo un avviso piccolo in alto.</div>
-        <div class="note">La pagina Borsa usa dati reali (Yahoo Finance tramite il ponte dati). I riquadri con l’etichetta «esempio» mostrano ancora dati dimostrativi e verranno collegati uno alla volta.</div><div class="note">Per un titolo di una borsa non in elenco scegli «Altro» e scrivi il simbolo Yahoo completo (es. ENI.MI, NOVO-B.CO).</div>
+          <div class="sect">Liste titoli</div>
+          <div class="set" style="margin-bottom:12px"><div class="fld"><label for="sOrder">Ordine dei titoli nel riquadro</label><select id="sOrder"><option value="market">Per borsa (in ordine di apertura), poi per ticker</option><option value="manual">Come inseriti nella lista</option></select></div></div>
+          <div id="sLists"></div>
+          <div class="btns" style="margin-top:0;margin-bottom:8px"><button class="btn sm" id="sNewList">+ Nuova lista</button></div>
+          <div class="note" style="margin:0 0 24px">Per un titolo di una borsa non in elenco scegli «Altro» e scrivi il simbolo Yahoo completo (es. ENI.MI, NOVO-B.CO).</div>
+
+          <div class="sect">Aggiornamento</div>
+          <div class="set">
+            <div class="fld"><label for="sFqB">Quotazioni · a mercato aperto</label><div class="rng"><input type="range" id="sFqB" min="0" max="5" step="1"><output id="oFqB" class="num"></output></div></div>
+            <div class="fld"><label for="sFqBoff">Quotazioni · a mercato chiuso</label><select id="sFqBoff"><option value="30">Ogni 30 minuti</option><option value="60">Ogni ora</option><option value="0">Nessun aggiornamento</option></select></div>
+          </div>
+          <div class="fixed"><div><span>Trimestrali</span><b>ogni 6 ore</b></div><div><span>Notizie di borsa</span><b>ogni 30 minuti</b></div></div>
+        </section>
+
+        <!-- ===== Sport ===== -->
+        <section class="spane" data-tab="sport">
+          <div class="sect">Riquadri</div>
+          <div class="pmx" id="sPM_sport"></div>
+
+          <div class="sect">Squadre</div>
+          <div class="set">
+            <div class="fld"><label for="sFav">Squadra preferita</label><select id="sFav"></select></div>
+            <div class="fld"><span class="lab">&nbsp;</span><div class="note" style="margin:0">Colore pieno, sempre in cima alle dirette e nel riquadro «In diretta» quando non si gioca.</div></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Squadre seguite</span><div class="chips" id="sFol"></div><div class="add"><button class="btn sm" id="sFolAuto">Ripristina: italiane in Champions</button><span class="mut" id="sFolMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sFolAv"></div>
+              <div class="note" style="margin-top:0">In grassetto con un pallino in classifiche e partite; in Champions vengono mostrate per prime. L’Italia è sempre seguita. Tocca una squadra dell’elenco per aggiungerla.</div></div>
+          </div>
+
+          <div class="sect">Avvisi a schermo intero</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><label for="sFqCscope">Partite che attivano avvisi e priorità</label><select id="sFqCscope"><option value="follow">Squadra preferita, squadre seguite e Italia</option><option value="fav">Solo la squadra preferita e l’Italia</option><option value="all">Tutte (Serie A, Champions, Nazionale)</option></select></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Eventi che attivano l’avviso</span><div class="chk" id="sAlerts"></div></div>
+            <div class="fld"><label for="sAlSec">Durata avviso</label><div class="rng"><input type="range" id="sAlSec" min="4" max="20" step="1"><output id="oAlSec" class="num"></output></div></div>
+            <div class="fld"><label for="sAlNight">Durante la modalità notte</label><select id="sAlNight"><option value="off">Nessun avviso</option><option value="dim">Avviso tenue</option></select></div>
+          </div>
+
+          <div class="sect">Aggiornamento</div>
+          <div class="set">
+            <div class="fld"><label for="sFqC">Dirette · durante le partite</label><div class="rng"><input type="range" id="sFqC" min="0" max="4" step="1"><output id="oFqC" class="num"></output></div></div>
+          </div>
+          <div class="fixed"><div><span>Partite di oggi, fuori dalle dirette</span><b>ogni 30 minuti</b></div><div><span>Classifiche e calendario</span><b>ogni 30 minuti e a fine partita</b></div><div><span>Nazionale</span><b>ogni 3 ore</b></div></div>
+
+          <div class="sect">Prove e simulazioni</div>
+          <div class="set">
+            <div class="fld"><label for="sLive">Partite in diretta simulate</label><select id="sLive"><option value="0">Nessuna</option><option value="1">1 partita (tabellone)</option><option value="4">4 partite (lista)</option><option value="7">7 partite (2 sotto-pagine)</option></select></div>
+            <div class="fld"><label for="sSimEv">Simula un evento</label><div class="sim"><select id="sSimEv"></select><button class="btn sm" id="sSimGo">Simula</button><button class="btn sm" id="sSimBurst">Raffica di 3</button></div></div>
+          </div>
+          <div class="note" style="margin:-12px 0 8px">La simulazione chiude le impostazioni e lancia l’avviso come se il pannello fosse a riposo. Se un evento arriva mentre stai usando il pannello, compare solo un avviso piccolo in alto.</div>
+        </section>
+
+        <!-- ===== Intrattenimento ===== -->
+        <section class="spane" data-tab="intr">
+          <div class="sect">Riquadri</div>
+          <div class="pmx" id="sPM_intr"></div>
+
+          <div class="sect">Piattaforme e generi</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Piattaforme in abbonamento</span><div class="chk" id="sProv"></div></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Generi esclusi dalle novità streaming</span><div class="chk" id="sGen"></div></div>
+          </div>
+
+          <div class="sect">Serie e preferiti</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Serie seguite</span><div class="chips" id="sTv"></div><div class="add"><input type="text" id="sTvQ" placeholder="Cerca una serie per titolo" aria-label="Cerca una serie" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sTvGo">Cerca</button><span class="mut" id="sTvMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sTvRes"></div></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Registi e attori preferiti</span><div class="chips" id="sPp"></div><div class="add"><input type="text" id="sPpQ" placeholder="Cerca un regista o un attore" aria-label="Cerca un regista o un attore" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPpGo">Cerca</button><span class="mut" id="sPpMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPpRes"></div></div>
+          </div>
+
+          <div class="sect">Aggiornamento</div>
+          <div class="fixed"><div><span>Cinema, streaming, serie e preferiti</span><b>ogni 6 ore</b></div></div>
+        </section>
+
+        <!-- ===== Fotografia ===== -->
+        <section class="spane" data-tab="foto">
+          <div class="sect">Riquadri</div>
+          <div class="pmx" id="sPM_foto"></div>
+
+          <div class="sect">Portfolio Flickr</div>
+          <div class="set">
+            <div class="fld"><label for="sFkUser">Profilo Flickr (alias o codice)</label><input type="text" id="sFkUser" placeholder="es. il nome in flickr.com/photos/…" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
+            <div class="fld"><label for="sFkTag">Tag delle foto del portfolio</label><input type="text" id="sFkTag" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="40"></div>
+          </div>
+          <div class="note" style="margin:-12px 0 24px">Compaiono le foto pubbliche del profilo con questo tag (le ultime 20 caricate), che siano in un album o no. In Lightroom Classic basta aggiungere la parola chiave e ripubblicare.</div>
+
+          <div class="sect">Meteo fotografico</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Località</span><div class="chips" id="sPl"></div><div class="add"><input type="text" id="sPlQ" placeholder="Cerca una località" aria-label="Cerca una località" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sPlGo">Cerca</button><span class="mut" id="sPlMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sPlRes"></div>
+              <div class="note" style="margin-top:0">Quella con il pallino ● è la località attiva; si cambia al volo dal riquadro.</div></div>
+          </div>
+
+          <div class="sect">Novità foto</div>
+          <div class="set">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Fonti</span><div class="chk" id="sFsrc"></div></div>
+          </div>
+
+          <div class="sect">Aggiornamento</div>
+          <div class="set">
+            <div class="fld"><label for="sFkFq">Portfolio Flickr</label><select id="sFkFq"><option value="5">Ogni 5 minuti</option><option value="15">Ogni 15 minuti</option><option value="30">Ogni 30 minuti</option><option value="60">Ogni ora</option></select></div>
+            <div class="fld"><span class="lab">&nbsp;</span><div class="note" style="margin:0">Dopo una pubblicazione da Lightroom, nel dettaglio del Portfolio c’è anche il pulsante «Aggiorna» per vedere subito le foto nuove.</div></div>
+          </div>
+          <div class="fixed"><div><span>Meteo fotografico, luce e luna</span><b>ogni 30 minuti</b></div><div><span>Novità foto</span><b>ogni 30 minuti</b></div></div>
+        </section>
       </div>
-      <div class="btns"><button class="btn pri" id="sSave">Salva e chiudi</button><button class="btn" id="sReset">Ripristina predefiniti</button></div>
+      </div>
+      <div class="btns"><button class="btn pri" id="sSave">Salva e chiudi</button><button class="btn" id="sReset">Ripristina predefiniti di questa scheda</button><span class="mut" id="sResetMsg" style="font-size:13px;align-self:center"></span></div>
     </div></div>
 
     <div id="alert" aria-live="assertive"><span class="ev-q" id="evQ"></span><span class="ev-k" id="evK">Serie A</span><span class="ev-t" id="evT">GOL</span><div class="ev-sc"><span class="ev-tm" id="evH"></span><span class="ev-n num"><span id="evSH">0</span><span>–</span><span id="evSA">0</span></span><span class="ev-tm" id="evA"></span></div><div class="ev-d" id="evD"></div><div class="ev-o" id="evO"></div><div class="ev-p" id="evP"></div></div>
@@ -641,18 +744,30 @@ function entRow(m,meta){return '<div class="er"'+(m.id&&m.type?' data-title="'+m
 /* ---------- fotografia: portfolio da Flickr (feed pubblico per tag) ---------- */
 var PH={items:null,err:null,at:null,loading:false},phIdx=0;
 function fotoCfg(){return S.foto||DEF.foto}
-function refreshPhotos(){var c=fotoCfg();if(!c.user){PH.items=null;PH.err=null;refreshTiles();return}if(PH.loading)return;PH.loading=true;
-  getJSON(apiBase()+'/flickr?user='+encodeURIComponent(c.user)+'&tag='+encodeURIComponent(c.tag||'')).then(function(d){PH.items=(d.items||[]).slice(0,24);PH.err=d.error||null;PH.at=new Date()},
-    function(e){PH.err=String((e&&e.message)||e)}).then(function(){PH.loading=false;refreshTiles()})}
-setTimeout(function(){refreshPhotos();setInterval(refreshPhotos,30*60000)},2500);
+/* frequenza scelta in Impostazioni › Fotografia (minuti); il ponte dati tiene il feed per lo stesso tempo */
+function phMin(f){var m=+((f||fotoCfg()).ph);return [5,15,30,60].indexOf(m)>=0?m:15}
+var phTimer=null;
+function schedulePhotos(){clearInterval(phTimer);phTimer=setInterval(function(){refreshPhotos(false)},phMin()*60000)}
+/* force = pulsante «Aggiorna»: il ponte dati rilegge Flickr senza usare la copia salvata */
+function refreshPhotos(force){var c=fotoCfg();if(!c.user){PH.items=null;PH.err=null;refreshTiles();return}if(PH.loading)return;PH.loading=true;PH.force=force===true;phRedraw();
+  getJSON(apiBase()+'/flickr?user='+encodeURIComponent(c.user)+'&tag='+encodeURIComponent(c.tag||'')+'&ttl='+phMin()*60+(force===true?'&fresh=1':'')).then(function(d){
+      var old=(PH.items||[]).map(function(x){return x.img}).join();PH.items=(d.items||[]).slice(0,24);PH.err=d.error||null;PH.at=new Date();
+      PH.same=force===true&&old===PH.items.map(function(x){return x.img}).join()},
+    function(e){PH.err=String((e&&e.message)||e)}).then(function(){PH.loading=false;PH.force=false;refreshTiles();phRedraw()})}
+/* ridisegna il dettaglio del Portfolio se è aperto */
+function phRedraw(){if(openMod==='portfolioPh'&&$('detail').classList.contains('show'))$('dBody').innerHTML=phSlide()}
+setTimeout(function(){refreshPhotos(false);schedulePhotos()},2500);
 function preload(u){if(u){var im=new Image();im.src=u}}
-/* titoli uguali al nome del file (es. DP2Q4207.jpg) e frasi automatiche di Flickr non si mostrano */
-function phTitle(it){var t=(it.title||'').trim();return /^[\w\-]+\.(jpe?g|tiff?|png|dng|heic|webp)$/i.test(t)||/^(img|dsc|dscf|_?mg|p)\d+$/i.test(t)?'':t}
+/* titoli uguali al nome del file (es. DP2Q4207.jpg, «Infrared (7 di 12).jpg») e frasi automatiche di Flickr non si mostrano */
+function phTitle(it){var t=(it.title||'').trim();return /\.(jpe?g|tiff?|png|dng|heic|webp)$/i.test(t)||/^(img|dsc|dscf|_?mg|p)\d+$/i.test(t)?'':t}
 function phDesc(it){var d=(it.desc||'').trim();return /ha (postato|pubblicato) una foto|posted a photo/i.test(d)&&d.length<80?'':d}
 function phCaption(it,i,n){var t=phTitle(it);return (t?'<b>'+esc(t)+'</b>':'')+'<span>Portfolio · '+(i+1)+' / '+n+(it.taken?' · '+esc(dShort(it.taken.slice(0,10)))+' '+it.taken.slice(0,4):'')+'</span>'}
-function phSlide(){var L=PH.items||[];if(!L.length)return '<div class="mut">Nessuna foto.</div>';var i=((phIdx%L.length)+L.length)%L.length,it=L[i];preload(L[(i+1)%L.length].img);preload(L[(i-1+L.length)%L.length].img);
+function phBar(){var c=fotoCfg(),n=(PH.items||[]).length;
+  var st=PH.loading?(PH.force?'Rilettura da Flickr…':'Aggiornamento…'):PH.err?'Ultima lettura non riuscita':PH.at?'Aggiornate alle '+hm(PH.at)+' · '+n+' foto con il tag «'+esc(c.tag)+'»'+(PH.same?' · nessuna novità':''):'';
+  return '<div class="ph-bar"><span>'+st+' · ogni '+(phMin()===60?'ora':phMin()+' min')+'</span><button class="btn sm" data-phr'+(PH.loading?' disabled':'')+'>↻ Aggiorna ora</button></div>'}
+function phSlide(){var L=PH.items||[];if(!L.length)return '<div class="mut" style="padding:40px 0;text-align:center">'+(fotoCfg().user?'Nessuna foto con il tag «'+esc(fotoCfg().tag)+'».':'Indica il tuo profilo Flickr in Impostazioni › Fotografia.')+'</div>'+phBar();var i=((phIdx%L.length)+L.length)%L.length,it=L[i];preload(L[(i+1)%L.length].img);preload(L[(i-1+L.length)%L.length].img);
   return '<div class="slide"><img src="'+esc(it.img)+'" alt="'+esc(phTitle(it))+'"><button class="sl-nav l" data-ph="prev" aria-label="Foto precedente">‹</button><button class="sl-nav r" data-ph="next" aria-label="Foto successiva">›</button></div>'+
-    '<div class="sl-cap">'+phCaption(it,i,L.length)+(phDesc(it)?'<div class="eo" style="-webkit-line-clamp:2">'+esc(phDesc(it))+'</div>':'')+'</div>'}
+    '<div class="sl-cap">'+phCaption(it,i,L.length)+(phDesc(it)?'<div class="eo" style="-webkit-line-clamp:2">'+esc(phDesc(it))+'</div>':'')+'</div>'+phBar()}
 
 /* posizione del sole (algoritmo di SunCalc, V. Agafonkin): orari in cui il sole passa per un'altezza data */
 var SUN=(function(){var PI=Math.PI,rad=PI/180,dayMs=864e5,J1970=2440588,J2000=2451545,e=rad*23.4397,J0=0.0009;
@@ -867,7 +982,7 @@ var D={
 var DEF={api:'https://pannello-dati.marco-foto.workers.dev',order:'market',fqB:2,fqBoff:'30',fqC:1,fqCscope:'follow',rot:20,sub:8,idle:30,pageMods:{borsa:['indices','portfolio','fx','earnings','movers','mktnews'],sport:['live','table','next','ucl','italy'],intr:['cinema','stream','episodes','favs'],foto:['photowx','portfolioPh','morning','moon','news']},alertSec:8,alertNight:'dim',alerts:{start:true,goal:true,var:true,pen:false,red:false,end:true},pages:{borsa:true,sport:true,intr:true,foto:true},liveN:0,
   lists:[{id:'l1',name:'Lista 1',tickers:[]}],
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
-  foto:{user:'',tag:'currentportfolio',places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
+  foto:{user:'',tag:'digitalportfolio',ph:15,places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
   sport:{fav:{k:'inter',n:'Inter'},follow:null}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
@@ -1346,9 +1461,14 @@ function closeOv(id){$(id).classList.remove('show')}
 function openDetail(mod){openMod=mod;earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];$('dTitle').textContent=m.l||'Portfolio';$('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
 /* ---------- impostazioni: copia di lavoro ---------- */
-var W=null;
-function openSettings(){
-  W=clone(S);
+var W=null,sTab='gen';
+function showTab(t){if(!document.querySelector('.spane[data-tab="'+t+'"]'))t='gen';sTab=t;
+  Array.prototype.forEach.call(document.querySelectorAll('#sTabs button'),function(b){b.classList.toggle('on',b.getAttribute('data-tab')===t)});
+  Array.prototype.forEach.call(document.querySelectorAll('.spane'),function(x){x.classList.toggle('on',x.getAttribute('data-tab')===t)});
+  $('sBody').scrollTop=0;$('sResetMsg').textContent=''}
+$('sTabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b)showTab(b.getAttribute('data-tab'))});
+function openSettings(tab){
+  W=clone(S);if(typeof tab==='string')sTab=tab;
   $('sRot').value=W.rot;$('oRot').textContent=W.rot+' s';
   $('sSub').value=W.sub;$('oSub').textContent=W.sub+' s';
   $('sIdle').value=W.idle;$('oIdle').textContent=W.idle+' s';
@@ -1358,7 +1478,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sAlSec').value=W.alertSec;$('oAlSec').textContent=W.alertSec+' s';$('sAlNight').value=W.alertNight;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
-  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';renderPageMods();renderLists();renderSp();openOv('settings');
+  migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
 var FQB=[1,2,5,10,15,30],FQC=[0.5,1,2,3,5];
@@ -1428,14 +1548,15 @@ $('sFolAv').addEventListener('click',function(e){var b=e.target.closest('[data-a
 $('sFolAuto').addEventListener('click',function(){W.sport.follow=null;renderSp()});
 $('sFav').addEventListener('change',function(){var o=this.options[this.selectedIndex];W.sport.fav=this.value?{k:this.value,n:o.textContent}:null;renderSp()});
 function renderPageMods(){
-  $('sPageMods').innerHTML=PAGES.map(function(p){
+  PAGES.forEach(function(p){var box=$('sPM_'+p.id);if(!box)return;
     var sel=W.pageMods[p.id]||[],av=THEME[p.id].filter(function(id){return sel.indexOf(id)<0});
-    return '<div class="pm"><div class="pm-h"><b>'+p.t+'</b><span class="num">'+sel.length+' riquadri</span></div>'+
+    box.innerHTML='<div class="pm"><div class="pm-h"><b>'+(W.pages[p.id]?'In rotazione':'Fuori rotazione · si attiva in Generale')+'</b><span class="num">'+sel.length+' riquadri · da 2 a 6</span></div>'+
       '<div class="pm-sel">'+sel.map(function(id,i){return '<span class="chip"><i class="num">'+(i+1)+'</i>'+esc(modName(id))+(i>0?'<button data-pmu="'+p.id+':'+i+'" aria-label="Sposta prima">▲</button>':'')+(sel.length>2?'<button data-pmd="'+p.id+':'+i+'" aria-label="Togli">✕</button>':'')+'</span>'}).join('')+'</div>'+
-      '<div class="pm-av">'+av.map(function(id){return '<button data-pma="'+p.id+':'+id+'"'+(sel.length>=6?' disabled':'')+'>+ '+esc(modName(id))+'</button>'}).join('')+'</div></div>';
-  }).join('');
+      '<div class="pm-av">'+av.map(function(id){return '<button data-pma="'+p.id+':'+id+'"'+(sel.length>=6?' disabled':'')+'>+ '+esc(modName(id))+'</button>'}).join('')+'</div>'+
+      '<div class="note" style="margin-top:8px">Il primo riquadro prende il posto grande. Lo schema si adatta al numero: 3 = uno grande e due piccoli, 4 = 2×2, 5 = uno grande e quattro piccoli, 6 = 3×2.</div></div>';
+  });
 }
-$('sPageMods').addEventListener('click',function(e){
+$('settings').addEventListener('click',function(e){
   var t=e.target,a;
   if((a=t.getAttribute('data-pmu'))){var q=a.split(':'),A=W.pageMods[q[0]],i=+q[1],x=A[i];A[i]=A[i-1];A[i-1]=x}
   else if((a=t.getAttribute('data-pmd'))){var r=a.split(':');W.pageMods[r[0]].splice(+r[1],1)}
@@ -1467,21 +1588,35 @@ $('sRot').addEventListener('input',function(){$('oRot').textContent=this.value+'
 $('sSub').addEventListener('input',function(){$('oSub').textContent=this.value+' s'});
 $('sIdle').addEventListener('input',function(){$('oIdle').textContent=this.value+' s'});
 $('sAlSec').addEventListener('input',function(){$('oAlSec').textContent=this.value+' s'});
-$('sSave').addEventListener('click',function(){
+/* legge i campi delle schede nella copia di lavoro */
+function collect(){
   W.rot=+$('sRot').value;W.sub=+$('sSub').value;W.idle=+$('sIdle').value;W.liveN=+$('sLive').value;
   Array.prototype.forEach.call(document.querySelectorAll('#sPages input'),function(c){W.pages[c.getAttribute('data-p')]=c.checked});
   W.lists.forEach(function(L){if(!L.name.trim())L.name='Lista'});
   W.ent.prov=PROV.map(function(p){return p.k}).filter(function(k){var c=$('pv_'+k);return c&&c.checked});
   W.ent.ex=GEN.map(function(g){return g[0]}).filter(function(k){var c=$('gn_'+k);return c&&c.checked});
   W.foto.user=($('sFkUser').value||'').trim().replace(/^.*flickr\.com\/photos\//i,'').replace(/[\/?#].*$/,'');W.foto.tag=($('sFkTag').value||'').trim().toLowerCase().replace(/[^a-z0-9_\-]/g,'')||DEF.foto.tag;
-  W.foto.src=FSRC.map(function(f){return f[0]}).filter(function(k){var c=$('fs_'+k);return c&&c.checked});
+  W.foto.src=FSRC.map(function(f){return f[0]}).filter(function(k){var c=$('fs_'+k);return c&&c.checked});W.foto.ph=+$('sFkFq').value||DEF.foto.ph;
   W.order=$('sOrder').value;W.fqB=+$('sFqB').value;W.fqBoff=$('sFqBoff').value;W.fqC=+$('sFqC').value;W.fqCscope=$('sFqCscope').value;
   W.alertSec=+$('sAlSec').value;W.alertNight=$('sAlNight').value;
   var fo=$('sFav').options[$('sFav').selectedIndex];W.sport.fav=$('sFav').value?{k:$('sFav').value,n:fo.textContent}:null;
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
-  W.api=($('sApi').value||'').trim()||DEF.api;S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  W.api=($('sApi').value||'').trim()||DEF.api}
+$('sSave').addEventListener('click',function(){
+  collect();S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);schedulePhotos();WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
-$('sReset').addEventListener('click',function(){S=clone(DEF);save();openSettings();refreshQuotes();scheduleQuotes()});
+var RESET={
+  gen:function(D){W.rot=D.rot;W.sub=D.sub;W.idle=D.idle;W.pages=clone(D.pages);W.api=D.api},
+  borsa:function(D){W.pageMods.borsa=clone(D.pageMods.borsa);W.order=D.order;W.fqB=D.fqB;W.fqBoff=D.fqBoff},
+  sport:function(D){W.pageMods.sport=clone(D.pageMods.sport);W.fqC=D.fqC;W.fqCscope=D.fqCscope;W.alerts=clone(D.alerts);W.alertSec=D.alertSec;W.alertNight=D.alertNight;W.liveN=D.liveN},
+  intr:function(D){W.pageMods.intr=clone(D.pageMods.intr);W.ent.prov=clone(D.ent.prov);W.ent.ex=clone(D.ent.ex)},
+  foto:function(D){W.pageMods.foto=clone(D.pageMods.foto);W.foto.tag=D.foto.tag;W.foto.ph=D.foto.ph;W.foto.src=clone(D.foto.src)}
+};
+var RESET_KEEP={gen:'',borsa:'Le liste titoli restano.',sport:'Squadra preferita e seguite restano.',intr:'Serie e preferiti restano.',foto:'Profilo Flickr e località restano.'};
+/* riporta ai predefiniti solo la scheda aperta, sulla copia di lavoro: diventa effettivo con «Salva e chiudi» */
+$('sReset').addEventListener('click',function(){var t=sTab,s0=S;collect();RESET[t](clone(DEF));S=W;openSettings(t);S=s0;
+  $('sResetMsg').textContent='Predefiniti ripristinati in questa scheda. '+RESET_KEEP[t]+' Premi «Salva e chiudi» per confermare.'});
+$('sPages').addEventListener('change',function(e){var p=e.target.getAttribute('data-p');if(p){W.pages[p]=e.target.checked;renderPageMods()}});
 
 
 
@@ -1589,6 +1724,7 @@ stage.addEventListener('click',function(e){
   var tt=t.closest('[data-title]');if(tt){var kp=$('dBody').scrollTop,q=tt.getAttribute('data-title').split(':');openTitle(q[0],q[1]);READ.st=kp;touch();return}
   var rd=t.closest('[data-read]');if(rd){var keep=$('dBody').scrollTop;openReader(rd.getAttribute('data-read'));READ.st=keep;touch();return}
   var pc=t.closest('[data-plc]');if(pc){S.foto.place=+pc.getAttribute('data-plc');save();WX.data=null;$('dBody').innerHTML=M[openMod].d();refreshWx();renderPage();touch();return}
+  if(t.closest('[data-phr]')){if(!PH.loading)refreshPhotos(true);touch();return}
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
   if(t.closest('.panel')){touch();return}
