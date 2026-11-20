@@ -350,6 +350,10 @@ html,body{margin:0}
 .exb{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;margin-right:8px;vertical-align:2px}
 .exb.up{color:var(--up);background:rgba(63,185,122,.14)}.exb.end{color:var(--accent);background:var(--accent-soft)}
 .exend{color:var(--accent)}
+.exheart{color:var(--down)}
+.exr{align-items:center}.exfl{flex:none;width:40px;height:40px;margin:0 6px 0 -8px;border:0;background:transparent;color:var(--text-3);font-size:22px;line-height:1;cursor:pointer;border-radius:20px}
+.exfl.on{color:var(--down)}
+.exr.hit{background:var(--accent-soft)}.exr{transition:background-color .6s ease}
 .exh{margin:18px 0 4px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}.exh.up{color:var(--up)}.exh .mut{font-weight:400;margin-left:6px}
 .exbar input{width:100%;box-sizing:border-box;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px;-webkit-appearance:none;-webkit-user-select:text;user-select:text}
 .exbar input:focus{outline:2px solid var(--accent);outline-offset:-1px}
@@ -1072,7 +1076,7 @@ var DEF={api:'https://pannello-dati.marco-foto.workers.dev',tr:true,order:'marke
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
   foto:{user:'',tag:'digitalportfolio',ph:15,places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
   sport:{fav:{k:'inter',n:'Inter'},follow:null},
-  eventi:{venues:[],fairs:[],artists:[],extra:['torino','lugano'],places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
+  eventi:{venues:[],fairs:[],artists:[],extra:['torino','lugano'],flags:{},places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
   corso:{status:{}}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
@@ -1171,30 +1175,42 @@ function exZoneName(k){return EX_ZONES[k]||(k?k.charAt(0).toUpperCase()+k.slice(
 /* zone nell'ordine del ponte dati (vicine per distanza, poi quelle sempre incluse); solo quelle con mostre */
 function exZones(){var L=EX.items||[];return (EX.provs||[]).map(function(p){return p.prov}).filter(function(k){return L.some(function(x){return x.prov===k})})}
 /* ordine dentro una zona: preferite, poi in corso dalla chiusura più vicina, poi in arrivo dall'apertura */
-function exSort(L){var f=L.filter(exFav),o=L.filter(function(x){return !exFav(x)});return f.concat(o)}
+/* mostre segnate «mi interessa» (♥): salvate sul dispositivo con i dati essenziali, tolte dopo la chiusura */
+function exFlags(){if(!S.eventi.flags||typeof S.eventi.flags!=='object')S.eventi.flags={};return S.eventi.flags}
+function exIsFlag(x){return !!(x&&exFlags()[x.id])}
+function exPruneFlags(){var F=exFlags(),t=new Date().toISOString().slice(0,10),ch=false;Object.keys(F).forEach(function(k){if(F[k].to&&F[k].to<t){delete F[k];ch=true}});if(ch)save()}
+exPruneFlags();
+function exFind(id){var L=(EX.items||[]).concat((EXUI.web&&EXUI.web.items)||[]);for(var i=0;i<L.length;i++)if(L[i].id===id)return L[i];return exFlags()[id]||null}
+function exToggleFlag(id){var F=exFlags();if(F[id])delete F[id];else{var x=exFind(id);if(!x)return;F[id]={id:x.id,title:x.title,venue:x.venue,city:x.city,from:x.from,to:x.to,link:x.link,prov:x.prov,upcoming:x.upcoming}}save()}
+/* le mie (♥) dalle più vicine alla chiusura; si ricalcola «in arrivo» con la data di oggi */
+function exMine(){var t=new Date().toISOString().slice(0,10),F=exFlags();return Object.keys(F).map(function(k){var x=F[k];return Object.assign({},x,{upcoming:x.from>t})}).sort(function(a,b){return (a.upcoming-b.upcoming)||(a.upcoming?a.from.localeCompare(b.from):a.to.localeCompare(b.to))})}
+/* ordine: segnate ♥, poi sedi preferite ★, poi le altre (già ordinate dal ponte dati) */
+function exSort(L){var a=L.filter(exIsFlag),r=L.filter(function(x){return !exIsFlag(x)}),f=r.filter(exFav),o=r.filter(function(x){return !exFav(x)});return a.concat(f,o)}
 function exOfZone(k){return exSort((EX.items||[]).filter(function(x){return x.prov===k}))}
 var EX_TILE_MAX=10;
 /* sotto-pagine del riquadro: una zona per volta, al massimo 10 mostre per zona (5 per pagina) */
 function exPages(){var P=[];exZones().forEach(function(k){var L=exOfZone(k),now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
-    var pick=now.slice(0,EX_TILE_MAX-Math.min(2,up.length)).concat(up.slice(0,2));
+    var fl=L.filter(exIsFlag),rest=function(A){return A.filter(function(x){return !exIsFlag(x)})};
+    var pick=fl.concat(rest(now).slice(0,Math.max(0,EX_TILE_MAX-fl.length-Math.min(2,rest(up).length))),rest(up).slice(0,2)).slice(0,Math.max(EX_TILE_MAX,fl.length));
     chunk(pick,5).forEach(function(g,i,all){P.push({zone:k,items:g,n:L.length,page:i+1,of:all.length})})});return P}
 function exBadge(x){return x.upcoming?'<span class="exb up">in arrivo</span>':(exClosing(x)?'<span class="exb end">in chiusura</span>':'')}
-function exRowTile(x){return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+esc(x.title||'')+'<small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to))+'</span></span></div>'}
+function exMarks(x){return (exIsFlag(x)?'<span class="exheart">♥</span> ':'')+(exFav(x)?'<span class="fstar">★</span> ':'')}
+function exRowTile(x){return '<div class="r" data-k="ex'+esc(x.id)+'"><span class="k" style="font-size:17px">'+exMarks(x)+esc(x.title||'')+'<small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to))+'</span></span></div>'}
 function exWait(){return '<div class="nolive"><span>'+(EX.err?'Dati non disponibili':'In attesa dei dati…')+'</span></div>'}
 M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},n:function(){return Math.max(1,exPages().length)},c:function(i){
     if(EX.items==null)return exWait();var P=exPages();if(!P.length)return '<div class="nolive"><span>Nessuna mostra trovata</span></div>';
     var pg=P[i%P.length];return '<div class="exz"><b>'+esc(exZoneName(pg.zone))+'</b><span class="mut">'+pg.n+' mostre'+(pg.of>1?' · '+pg.page+'/'+pg.of:'')+'</span></div><div class="rows">'+pg.items.map(exRowTile).join('')+'</div>'},
   d:function(){if(EX.items==null)return exWait();
-    var Z=exZones();if(EXUI.zone!=='all'&&Z.indexOf(EXUI.zone)<0)EXUI.zone=Z[0]||'all';
+    var Z=exZones();if(EXUI.zone==='mine'&&!exMine().length)EXUI.zone=Z[0]||'all';if(EXUI.zone!=='all'&&EXUI.zone!=='mine'&&Z.indexOf(EXUI.zone)<0)EXUI.zone=Z[0]||'all';
     return '<div class="exbar"><input type="search" id="exQ" placeholder="Cerca autore, titolo o sede, es. Fan Ho" value="'+esc(EXUI.q)+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
-      '<div class="pchips" id="exTabs" style="margin:12px 0 4px">'+Z.map(function(k){return '<button data-exz="'+k+'" class="'+(EXUI.zone===k?'on':'')+'">'+esc(exZoneName(k))+' <span class="mut">'+(EX.items||[]).filter(function(x){return x.prov===k}).length+'</span></button>'}).join('')+'<button data-exz="all" class="'+(EXUI.zone==='all'?'on':'')+'">Tutte</button></div>'+
+      '<div class="pchips" id="exTabs" style="margin:12px 0 4px">'+(exMine().length?'<button data-exz="mine" class="'+(EXUI.zone==='mine'?'on':'')+'"><span class="exheart">♥</span> Le mie <span class="mut">'+exMine().length+'</span></button>':'')+Z.map(function(k){return '<button data-exz="'+k+'" class="'+(EXUI.zone===k?'on':'')+'">'+esc(exZoneName(k))+' <span class="mut">'+(EX.items||[]).filter(function(x){return x.prov===k}).length+'</span></button>'}).join('')+'<button data-exz="all" class="'+(EXUI.zone==='all'?'on':'')+'">Tutte</button></div>'+
       '<div id="exList">'+exDetailList()+'</div>'+
-      '<div class="note">Mostre dal calendario di arte.it per le zone vicine alla località attiva e per quelle sempre incluse (Impostazioni › Eventi). Le sedi preferite sono evidenziate con ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
+      '<div class="note">Mostre dal calendario di arte.it per le zone vicine alla località attiva e per quelle sempre incluse (Impostazioni › Eventi). Tocca ♡ per segnare una mostra che ti interessa: resta in cima, con ♥, anche nel riquadro. Le sedi preferite hanno ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
   sub:'Mostre in corso e in arrivo vicino a te · arte.it'};
 var EXUI={zone:'all',q:'',web:null};
 function exNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
 function exMatch(x,q){var h=exNorm([x.title,x.venue,x.city].join(' '));return exNorm(q).split(' ').every(function(w){return h.indexOf(w)>=0})}
-function exRowD(x,showZone){return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+'<a href="'+esc(x.link)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+esc(x.title||'')+'</a><small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+(showZone&&x.prov&&x.prov!==(x.city||'').toLowerCase()?' · '+esc(exZoneName(x.prov)):'')+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(dShort(x.from))+' – '+esc(dShort(x.to))+'</span></span></div>'}
+function exRowD(x,showZone){var on=exIsFlag(x);return '<div class="r exr" data-k="ex'+esc(x.id)+'"><button class="exfl'+(on?' on':'')+'" data-exflag="'+esc(x.id)+'" aria-label="'+(on?'Togli da «Mi interessa»':'Segna «Mi interessa»')+'">'+(on?'♥':'♡')+'</button><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+'<a href="'+esc(x.link)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+esc(x.title||'')+'</a><small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+(showZone&&x.prov&&x.prov!==(x.city||'').toLowerCase()?' · '+esc(exZoneName(x.prov)):'')+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(dShort(x.from))+' – '+esc(dShort(x.to))+'</span></span></div>'}
 function exSections(L,showZone){var now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
   return (now.length?'<div class="exh">In corso <span class="mut">'+now.length+'</span></div><div class="rows">'+now.map(function(x){return exRowD(x,showZone)}).join('')+'</div>':'')+
     (up.length?'<div class="exh up">In arrivo <span class="mut">'+up.length+'</span></div><div class="rows">'+up.map(function(x){return exRowD(x,showZone)}).join('')+'</div>':'')}
@@ -1206,6 +1222,7 @@ function exDetailList(){var q=EXUI.q.trim();
         (W.items.length?exSections(W.items.filter(function(x){return !L.some(function(y){return y.id===x.id})}),true)||'<div class="mut">Nessun’altra mostra oltre a quelle sopra.</div>':'<div class="mut">Nessuna mostra in corso o in arrivo con «'+esc(q)+'».</div>'))}
       else h+='<button class="btn sm" data-exweb style="margin-top:16px">Cerca «'+esc(q)+'» su tutto arte.it</button>'}
     return h}
+  if(EXUI.zone==='mine'){var M2=exMine();return M2.length?exSections(M2,true):'<div class="mut">Nessuna mostra segnata.</div>'}
   var Z=EXUI.zone==='all'?null:EXUI.zone,L2=exSort((EX.items||[]).filter(function(x){return !Z||x.prov===Z}));
   return L2.length?exSections(L2,!Z):'<div class="mut">Nessuna mostra.</div>'}
 function exRedrawList(){var el=document.getElementById('exList');if(el)el.innerHTML=exDetailList()}
@@ -1835,7 +1852,7 @@ function closeOv(id){$(id).classList.remove('show')}
 function focusRow(k){var b=$('dBody'),L=b.querySelectorAll('[data-k]'),el=null;for(var i=0;i<L.length;i++){if(L[i].getAttribute('data-k')===k){el=L[i];break}}if(!el)return;
   var y=0,n=el;while(n&&n!==b){y+=n.offsetTop;n=n.offsetParent}if(n!==b){y=0;n=el;var by=0,m=b;while(n){y+=n.offsetTop;n=n.offsetParent}while(m){by+=m.offsetTop;m=m.offsetParent}y-=by}
   b.scrollTop=Math.max(0,y-8);el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},1600)}
-function openDetail(mod){openMod=mod;if(mod==='mostre'){EXUI.q='';EXUI.web=null;EXUI.zone=exZones()[0]||'all'}earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];
+function openDetail(mod){openMod=mod;if(mod==='mostre'){EXUI.q='';EXUI.web=null;var fx=EXUI.focus?exFind(EXUI.focus):null;EXUI.focus=null;EXUI.zone=fx&&fx.prov&&exZones().indexOf(fx.prov)>=0?fx.prov:(exZones()[0]||'all')}earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];
   $('dTitle').innerHTML=isCorsoMod(mod)?'<span style="display:flex;justify-content:space-between;align-items:center;padding-right:56px">'+esc(m.l||'')+corsoLogo(36)+'</span>':esc(m.l||'Portfolio');
   $('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
@@ -2141,6 +2158,11 @@ stage.addEventListener('click',function(e){
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
   var exz=t.closest('[data-exz]');if(exz){EXUI.zone=exz.getAttribute('data-exz');EXUI.q='';EXUI.web=null;var kb=$('dBody');kb.innerHTML=M.mostre.d();touch();return}
+  var exf=t.closest('[data-exflag]');if(exf){var fid=exf.getAttribute('data-exflag');exToggleFlag(fid);var fon=!!exFlags()[fid];
+    /* il cuore cambia sul posto (la riga non salta in cima); si aggiornano solo le schede, per il conteggio di «Le mie» */
+    [].forEach.call($('dBody').querySelectorAll('[data-exflag="'+fid+'"]'),function(bt){bt.classList.toggle('on',fon);bt.textContent=fon?'♥':'♡'});
+    var tb=$('exTabs');if(tb){var tmp=document.createElement('div');tmp.innerHTML=M.mostre.d();var nt=tmp.querySelector('#exTabs');if(nt)tb.innerHTML=nt.innerHTML}
+    refreshTiles();touch();return}
   if(t.closest('[data-exweb]')){var wq=EXUI.q.trim();if(wq.length>=2)exWebSearch(wq);touch();return}
   if(t.closest('.panel')){touch();return}
   if(t.closest('.ov')){closeOv('detail');closeOv('settings');touch();return}
@@ -2150,7 +2172,7 @@ stage.addEventListener('click',function(e){
   if(t.closest('#bNight')){setNight(true);return}
   var pl=t.closest('[data-plist]');if(pl){portJump(pl.getAttribute('data-plist'));touch();return}
   var tile=t.closest('.tile[data-mod]');
-  if(tile&&interactive){var hr=t.closest('[data-k]')||tile.querySelector('[data-k]');openDetail(tile.getAttribute('data-mod'));if(hr)focusRow(hr.getAttribute('data-k'));touch();return}
+  if(tile&&interactive){var hr=t.closest('[data-k]')||tile.querySelector('[data-k]');if(tile.getAttribute('data-mod')==='mostre'){var hk=t.closest('[data-k]');EXUI.focus=hk?hk.getAttribute('data-k').slice(2):null;if(!hk)hr=null}openDetail(tile.getAttribute('data-mod'));if(hr)focusRow(hr.getAttribute('data-k'));touch();return}
   touch(); // primo tocco: ferma la rotazione e mostra la barra
 });
 stage.addEventListener('touchstart',function(e){var p=e.touches[0];tx=p.clientX;ty=p.clientY},{passive:true});
