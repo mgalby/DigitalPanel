@@ -355,7 +355,7 @@ html,body{margin:0}
 .exend{color:var(--accent)}
 .exheart{color:var(--down)}
 /* righe del riquadro Mostre: posti fissi, titolo grande su massimo 2 righe, sede su una riga, etichetta sopra la data */
-.rows.exrows{display:grid;gap:0}
+.rows.exrows{display:grid;gap:0;grid-template-columns:minmax(0,1fr)}
 .exrt{padding:0;min-height:0;align-items:center}
 .exrt .k{min-width:0}
 .exrt .ext{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:20px;font-weight:500;line-height:1.2}
@@ -367,6 +367,14 @@ html,body{margin:0}
 .exr.hit{background:var(--accent-soft)}.exr{transition:background-color .6s ease}
 .exh{margin:18px 0 4px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}.exh.up{color:var(--up)}.exh .mut{font-weight:400;margin-left:6px}
 #sEvPl .chip.on{border-color:var(--accent);color:var(--accent)}
+.frr{padding:0;min-height:0;align-items:center;gap:14px}
+.frbox{flex:none}.frd{display:flex;flex-direction:column;align-items:center;width:52px;line-height:1.05}.frd b{font-size:26px;font-weight:400}.frd small{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+.frr .frt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:18px;font-weight:500;line-height:1.2}
+.frr .k{flex:1;min-width:0;overflow:hidden}.frr .k small{font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.frr .v.frv{font-size:15px;white-space:nowrap;flex:none;max-width:none}
+#dBody .frr{padding:7px 0}
+.frc{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:5px;padding:1px 6px;margin-right:4px;vertical-align:1px;color:var(--accent);background:var(--accent-soft)}
+.frc.fc-photo{color:#7FB2E5;background:rgba(127,178,229,.14)}.frc.fc-comics{color:#C792EA;background:rgba(199,146,234,.14)}.frc.fc-fiera{color:var(--up);background:rgba(63,185,122,.14)}.frc.fc-mine{color:var(--text-2);background:var(--surface-2)}
+.frg{margin:0 0 12px}.frchips{display:flex;flex-wrap:wrap;gap:6px}.frch{text-align:left;display:flex;flex-direction:column;align-items:flex-start;max-width:100%}.frch small{font-size:11px;opacity:.8;margin-top:1px}
 .zcount{margin-left:8px;font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:0;text-transform:none}.zcount.full{color:var(--accent)}
 .zchip{border:1px solid var(--line);background:transparent;color:var(--text-2);border-radius:16px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
 .zchip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}.zchip:disabled{opacity:.35;cursor:default}
@@ -591,11 +599,12 @@ html,body{margin:0}
               <div class="note" style="margin-top:8px">Le mostre arrivano da arte.it per le zone scelte più sotto («Mostre · zone lette»). Le sedi che aggiungi qui sono le tue preferite: le loro mostre vanno in cima, con ★. Mentre scrivi ti vengono proposte le sedi trovate nelle mostre lette; con la città, vale solo la sede di quella città.</div></div>
           </div>
 
-          <div class="sect" style="margin-top:20px">Fiere e mercatini ricorrenti</div>
+          <div class="sect" style="margin-top:20px">Fiere e mercatini <span class="zcount" id="sFrCnt"></span></div>
           <div class="set" style="margin-bottom:0">
-            <div class="fld" style="grid-column:1 / -1"><div id="sFairs"></div>
-              <div class="add"><input type="text" id="sFrN" placeholder="Nome, es. Mercatone dell’Antiquariato" aria-label="Nome fiera" maxlength="60" style="width:260px;text-transform:none"><select id="sFrType"><option value="monthly">Ogni mese, il giorno…</option><option value="weekly">Ogni settimana, di…</option></select><select id="sFrDom"></select><select id="sFrWd"><option value="0">domenica</option><option value="1">lunedì</option><option value="2">martedì</option><option value="3">mercoledì</option><option value="4">giovedì</option><option value="5">venerdì</option><option value="6">sabato</option></select><button class="btn sm" id="sFrAdd">Aggiungi</button></div>
-              <div class="note" style="margin-top:8px">Per fiere con un calendario diverso (es. terza domenica del mese) scegli il giorno più vicino: il conto alla rovescia resta indicativo.</div></div>
+            <div class="fld" style="grid-column:1 / -1"><div id="sFrCat"></div>
+              <div class="note" style="margin-top:8px">Catalogo preparato da Claude (mercatini dell’antiquariato e del vintage delle tue zone, fiere di fotografia, fumetti e grandi fiere): tocca per includere (✓) o escludere. Le date ricorrenti si calcolano dalla regola.</div></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">I tuoi appuntamenti</span><div id="sFairs"></div>
+              <div class="add"><input type="text" id="sFrN" placeholder="Nome, es. Mercatino di Paderno" aria-label="Nome" maxlength="60" style="width:230px;text-transform:none"><input type="text" id="sFrC" placeholder="Città" aria-label="Città" maxlength="40" style="width:130px;text-transform:none"><select id="sFrType"><option value="nth">Ogni mese, la…</option><option value="monthly">Ogni mese, il giorno…</option><option value="weekly">Ogni settimana, di…</option></select><select id="sFrNth"><option value="1">prima</option><option value="2">seconda</option><option value="3">terza</option><option value="4">quarta</option><option value="-1">ultima</option></select><select id="sFrDom"></select><select id="sFrWd"><option value="0">domenica</option><option value="1">lunedì</option><option value="2">martedì</option><option value="3">mercoledì</option><option value="4">giovedì</option><option value="5">venerdì</option><option value="6">sabato</option></select><button class="btn sm" id="sFrAdd">Aggiungi</button></div></div>
           </div>
 
           <div class="sect" style="margin-top:20px">Concerti</div>
@@ -1201,13 +1210,6 @@ function exZoneList(c){c=c||eventiCfg();if(Array.isArray(c.zones))return c.zones
 function evPlaces(){var c=eventiCfg();return (c.places&&c.places.length)?c.places:DEF.eventi.places}
 function curEvPlace(){var P=evPlaces(),i=eventiCfg().place||0;return P[Math.min(i,P.length-1)]}
 function evPlaceChips(){var P=evPlaces(),cur=eventiCfg().place||0;return '<div class="pchips">'+P.map(function(p,i){return '<button data-evplc="'+i+'" class="'+(i===cur?'on':'')+'">'+esc(p.n)+'</button>'}).join('')+'</div>'}
-var FRGG=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
-/* prossima data di una fiera ricorrente: mensile (giorno del mese) o settimanale (giorno della settimana) */
-function fairNext(f){var now=new Date();now.setHours(0,0,0,0);
-  if(f.type==='weekly'){var wd=+f.wd,d=new Date(now);var diff=(wd-d.getDay()+7)%7;d.setDate(d.getDate()+diff);return d}
-  var dom=Math.max(1,Math.min(31,+f.dom||1)),d2=new Date(now.getFullYear(),now.getMonth(),dom);
-  if(d2<now)d2=new Date(now.getFullYear(),now.getMonth()+1,dom);return d2}
-function fairList(){return (eventiCfg().fairs||[]).map(function(f){return {f:f,d:fairNext(f)}}).sort(function(a,b){return a.d-b.d})}
 var EX={items:null,err:null,at:null,loading:false,provs:[]};
 function refreshExhib(){var p=curEvPlace();if(!p||EX.loading)return;EX.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
   getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&zones='+exZoneList().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;exRedrawTile();exRedrawDetail()})}
@@ -1300,13 +1302,100 @@ function exWebSearch(q){EXUI.web={q:q,loading:true,items:[]};exRedrawList();
   getJSON(apiBase()+'/events/exhibitions/search?q='+encodeURIComponent(q),25000).then(function(d){if(EXUI.web&&EXUI.web.q===q)EXUI.web={q:q,items:d.items||[]}},function(e){if(EXUI.web&&EXUI.web.q===q)EXUI.web={q:q,items:[],err:String((e&&e.message)||e)}}).then(exRedrawList)}
 $('dBody').addEventListener('input',function(e){if(e.target&&e.target.id==='exQ'){EXUI.q=e.target.value;exRedrawList();touch()}});
 $('dBody').addEventListener('keydown',function(e){if(e.target&&e.target.id==='exQ'&&e.key==='Enter'){e.preventDefault();var q=EXUI.q.trim();if(q.length>=2)exWebSearch(q);e.target.blur()}});
-M.fiere={l:'Fiere e mercatini',s:'ricorrenti',n:function(){return Math.max(1,chunk(fairList(),4).length)},c:function(i){
-    var L=fairList();if(!L.length)return '<div class="nolive"><span>Nessuna fiera in elenco</span><span style="font-size:13px">Aggiungile da Impostazioni › Eventi</span></div>';
-    var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){var g2=dayDiff(x.d.toISOString());return '<div class="cd"><div class="g">'+gBox(g2)+'</div><div class="i"><b>'+esc(x.f.n)+'</b><div>'+(x.f.type==='weekly'?'Ogni '+FRGG[+x.f.wd]:'Il '+x.f.dom+' di ogni mese')+'</div><div>'+esc(dLabel(x.d.toISOString()))+'</div></div></div>'}).join('')+'</div>'},
-  d:function(){var L=fairList();if(!L.length)return '<div class="mut">Nessuna fiera in elenco. Aggiungile da Impostazioni › Eventi.</div>';
-    return '<table class="dtbl"><tr><th>Fiera</th><th>Ricorrenza</th><th class="n">Prossima data</th></tr>'+L.map(function(x){return '<tr><td><b>'+esc(x.f.n)+'</b></td><td class="mut">'+(x.f.type==='weekly'?'Ogni '+FRGG[+x.f.wd]:'Il '+x.f.dom+' di ogni mese')+'</td><td class="n num">'+esc(dLabel(x.d.toISOString()))+'</td></tr>'}).join('')+'</table>'+
-      '<div class="note">Per fiere con un calendario diverso (es. terza domenica del mese) scegli il giorno più vicino: il conto alla rovescia resta indicativo.</div>'},
-  sub:'Mercatini dell’antiquariato, fiere del fumetto e della fotografia · conto alla rovescia'};
+var FRGG=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+/* ---------- Fiere e mercatini: catalogo curato (ricerca del 20 nov 2026) ----------
+   r = regola ricorrente: t:'nth' n=[1..4 | -1 = ultima], wd = giorno (0 domenica, 6 sabato), sat = anche il sabato prima,
+       ex = mesi esclusi (1-12); t:'wk' ogni settimana di wd. over = date spostate {'AAAA-MM':'AAAA-MM-GG'}.
+   d = fiere con date proprie [[inizio, fine], ...]; tbc = date non ancora confermate dall'organizzatore.
+   cat: antiq (antiquariato e vintage), photo (fotografia), comics (fumetti), fiera (grandi fiere). */
+var FAIR_CAT=[
+  {id:'naviglio',n:'Mercatone dell’Antiquariato',p:'Naviglio Grande',c:'Milano',z:'milano',cat:'antiq',r:{t:'nth',n:[-1],wd:0},over:{'2026-12':'2026-12-20'},note:'a dicembre anticipato'},
+  {id:'brera',n:'Mercatino dell’Antiquariato di Brera',p:'via Fiori Chiari',c:'Milano',z:'milano',cat:'antiq',r:{t:'nth',n:[3],wd:0,ex:[8]}},
+  {id:'lido',n:'Antiquari al Lido',p:'piazzale Lotto',c:'Milano',z:'milano',cat:'antiq',r:{t:'nth',n:[2],wd:0}},
+  {id:'diaz',n:'Mercatino di Piazza Diaz',p:'portici di piazza Diaz',c:'Milano',z:'milano',cat:'antiq',r:{t:'nth',n:[2],wd:0,ex:[8]}},
+  {id:'sinigaglia',n:'Fiera di Sinigaglia',p:'Darsena',c:'Milano',z:'milano',cat:'antiq',r:{t:'wk',wd:6}},
+  {id:'monza',n:'Mercatino del Brocantage',p:'via Bergamo',c:'Monza',z:'milano',cat:'antiq',r:{t:'nth',n:[2],wd:0,ex:[8]}},
+  {id:'corsico',n:'Pulci e… non solo',p:'',c:'Corsico',z:'milano',cat:'antiq',r:{t:'nth',n:[1,3],wd:0}},
+  {id:'cassano',n:'Mercatino dell’Antiquariato',p:'piazza Perrucchetti',c:'Cassano d’Adda',z:'milano',cat:'antiq',r:{t:'nth',n:[1],wd:0,ex:[8]}},
+  {id:'trezzo',n:'Mercante in Piazza',p:'piazza Nazionale',c:'Trezzo sull’Adda',z:'milano',cat:'antiq',r:{t:'nth',n:[1],wd:0}},
+  {id:'mercantico',n:'MercAntico',p:'Città Alta',c:'Bergamo',z:'bergamo',cat:'antiq',r:{t:'nth',n:[3],wd:0,ex:[1,7,8]}},
+  {id:'sanpellegrino',n:'Mercatino dell’Antiquariato e dell’Ingegno',p:'zona Terme',c:'San Pellegrino Terme',z:'bergamo',cat:'antiq',r:{t:'nth',n:[-1],wd:0}},
+  {id:'treviglio',n:'Antico in Via',p:'centro storico',c:'Treviglio',z:'bergamo',cat:'antiq',r:{t:'nth',n:[3],wd:0}},
+  {id:'martinengo',n:'Mercato dell’Antiquariato e del Collezionismo',p:'portici medievali',c:'Martinengo',z:'bergamo',cat:'antiq',r:{t:'nth',n:[1],wd:0}},
+  {id:'bosino',n:'Antico Mercato Bosino',p:'corso Matteotti',c:'Varese',z:'varese',cat:'antiq',r:{t:'nth',n:[2],wd:0}},
+  {id:'gallarate',n:'Antico Mercato di Gallarate',p:'centro storico',c:'Gallarate',z:'varese',cat:'antiq',r:{t:'nth',n:[3],wd:0,ex:[7,8]}},
+  {id:'busto',n:'Mercatino Cronos',p:'piazza Garibaldi',c:'Busto Arsizio',z:'varese',cat:'antiq',r:{t:'nth',n:[-1],wd:0}},
+  {id:'castiglione',n:'Fiera del Cardinale',p:'centro storico',c:'Castiglione Olona',z:'varese',cat:'antiq',r:{t:'nth',n:[1],wd:0}},
+  {id:'castelseprio',n:'Mercatino dell’Antiquariato',p:'via San Giuseppe, mattina',c:'Castelseprio',z:'varese',cat:'antiq',r:{t:'nth',n:[2],wd:0}},
+  {id:'granbalon',n:'Gran Balon',p:'Borgo Dora',c:'Torino',z:'torino',cat:'antiq',r:{t:'nth',n:[2],wd:0}},
+  {id:'balon',n:'Balon del sabato',p:'Borgo Dora',c:'Torino',z:'torino',cat:'antiq',r:{t:'wk',wd:6}},
+  {id:'santostefano',n:'Mercato Antiquario Città di Bologna',p:'piazza Santo Stefano',c:'Bologna',z:'bologna',cat:'antiq',r:{t:'nth',n:[2],wd:0,sat:1,ex:[7,8]}},
+  {id:'medicina',n:'I Portici di Medicina',p:'centro storico',c:'Medicina',z:'bologna',cat:'antiq',r:{t:'nth',n:[1],wd:0,ex:[1,7,8]}},
+  {id:'budrio',n:'Incanti & Mercanti',p:'centro',c:'Budrio',z:'bologna',cat:'antiq',r:{t:'nth',n:[3],wd:0}},
+  {id:'lugano',n:'Mercato dell’antiquariato e dell’artigianato',p:'Quartiere Maghetti',c:'Lugano',z:'lugano',cat:'antiq',r:{t:'wk',wd:6}},
+  {id:'mgw',n:'Milan Games Week & Cartoomics',p:'Fiera Milano',c:'Rho',z:'milano',cat:'comics',d:[['2026-11-27','2026-11-29']]},
+  {id:'fumetto',n:'Festival del Fumetto',p:'Parco Esposizioni Novegro',c:'Segrate',z:'milano',cat:'comics',d:[['2027-01-30','2027-01-31']],tbc:true,note:'di solito l’ultimo weekend di gennaio'},
+  {id:'becomics',n:'Be Comics! Be Games!',p:'Lingotto Fiere',c:'Torino',z:'torino',cat:'comics',d:[['2026-12-12','2026-12-13'],['2027-04-17','2027-04-18']]},
+  {id:'artigiano',n:'Artigiano in Fiera',p:'Fiera Milano',c:'Rho',z:'milano',cat:'fiera',d:[['2026-12-05','2026-12-13']]},
+  {id:'falacosa',n:'Fa’ la cosa giusta!',p:'Fiera Milano',c:'Rho',z:'milano',cat:'fiera',d:[['2027-03-05','2027-03-07']]},
+  {id:'mia',n:'MIA Photo Fair BNP Paribas',p:'Superstudio Più',c:'Milano',z:'milano',cat:'photo',d:[['2027-03-18','2027-03-21']]}
+];
+var FR_CATS={antiq:'Antiquariato',photo:'Fotografia',comics:'Fumetti',fiera:'Grandi fiere',mine:'Tuoi'};
+function frIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function frDate(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+/* n-esimo giorno wd del mese (n=-1: l'ultimo) */
+function frNth(y,m,n,wd){if(n>0){var d=new Date(y,m,1);d.setDate(1+(wd-d.getDay()+7)%7+(n-1)*7);return d.getMonth()===m?d:null}
+  var e=new Date(y,m+1,0);e.setDate(e.getDate()-((e.getDay()-wd+7)%7));return e}
+/* prossima occorrenza (in corso o futura): {s, e} come Date */
+function frNext(f,today){today=today||(function(){var t=new Date();t.setHours(0,0,0,0);return t})();
+  if(f.d){for(var i=0;i<f.d.length;i++){var e0=frDate(f.d[i][1]);if(e0>=today)return {s:frDate(f.d[i][0]),e:e0}}return null}
+  var r=f.r||{};
+  if(r.t==='wk'){var w=new Date(today);w.setDate(w.getDate()+(r.wd-w.getDay()+7)%7);return {s:w,e:w}}
+  if(r.t==='nth'){for(var k=0;k<15;k++){var y=today.getFullYear(),m=today.getMonth()+k;var mm=new Date(y,m,1);y=mm.getFullYear();m=mm.getMonth();
+      if((r.ex||[]).indexOf(m+1)>=0)continue;var key=y+'-'+String(m+1).padStart(2,'0'),best=null;
+      if(f.over&&f.over[key]){var o=frDate(f.over[key]);best={s:r.sat?new Date(o.getFullYear(),o.getMonth(),o.getDate()-1):o,e:o}}
+      else (r.n||[]).forEach(function(n){var d=frNth(y,m,n,r.wd);if(!d)return;var s=r.sat?new Date(d.getFullYear(),d.getMonth(),d.getDate()-1):d;
+        if(d>=today&&(!best||s<best.s))best={s:s,e:d}});
+      if(best&&best.e>=today)return best}return null}
+  return null}
+/* testo della regola, per elenco e impostazioni */
+var FR_ORD={1:'prima',2:'seconda',3:'terza',4:'quarta','-1':'ultima'};
+var FR_MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function frRule(f){if(f.d){var t=f.d.map(function(x){return frRange(frDate(x[0]),frDate(x[1]))}).join(' e ');return t+(f.tbc?' (da confermare)':'')}
+  var r=f.r||{};if(r.t==='wk')return 'ogni '+FRGG[r.wd];
+  var t='ogni '+(r.n||[]).map(function(n){return FR_ORD[n]}).join(' e ')+' '+FRGG[r.wd]+' del mese'+(r.sat?' (e il sabato prima)':'');
+  if(r.ex&&r.ex.length)t+=', escluso '+r.ex.map(function(m){return FR_MESI[m-1]}).join(', ');return t}
+function frRange(s,e){var a=s.getDate()+' '+FR_MESI[s.getMonth()],b=e.getDate()+' '+FR_MESI[e.getMonth()];return +s===+e?a:(s.getMonth()===e.getMonth()?s.getDate()+'–'+b:a+' – '+b)}
+/* appuntamenti aggiunti a mano (formato vecchio + n-esimo giorno) trasformati come quelli del catalogo */
+function frCustom(c){return (c.fairs||[]).map(function(f,i){var r=f.type==='weekly'?{t:'wk',wd:+f.wd}:f.type==='nth'?{t:'nth',n:[+f.nth],wd:+f.wd}:null;
+  return {id:'u'+i,n:f.n,c:f.c||'',p:'',cat:'mine',r:r,dom:f.type==='monthly'?+f.dom:null}})}
+function frNextCustom(f,today){if(f.dom){var now=today||new Date();now.setHours(0,0,0,0);var dom=Math.max(1,Math.min(31,f.dom)),d=new Date(now.getFullYear(),now.getMonth(),dom);if(d<now)d=new Date(now.getFullYear(),now.getMonth()+1,dom);return {s:d,e:d}}return frNext(f,today)}
+/* selezione: se non ancora scelta, quelle delle zone delle mostre più le fiere con data di fotografia e fumetti */
+function frSel(c){c=c||eventiCfg();if(Array.isArray(c.fairSel))return c.fairSel;var Z=exZoneList(c);
+  return FAIR_CAT.filter(function(f){return Z.indexOf(f.z)>=0||(f.d&&(f.cat==='photo'||f.cat==='comics'))}).map(function(f){return f.id})}
+/* elenco dei prossimi appuntamenti scelti (uno per voce), dal più vicino; entro «giorni» (default 120) */
+function fairList(days){var c=eventiCfg(),sel=frSel(c),t=new Date();t.setHours(0,0,0,0);var lim=new Date(t);lim.setDate(lim.getDate()+(days||120));
+  var L=FAIR_CAT.filter(function(f){return sel.indexOf(f.id)>=0}).map(function(f){return {f:f,o:frNext(f,t)}})
+    .concat(frCustom(c).map(function(f){return {f:f,o:frNextCustom(f,new Date(t))}}))
+    .filter(function(x){return x.o&&x.o.s<=lim});
+  return L.sort(function(a,b){return a.o.s-b.o.s||a.f.n.localeCompare(b.f.n)})}
+function frCount(o){var t=new Date();t.setHours(0,0,0,0);if(o.s<=t&&o.e>=t)return 'in corso';var g=Math.round((o.s-t)/86400000);return g===1?'domani':'tra '+g+' giorni'}
+function frBox(o){var s=o.s;return '<span class="frd"><small>'+FRGG[s.getDay()].slice(0,3)+'</small><b>'+s.getDate()+'</b><small>'+FR_MESI[s.getMonth()]+'</small></span>'}
+function frRow(x,big){var f=x.f,o=x.o,multi=+o.s!==+o.e;
+  return '<div class="r frr"><span class="frbox">'+frBox(o)+'</span><span class="k"><span class="frt">'+esc(f.n)+'</span><small><span class="frc fc-'+f.cat+'">'+FR_CATS[f.cat]+'</span> '+esc([f.c,f.p].filter(Boolean).join(' · '))+(multi?' · '+frRange(o.s,o.e):'')+(big&&f.r?' · '+esc(frRule(f)):'')+'</small></span><span class="v mut frv">'+esc(frCount(o))+'</span></div>'}
+var FR={per:3};
+function frMeasure(){var t=grid.querySelector('.tile[data-mod="fiere"] .tb');if(!t)return;var h=t.clientHeight;if(h<=0)return;var per=Math.max(2,Math.min(6,Math.floor(h/84)));
+  if(per!==FR.per){FR.per=per;var tb=t;tb.innerHTML=M.fiere.c(subIdx);var sd=grid.querySelector('.tile[data-mod="fiere"] [data-sd]');if(sd)sd.innerHTML=dotsHtml(M.fiere.n(),subIdx)}}
+var FRUI={cat:'all'};
+M.fiere={l:'Fiere e mercatini',s:'prossimi appuntamenti',n:function(){return Math.max(1,chunk(fairList(60),FR.per).length)},c:function(i){
+    var L=fairList(60);if(!L.length)return '<div class="nolive"><span>Nessun appuntamento nei prossimi 60 giorni</span><span style="font-size:13px">Scegli i mercatini da Impostazioni › Eventi</span></div>';
+    var g=chunk(L,FR.per);setTimeout(frMeasure,0);return '<div class="rows exrows" style="grid-template-rows:repeat('+FR.per+',minmax(0,1fr))">'+g[i%g.length].map(function(x){return frRow(x,false)}).join('')+'</div>'},
+  d:function(){var L=fairList(180),cats=['antiq','photo','comics','fiera','mine'].filter(function(k){return L.some(function(x){return x.f.cat===k})});
+    if(FRUI.cat!=='all'&&cats.indexOf(FRUI.cat)<0)FRUI.cat='all';var V=L.filter(function(x){return FRUI.cat==='all'||x.f.cat===FRUI.cat});
+    return '<div class="pchips" style="margin:0 0 8px"><button data-frc="all" class="'+(FRUI.cat==='all'?'on':'')+'">Tutti <span class="mut">'+L.length+'</span></button>'+cats.map(function(k){return '<button data-frc="'+k+'" class="'+(FRUI.cat===k?'on':'')+'">'+FR_CATS[k]+' <span class="mut">'+L.filter(function(x){return x.f.cat===k}).length+'</span></button>'}).join('')+'</div>'+
+      (V.length?'<div class="rows">'+V.map(function(x){return frRow(x,true)}).join('')+'</div>':'<div class="mut">Nessun appuntamento nei prossimi sei mesi.</div>')+
+      '<div class="note">Prossimo appuntamento di ogni mercatino e fiera scelti in Impostazioni › Eventi (catalogo preparato da Claude, più i tuoi). Le date ricorrenti sono calcolate dalla regola: in caso di maltempo o festività controlla sul sito dell’organizzatore.</div>'},
+  sub:'Mercatini dell’antiquariato e del vintage, fiere di fotografia e fumetti · conto alla rovescia'};
 var CN={items:null,err:null,at:null,loading:false};
 function refreshConcerts(){var p=curEvPlace();if(!p||CN.loading)return;CN.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
   getJSON(apiBase()+'/events/concerts?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&days=90').then(function(d){CN.items=d.events||[];CN.err=null;CN.at=new Date()},function(e){CN.err=String((e&&e.message)||e)}).then(function(){CN.loading=false;refreshTiles()})}
@@ -1944,7 +2033,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sTr').checked=W.tr!==false;$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
   migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));
-  if(!Array.isArray(W.eventi.zones))W.eventi.zones=exZoneList(W.eventi).slice();renderVenues();renderFairs();renderArtists();renderEvPl();renderExZ();fillVenueList();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
+  if(!Array.isArray(W.eventi.zones))W.eventi.zones=exZoneList(W.eventi).slice();if(!Array.isArray(W.eventi.fairSel))W.eventi.fairSel=frSel(W.eventi).slice();renderVenues();renderFairs();renderArtists();renderEvPl();renderExZ();fillVenueList();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';frForm();$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
   renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
@@ -2004,9 +2093,21 @@ function modName(id){return M[id].l||'Portfolio foto'}
 function renderVenues(){var V=W.eventi.venues;$('sVenues').innerHTML=V.length?V.map(function(v,i){return '<span class="chip">'+esc(v.n)+(v.c?' <span class="mut" style="font-weight:400;font-size:12px">'+esc(v.c)+'</span>':'')+'<button data-dven="'+i+'" aria-label="Rimuovi '+esc(v.n)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna sede</span>'}
 $('sVenAdd').addEventListener('click',function(){var n=($('sVenN').value||'').trim();if(!n)return;W.eventi.venues.push({n:n,c:($('sVenC').value||'').trim()});$('sVenN').value='';$('sVenC').value='';renderVenues()});
 $('sVenues').addEventListener('click',function(e){var a=e.target.getAttribute('data-dven');if(a!==null){W.eventi.venues.splice(+a,1);renderVenues()}});
-function renderFairs(){var F=W.eventi.fairs;$('sFairs').innerHTML=F.length?F.map(function(f,i){return '<div class="r"><span class="k" style="font-size:15px">'+esc(f.n)+'<small>'+(f.type==='weekly'?'Ogni '+FRGG[+f.wd]:'Il '+f.dom+' di ogni mese')+'</small></span><button class="btn sm del" data-dfr="'+i+'">Rimuovi</button></div>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna fiera</span>'}
-$('sFrType').addEventListener('change',function(){var m=this.value==='weekly';$('sFrDom').style.display=m?'none':'';$('sFrWd').style.display=m?'':'none'});
-$('sFrAdd').addEventListener('click',function(){var n=($('sFrN').value||'').trim();if(!n)return;var type=$('sFrType').value;W.eventi.fairs.push(type==='weekly'?{n:n,type:'weekly',wd:$('sFrWd').value}:{n:n,type:'monthly',dom:$('sFrDom').value});$('sFrN').value='';renderFairs()});
+function frRuleCustom(f){return f.type==='weekly'?'ogni '+FRGG[+f.wd]:f.type==='nth'?'ogni '+FR_ORD[f.nth]+' '+FRGG[+f.wd]+' del mese':'il '+f.dom+' di ogni mese'}
+function renderFairs(){var F=W.eventi.fairs;$('sFairs').innerHTML=F.length?F.map(function(f,i){return '<div class="r"><span class="k" style="font-size:15px">'+esc(f.n)+'<small>'+esc([f.c,frRuleCustom(f)].filter(Boolean).join(' · '))+'</small></span><button class="btn sm del" data-dfr="'+i+'">Togli</button></div>'}).join(''):'<span class="mut" style="font-size:13px">Nessuno</span>';
+  /* catalogo per zona: prima le zone delle mostre, poi le altre; fiere con data a parte */
+  var sel=W.eventi.fairSel,Z=exZoneList(W.eventi),groups={};FAIR_CAT.forEach(function(f){var g=f.d?'_d':f.z;(groups[g]=groups[g]||[]).push(f)});
+  var order=Object.keys(groups).filter(function(g){return g!=='_d'}).sort(function(a,b){var ia=Z.indexOf(a),ib=Z.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b)});
+  if(groups._d)order.unshift('_d');
+  $('sFrCat').innerHTML=order.map(function(g){return '<div class="frg"><span class="lab">'+(g==='_d'?'Fiere con data (fotografia, fumetti, grandi fiere)':'Mercatini · '+esc(EX_ZONES[g]||g))+'</span><div class="frchips">'+groups[g].map(function(f){var on=sel.indexOf(f.id)>=0;
+    return '<button class="zchip frch'+(on?' on':'')+'" data-frs="'+f.id+'">'+(on?'✓ ':'')+esc(f.n)+'<small>'+esc((f.c&&f.c!==EX_ZONES[g]?f.c+' · ':'')+frRule(f))+'</small></button>'}).join('')+'</div></div>'}).join('');
+  $('sFrCnt').textContent=sel.length+' scelti'}
+$('sFrCat').addEventListener('click',function(e){var b=e.target.closest('[data-frs]');if(!b)return;var id=b.getAttribute('data-frs'),S2=W.eventi.fairSel,i=S2.indexOf(id);if(i>=0)S2.splice(i,1);else S2.push(id);renderFairs()});
+function frForm(){var t=$('sFrType').value;$('sFrDom').style.display=t==='monthly'?'':'none';$('sFrWd').style.display=t==='monthly'?'none':'';$('sFrNth').style.display=t==='nth'?'':'none'}
+$('sFrType').addEventListener('change',frForm);
+$('sFrAdd').addEventListener('click',function(){var n=($('sFrN').value||'').trim();if(!n)return;var type=$('sFrType').value,c=($('sFrC').value||'').trim(),o={n:n,c:c,type:type};
+  if(type==='weekly')o.wd=$('sFrWd').value;else if(type==='nth'){o.nth=$('sFrNth').value;o.wd=$('sFrWd').value}else o.dom=$('sFrDom').value;
+  W.eventi.fairs.push(o);$('sFrN').value='';$('sFrC').value='';renderFairs()});
 $('sFairs').addEventListener('click',function(e){var a=e.target.getAttribute('data-dfr');if(a!==null){W.eventi.fairs.splice(+a,1);renderFairs()}});
 function renderExZ(){var Z=W.eventi.zones,full=Z.length>=EX_MAX_Z;
   var near=exNear(W.eventi),nk=near.map(function(z){return z.k}),pl=W.eventi.places[Math.min(W.eventi.place||0,W.eventi.places.length-1)];
@@ -2240,6 +2341,7 @@ stage.addEventListener('click',function(e){
   if(t.closest('[data-phr]')){if(!PH.loading)refreshPhotos(true);touch();return}
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
+  var frc=t.closest('[data-frc]');if(frc){FRUI.cat=frc.getAttribute('data-frc');$('dBody').innerHTML=M.fiere.d();touch();return}
   var exz=t.closest('[data-exz]');if(exz){EXUI.zone=exz.getAttribute('data-exz');EXUI.q='';EXUI.web=null;var kb=$('dBody');kb.innerHTML=M.mostre.d();touch();return}
   var etz=t.closest('[data-extz]');if(etz){var zk=etz.getAttribute('data-extz');if(EXT.zone===zk){EXT.zone=null}else{EXT.zone=zk;EXT.until=Date.now()+300000;EXT.base=subIdx}exRedrawTile();touch();return}
   var exf=t.closest('[data-exflag]');if(exf){var fid=exf.getAttribute('data-exflag');exToggleFlag(fid);var fon=!!exFlags()[fid];

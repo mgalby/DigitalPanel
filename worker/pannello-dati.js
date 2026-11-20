@@ -99,6 +99,7 @@
 // GET /events/exhibitions/search?q=Fan Ho
 //     ricerca su tutto arte.it (pagina /ricerca.php): mostre non ancora finite. Cache 24 h per testo cercato.
 //   { updated, q, found, ended, items:[{id, title, city, venue, from, to, link, prov, upcoming}] }
+// GET /events/novegro/debug?fresh=1     prova di lettura del calendario del Parco Esposizioni Novegro
 // GET /events/exhibitions/debug?prov=milano&src=rss,cal&fresh=1
 //     diagnostica: stato delle due fonti, campi trovati, voci analizzate, un estratto dell'HTML grezzo.
 //     Solo dati essenziali (titolo, sede, date, link). Cache 24 h; fresh=1 rilegge.
@@ -1233,6 +1234,38 @@ async function arteSearch(q, fresh, ctx) {
     raw: all.length ? undefined : html.replace(/\s+/g, " ").slice(html.search(/risultat|ricerca/i) > 0 ? html.search(/risultat|ricerca/i) : 0).slice(0, 1500) };
 }
 
+// ---------------------------------------------------------------- Eventi: Parco Esposizioni Novegro (in prova)
+// Calendario delle fiere del Parco Esposizioni Novegro (Segrate): Brocantage, Il Bagagliaio, Festival del Fumetto,
+// Novegro Vinile Expo… Diagnostica: pagina letta, link alle fiere trovati, date riconosciute, estratto grezzo.
+async function novegroDebug(fresh, ctx) {
+  const url = "https://www.parcoesposizioninovegro.it/calendario/";
+  const diag = { url };
+  try {
+    const html = await cachedText("novegro:cal", 12 * 3600, ctx, async () => {
+      const r = await fetch(url, { headers: { "User-Agent": ARTE_UA, Accept: "text/html", "Accept-Language": "it-IT,it;q=0.9" }, redirect: "follow" });
+      diag.status = r.status;
+      if (!r.ok) throw new Error("Novegro HTTP " + r.status);
+      return r.text();
+    }, fresh);
+    diag.bytes = html.length;
+    diag.hasJsonLd = /application\/ld\+json/i.test(html);
+    const links = [], seen = {};
+    const re = /<a\s[^>]*href=["']((?:https?:\/\/(?:www\.)?parcoesposizioninovegro\.it)?\/fiere\/[^"'#?]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    let m;
+    while ((m = re.exec(html)) && links.length < 60) {
+      if (seen[m[1]]) continue;
+      seen[m[1]] = 1;
+      const around = cleanText(html.slice(Math.max(0, m.index - 400), m.index + 900), 0).slice(0, 400);
+      links.push({ link: m[1], text: cleanText(m[2], 120), around });
+    }
+    diag.count = links.length;
+    diag.links = links;
+    const i = html.search(/\/fiere\//i);
+    diag.raw = html.slice(Math.max(0, i - 1500), i + 2500);
+  } catch (e) { diag.error = String((e && e.message) || e); }
+  return diag;
+}
+
 // capoluoghi di provincia (nome come nei percorsi di arte.it) per scegliere le province vicine alla località
 const ARTE_PROV = {
   milano: [45.464, 9.19], como: [45.81, 9.085], varese: [45.82, 8.825], lecco: [45.856, 9.393], bergamo: [45.698, 9.677],
@@ -1763,6 +1796,9 @@ export default {
           if (q.length < 2 || q.length > 60) return json({ error: "parametro q: da 2 a 60 caratteri" }, 400);
           const data = await arteSearch(q, url.searchParams.get("fresh") === "1", ctx);
           return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=3600" });
+        }
+        if (sub === "novegro/debug") {
+          return json(Object.assign({ updated: new Date().toISOString() }, await novegroDebug(url.searchParams.get("fresh") === "1", ctx)), 200, { "Cache-Control": "no-store" });
         }
         if (sub === "exhibitions/debug") {
           const prov = (url.searchParams.get("prov") || "milano").trim().toLowerCase();
