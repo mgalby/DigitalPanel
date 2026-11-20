@@ -285,6 +285,27 @@ html,body{margin:0}
 .nw .ns{font-size:14px;color:var(--text-2);line-height:1.4;margin-top:4px}
 .nw.full[data-read]{cursor:pointer}.nw.full[data-read] .nt::after{content:'  ›';color:var(--text-3)}
 .nw.corso .nt{font-size:17px}.nw.corso.full .nt{font-size:19px}.nw.corso .nm{font-size:14px}.nw.corso .ebadge{font-size:11px;padding:1px 6px}
+/* OrangePhotoSchool: data grande a sinistra (colore della categoria), titolo leggibile da lontano */
+.ops{display:flex;align-items:center;gap:16px;padding:8px 0;border-bottom:1px solid rgba(36,40,48,.6);cursor:pointer;min-height:0}
+.ops:last-child{border-bottom:0}
+.ops-d{flex:none;width:74px;text-align:center;border-left:4px solid var(--br);padding:2px 0 2px 2px;color:var(--br);line-height:1}
+.ops-d span{display:block;font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.ops-d b{display:block;font-size:42px;font-weight:300;margin:3px 0 4px;color:var(--text)}
+.ops-i{flex:1;min-width:0}
+.ops-t{font-size:21px;font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ops-m{font-size:15px;color:var(--text-2);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ops-m b{font-weight:600}
+.ops .ebadge{font-size:12px;padding:1px 6px;vertical-align:1px;margin-left:6px}
+.ops.today .ops-d b{color:var(--br);font-weight:400}
+.ops.past{opacity:.45}
+.ops.full{padding:12px 0}.ops.full .ops-t{font-size:20px}
+.rows.ops-l{justify-content:space-around}
+/* Liste titoli: 5 righe di altezza fissa, così l'ultima non viene tagliata */
+.rows.port{display:grid;grid-template-rows:repeat(5,minmax(0,1fr));gap:0}
+.rows.port .r{padding:0;min-height:0}
+.rows.port .r .k{font-size:18px;line-height:1.15}.rows.port .r .k small{font-size:12px;line-height:1.2;margin-top:1px}
+.rows.port .r .v{font-size:20px;line-height:1.1}.rows.port .r .v small{font-size:13px;line-height:1.2}
+.port-seg{margin:-2px 0 4px!important}.port-seg span[data-plist]{padding:3px 12px!important}
 .rd-t{font-size:22px;font-weight:500;margin:0 0 6px;line-height:1.3}
 .er[data-title]{cursor:pointer}.er[data-title] .ei>b::after{content:'  ›';color:var(--text-3)}
 .tt{display:flex;gap:20px}.tt-p{width:150px;height:225px;object-fit:cover;border-radius:10px;flex:none;background:var(--surface-2)}.tt-i{flex:1;min-width:0}.tt-i .kv{font-size:14px;margin-top:6px;gap:16px}
@@ -390,7 +411,7 @@ html,body{margin:0}
         <button data-tab="intr">Intrattenimento<small>piattaforme, serie, preferiti</small></button>
         <button data-tab="foto">Fotografia<small>portfolio, meteo, novità</small></button>
         <button data-tab="eventi">Eventi<small>mostre, fiere, concerti</small></button>
-        <button data-tab="corso">Corso<small>calendario OPS! Photo School</small></button>
+        <button data-tab="corso">OrangePhotoSchool<small>calendario dei corsi</small></button>
       </nav>
       <div class="pbody" id="sBody">
 
@@ -1093,7 +1114,7 @@ var M={
   portfolio:{l:'Liste titoli',s:'',live:true,n:function(){return Math.max(1,portPages().length)},si:portIdx,c:function(i){
       var P=portPages();if(!P.length)return '<div class="nolive"><span>Nessun titolo nelle liste</span></div>';
       var pg=P[portIdx(i)%P.length];
-      return '<div class="seg">'+S.lists.map(function(L){return '<span data-plist="'+esc(L.id)+'" class="'+(L.id===pg.L.id?'on':'')+'">'+esc(L.name)+'</span>'}).join('')+'<span class="segk">'+pg.k+'</span></div><div class="rows">'+pg.t.map(rowTicker).join('')+'</div>'},
+      return '<div class="seg port-seg">'+S.lists.map(function(L){return '<span data-plist="'+esc(L.id)+'" class="'+(L.id===pg.L.id?'on':'')+'">'+esc(L.name)+'</span>'}).join('')+'<span class="segk">'+pg.k+'</span></div><div class="rows port">'+pg.t.map(rowTicker).join('')+'</div>'},
     d:function(){var h='',byX=S.order!=='manual';S.lists.forEach(function(L){
       h+='<table class="dtbl" style="margin-bottom:18px"><tr><th>'+esc(L.name)+'</th><th>Nome</th>'+(byX?'':'<th>Borsa</th>')+'<th class="n">Prezzo</th><th class="n">Var. giorno</th><th class="n">Ultimo</th></tr>';
       var a=sortedTickers(L),az=a.filter(function(t){return !isEtf(t)}),et=a.filter(isEtf),G=az.length&&et.length?[['Azioni',az],['ETF',et]]:[['',a]],cols=byX?5:6;
@@ -1282,8 +1303,10 @@ function corsoMonthRange(){var d=new Date(),y=d.getFullYear(),m=d.getMonth();ret
 function corsoThisMonth(){var r=corsoMonthRange();return corsoAll().filter(function(x){return x.ev.s<=r.e&&x.ev.e>=r.s})}
 function corsoDateLabel(ev){var s=dShort(ev.s),e=ev.e!==ev.s?' – '+dShort(ev.e):'';return s+e}
 function corsoToday(){return new Date().toISOString().slice(0,10)}
-function corsoRow(x,full){var cat=CORSO_CAT[x.ev.c]||{l:'',c:'var(--line)'},st=x.st,past=x.ev.e<corsoToday();
-  return '<div class="nw br corso'+(full?' full':'')+'" data-corso="'+esc(x.id)+'" style="--br:'+cat.c+';cursor:pointer'+(past?';opacity:.5':'')+'"><div class="nt">'+esc(x.ev.t)+(st?' <span class="ebadge" style="border-color:'+cat.c+';color:'+cat.c+'">'+esc(CORSO_ST_LAB[st].toUpperCase())+'</span>':'')+'</div><div class="nm"><b style="color:'+cat.c+'">'+esc(cat.l)+'</b> · '+esc(corsoDateLabel(x.ev))+'</div></div>'}
+function corsoRow(x,full){var cat=CORSO_CAT[x.ev.c]||{l:'',c:'var(--line)'},st=x.st,td=corsoToday(),past=x.ev.e<td,now=x.ev.s<=td&&x.ev.e>=td,d=new Date(x.ev.s+'T12:00:00');
+  var rng=x.ev.e!==x.ev.s?(function(){var e=new Date(x.ev.e+'T12:00:00');return GGS[d.getDay()].toLowerCase()+' '+d.getDate()+' – '+GGS[e.getDay()].toLowerCase()+' '+e.getDate()+' '+MESI[e.getMonth()]})():'';
+  return '<div class="ops'+(full?' full':'')+(past?' past':'')+(now?' today':'')+'" data-corso="'+esc(x.id)+'" style="--br:'+cat.c+'"><div class="ops-d"><span>'+(now?'oggi':GGS[d.getDay()])+'</span><b class="num">'+d.getDate()+'</b><span>'+MESI[d.getMonth()]+'</span></div>'+
+    '<div class="ops-i"><div class="ops-t">'+esc(x.ev.t)+'</div><div class="ops-m"><b style="color:'+cat.c+'">'+esc(cat.l)+'</b>'+(rng?' · '+esc(rng):'')+(st?'<span class="ebadge" style="border-color:'+cat.c+';color:'+cat.c+'">'+esc(CORSO_ST_LAB[st].toUpperCase())+'</span>':'')+'</div></div></div>'}
 /* riga divisoria "oggi" tra gli appuntamenti già passati e quelli ancora da venire, solo se nel mese ci sono entrambi */
 function corsoTodayDivider(){return '<div class="spsect" style="margin:10px 0 4px;color:var(--accent);border-top:1px solid var(--line);padding-top:10px">OGGI</div>'}
 function corsoRowsWithDivider(L,full){var today=corsoToday(),pastSeen=false,put=false,h='';
@@ -1293,15 +1316,15 @@ function corsoRowsWithDivider(L,full){var today=corsoToday(),pastSeen=false,put=
   return h}
 function corsoLogo(h){return '<img src="img/ops-logo.png" alt="OPS! Orange Photo School" style="height:'+(h||24)+'px;vertical-align:middle;margin-left:10px;opacity:.95">'}
 function isCorsoMod(id){return id==='corsoProssimi'||id==='corsoMese'}
-M.corsoProssimi={l:'Prossimi impegni',s:'',n:function(){return Math.max(1,chunk(corsoUpcoming(12),3).length)},c:function(i){
+M.corsoProssimi={l:'Prossimi impegni',s:'',n:function(){return Math.max(1,chunk(corsoUpcoming(12),4).length)},c:function(i){
     var L=corsoUpcoming(12);if(!L.length)return '<div class="nolive"><span>Nessun impegno in programma</span></div>';
-    var g=chunk(L,3);return '<div class="rows">'+g[i%g.length].map(function(x){return corsoRow(x,false)}).join('')+'</div>'},
+    var g=chunk(L,4);return '<div class="rows ops-l">'+g[i%g.length].map(function(x){return corsoRow(x,false)}).join('')+'</div>'},
   d:function(){var L=corsoUpcoming(40);if(!L.length)return '<div class="mut">Nessun impegno in programma.</div>';
     return L.map(function(x){return corsoRow(x,true)}).join('')+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato. Calendario del programma OPS! Orange Photo School 2026/2027.</div>'},
   sub:'Prossimi appuntamenti del corso · tocca per Iscritto/Pagato/Abbonato'};
 M.corsoMese={l:'Agenda del mese',s:function(){return MESI[new Date().getMonth()]},n:function(){return Math.max(1,chunk(corsoThisMonth(),4).length)},c:function(i){
     var L=corsoThisMonth();if(!L.length)return '<div class="nolive"><span>Nessun impegno questo mese</span></div>';
-    var g=chunk(L,4);return '<div class="rows">'+corsoRowsWithDivider(g[i%g.length],false)+'</div>'},
+    var g=chunk(L,4);return '<div class="rows ops-l">'+corsoRowsWithDivider(g[i%g.length],false)+'</div>'},
   d:function(){var L=corsoThisMonth();if(!L.length)return '<div class="mut">Nessun impegno questo mese.</div>';
     return corsoRowsWithDivider(L,true)+'<div class="note">Tocca un appuntamento per cambiarne lo stato: Non iscritto → Iscritto → Pagato → Abbonato.</div>'},
   sub:'Impegni del mese in corso'};
@@ -1664,7 +1687,7 @@ var PAGES=[
   {id:'intr',t:'Intrattenimento'},
   {id:'foto',t:'Fotografia'},
   {id:'eventi',t:'Eventi'},
-  {id:'corso',t:'Corso'}
+  {id:'corso',t:'OrangePhotoSchool'}
 ];
 
 /* ---------- stato ---------- */
@@ -1753,7 +1776,7 @@ function focusRow(k){var b=$('dBody'),L=b.querySelectorAll('[data-k]'),el=null;f
   var y=0,n=el;while(n&&n!==b){y+=n.offsetTop;n=n.offsetParent}if(n!==b){y=0;n=el;var by=0,m=b;while(n){y+=n.offsetTop;n=n.offsetParent}while(m){by+=m.offsetTop;m=m.offsetParent}y-=by}
   b.scrollTop=Math.max(0,y-8);el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},1600)}
 function openDetail(mod){openMod=mod;earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];
-  $('dTitle').innerHTML=isCorsoMod(mod)?'<span style="display:flex;justify-content:space-between;align-items:center">'+esc(m.l||'')+corsoLogo(36)+'</span>':esc(m.l||'Portfolio');
+  $('dTitle').innerHTML=isCorsoMod(mod)?'<span style="display:flex;justify-content:space-between;align-items:center;padding-right:56px">'+esc(m.l||'')+corsoLogo(36)+'</span>':esc(m.l||'Portfolio');
   $('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
 /* ---------- impostazioni: copia di lavoro ---------- */
