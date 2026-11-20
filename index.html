@@ -560,6 +560,9 @@ html,body{margin:0}
             <div class="fld" style="grid-column:1 / -1"><div class="chips" id="sVenues"></div>
               <div class="add"><input type="text" id="sVenN" placeholder="Nome sede, es. Palazzo Reale" aria-label="Nome sede" maxlength="60" style="width:220px;text-transform:none"><input type="text" id="sVenC" placeholder="Città" aria-label="Città" maxlength="40" style="width:140px;text-transform:none"><button class="btn sm" id="sVenAdd">Aggiungi</button></div>
               <div class="note" style="margin-top:8px">Le mostre arrivano da arte.it per le province vicine alla località scelta qui sotto. Le sedi che aggiungi qui sono le tue preferite: le loro mostre vanno in cima, con ★. Basta una parte del nome, es. «Palazzo Reale» o «Camera».</div></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Zone sempre incluse</span><div class="chips" id="sExZ"></div>
+              <div class="add"><select id="sExZSel" aria-label="Zona da aggiungere"></select><button class="btn sm" id="sExZAdd">Aggiungi</button></div>
+              <div class="note" style="margin-top:8px">Città dove vai volentieri anche se fuori dal raggio: le loro mostre si aggiungono a quelle vicine (al massimo 3).</div></div>
           </div>
 
           <div class="sect" style="margin-top:20px">Fiere e mercatini ricorrenti</div>
@@ -578,11 +581,11 @@ html,body{margin:0}
           <div class="sect" style="margin-top:20px">Località e raggio</div>
           <div class="set">
             <div class="fld" style="grid-column:1 / -1"><span class="lab">Località</span><div class="chips" id="sEvPl"></div><div class="add"><input type="text" id="sEvPlQ" placeholder="Cerca una località" aria-label="Cerca una località" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sEvPlGo">Cerca</button><span class="mut" id="sEvPlMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sEvPlRes"></div></div>
-            <div class="fld"><label for="sEvRad">Raggio dei concerti</label><div class="rng"><input type="range" id="sEvRad" min="10" max="200" step="10"><output id="oEvRad" class="num"></output></div></div>
+            <div class="fld"><label for="sEvRad">Raggio (mostre e concerti)</label><div class="rng"><input type="range" id="sEvRad" min="10" max="200" step="10"><output id="oEvRad" class="num"></output></div></div>
           </div>
 
           <div class="sect">Aggiornamento</div>
-          <div class="fixed"><div><span>Concerti (Ticketmaster)</span><b>ogni 6 ore</b></div></div>
+          <div class="fixed"><div><span>Mostre (arte.it)</span><b>ogni 6 ore</b></div><div><span>Concerti (Ticketmaster)</span><b>ogni 6 ore</b></div></div>
         </section>
 
         <!-- ===== Corso di fotografia (OPS! Orange Photo School) ===== -->
@@ -1062,7 +1065,7 @@ var DEF={api:'https://pannello-dati.marco-foto.workers.dev',tr:true,order:'marke
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
   foto:{user:'',tag:'digitalportfolio',ph:15,places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
   sport:{fav:{k:'inter',n:'Inter'},follow:null},
-  eventi:{venues:[],fairs:[],artists:[],places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
+  eventi:{venues:[],fairs:[],artists:[],extra:['torino','lugano'],places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
   corso:{status:{}}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
@@ -1137,6 +1140,9 @@ var M={
 
 /* ---------- Eventi: mostre (elenco manuale), fiere ricorrenti, concerti (Ticketmaster) ---------- */
 function eventiCfg(){return S.eventi||DEF.eventi}
+/* zone di arte.it che si possono includere sempre (stessi nomi del ponte dati, ARTE_PROV) */
+var EX_ZONES={torino:'Torino',lugano:'Lugano',genova:'Genova',bergamo:'Bergamo',brescia:'Brescia',como:'Como',varese:'Varese',novara:'Novara',verona:'Verona',venezia:'Venezia',padova:'Padova',bologna:'Bologna',parma:'Parma',modena:'Modena',trento:'Trento',firenze:'Firenze',roma:'Roma'};
+function exExtra(c){c=c||eventiCfg();return Array.isArray(c.extra)?c.extra:['torino','lugano']}
 function evPlaces(){var c=eventiCfg();return (c.places&&c.places.length)?c.places:DEF.eventi.places}
 function curEvPlace(){var P=evPlaces(),i=eventiCfg().place||0;return P[Math.min(i,P.length-1)]}
 function evPlaceChips(){var P=evPlaces(),cur=eventiCfg().place||0;return '<div class="pchips">'+P.map(function(p,i){return '<button data-evplc="'+i+'" class="'+(i===cur?'on':'')+'">'+esc(p.n)+'</button>'}).join('')+'</div>'}
@@ -1149,7 +1155,7 @@ function fairNext(f){var now=new Date();now.setHours(0,0,0,0);
 function fairList(){return (eventiCfg().fairs||[]).map(function(f){return {f:f,d:fairNext(f)}}).sort(function(a,b){return a.d-b.d})}
 var EX={items:null,err:null,at:null,loading:false};
 function refreshExhib(){var p=curEvPlace();if(!p||EX.loading)return;EX.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
-  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r,20000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;refreshTiles()})}
+  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&extra='+exExtra().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;refreshTiles()})}
 setTimeout(function(){refreshExhib();setInterval(refreshExhib,6*3600000)},7000);
 /* sede preferita: il nome in Impostazioni › Eventi compare nel nome della sede (o viceversa) */
 function exFav(x){var V=eventiCfg().venues||[],v=(x.venue||'').toLowerCase();if(!v||!V.length)return false;return V.some(function(s){var n=String(s.n||'').toLowerCase().trim();return n&&(v.indexOf(n)>=0||n.indexOf(v)>=0)})}
@@ -1164,7 +1170,7 @@ M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},live:true,n:f
     var row=function(x){var cl=exClosing(x);return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+'<a href="'+esc(x.link)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+esc(x.title||'')+'</a><small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v'+(cl?'':' mut')+'" style="font-size:15px;white-space:nowrap'+(cl?';color:var(--accent)':'')+'">'+esc(dShort(x.from))+' – '+esc(dShort(x.to))+(cl?' · in chiusura':'')+'</span></div>'};
     var now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
     return (now.length?'<div class="sect">In corso</div><div class="rows">'+now.map(row).join('')+'</div>':'')+(up.length?'<div class="sect">In arrivo</div><div class="rows">'+up.map(row).join('')+'</div>':'')+
-      '<div class="note">Mostre dal calendario di arte.it per le province vicine alla località attiva'+((EX.provs&&EX.provs.length)?' ('+EX.provs.map(function(p){return p.prov}).join(', ')+')':'')+'. In corso: dalla chiusura più vicina. Le sedi preferite (Impostazioni › Eventi) sono evidenziate con ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
+      '<div class="note">Mostre dal calendario di arte.it per le zone vicine alla località attiva e quelle sempre incluse'+((EX.provs&&EX.provs.length)?' ('+EX.provs.map(function(p){return (EX_ZONES[p.prov]||p.prov.charAt(0).toUpperCase()+p.prov.slice(1))}).join(', ')+')':'')+'. In corso: dalla chiusura più vicina. Le sedi preferite (Impostazioni › Eventi) sono evidenziate con ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
   sub:'Mostre in corso e in arrivo vicino a te · arte.it'};
 M.fiere={l:'Fiere e mercatini',s:'ricorrenti',n:function(){return Math.max(1,chunk(fairList(),4).length)},c:function(i){
     var L=fairList();if(!L.length)return '<div class="nolive"><span>Nessuna fiera in elenco</span><span style="font-size:13px">Aggiungile da Impostazioni › Eventi</span></div>';
@@ -1810,7 +1816,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sTr').checked=W.tr!==false;$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
   migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));
-  renderVenues();renderFairs();renderArtists();renderEvPl();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
+  if(!Array.isArray(W.eventi.extra))W.eventi.extra=exExtra(W.eventi).slice();renderExZ();renderVenues();renderFairs();renderArtists();renderEvPl();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
   renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
@@ -1874,6 +1880,10 @@ function renderFairs(){var F=W.eventi.fairs;$('sFairs').innerHTML=F.length?F.map
 $('sFrType').addEventListener('change',function(){var m=this.value==='weekly';$('sFrDom').style.display=m?'none':'';$('sFrWd').style.display=m?'':'none'});
 $('sFrAdd').addEventListener('click',function(){var n=($('sFrN').value||'').trim();if(!n)return;var type=$('sFrType').value;W.eventi.fairs.push(type==='weekly'?{n:n,type:'weekly',wd:$('sFrWd').value}:{n:n,type:'monthly',dom:$('sFrDom').value});$('sFrN').value='';renderFairs()});
 $('sFairs').addEventListener('click',function(e){var a=e.target.getAttribute('data-dfr');if(a!==null){W.eventi.fairs.splice(+a,1);renderFairs()}});
+function renderExZ(){var Z=W.eventi.extra;$('sExZ').innerHTML=Z.length?Z.map(function(k,i){return '<span class="chip">'+esc(EX_ZONES[k]||k)+'<button data-dexz="'+i+'" aria-label="Rimuovi '+esc(EX_ZONES[k]||k)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna zona</span>';
+  $('sExZSel').innerHTML=Object.keys(EX_ZONES).filter(function(k){return Z.indexOf(k)<0}).map(function(k){return '<option value="'+k+'">'+EX_ZONES[k]+'</option>'}).join('');$('sExZAdd').disabled=Z.length>=3}
+$('sExZAdd').addEventListener('click',function(){var k=$('sExZSel').value;if(!k||W.eventi.extra.length>=3||W.eventi.extra.indexOf(k)>=0)return;W.eventi.extra.push(k);renderExZ()});
+$('sExZ').addEventListener('click',function(e){var a=e.target.getAttribute('data-dexz');if(a!==null){W.eventi.extra.splice(+a,1);renderExZ()}});
 function renderArtists(){var A=W.eventi.artists;$('sArtists').innerHTML=A.length?A.map(function(a,i){return '<span class="chip">'+esc(a)+'<button data-dart="'+i+'" aria-label="Rimuovi '+esc(a)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessun artista</span>'}
 $('sArtAdd').addEventListener('click',function(){var n=($('sArtN').value||'').trim();if(!n)return;W.eventi.artists.push(n);$('sArtN').value='';renderArtists()});
 $('sArtists').addEventListener('click',function(e){var a=e.target.getAttribute('data-dart');if(a!==null){W.eventi.artists.splice(+a,1);renderArtists()}});

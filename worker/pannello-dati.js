@@ -88,9 +88,10 @@
 //       genre, artists:[nome,...]} ] }
 //
 // ---- Eventi (mostre: arte.it, in prova) ----
-// GET /events/exhibitions?lat=45.4642&lon=9.19&radius=50
-//     mostre in corso e in arrivo nelle province vicine (calendario mensile di arte.it, tutte le pagine;
-//     al massimo 4 province). Cache 24 h per pagina letta.
+// GET /events/exhibitions?lat=45.4642&lon=9.19&radius=50&extra=torino,lugano
+//     mostre in corso e in arrivo nelle province vicine (calendario mensile di arte.it, fino a 5 pagine;
+//     al massimo 4 province, 3 se ci sono zone extra) più le zone extra sempre incluse (max 3, nomi di ARTE_PROV).
+//     Cache 24 h per provincia.
 //   { updated, source, provinces:[{prov, km, pages, n, error}],
 //     items:[{id, title, city, venue, from, to, link, prov, km, upcoming}] }   km = distanza dal capoluogo
 // GET /events/exhibitions/debug?prov=milano&src=rss,cal&fresh=1
@@ -1185,24 +1186,31 @@ async function arteCalendar(prov, fresh, ctx) {
   return diag;
 }
 
-// tutte le pagine del mese di una provincia (al massimo ARTE_MAX_PAGES)
-const ARTE_MAX_PAGES = 6;
+// tutte le pagine del mese di una provincia (al massimo ARTE_MAX_PAGES), in un'unica voce della cache:
+// a cache piena una sola lettura per provincia (il Worker ha un limite di sottorichieste per chiamata)
+const ARTE_MAX_PAGES = 5;
 const ARTE_MAX_DAYS = 730; // oltre 2 anni di durata: allestimento permanente, si scarta
 async function arteProvince(prov, fresh, ctx) {
   const mp = arteMonthPath(prov);
-  const d0 = {};
-  const first = await arteFetch(mp.path, fresh, ctx, d0);
-  const nums = [...first.matchAll(/calendario_mese\.php\?[^"'\s>]*?p=(\d+)/gi)].map((x) => +x[1]);
-  const pages = Math.min(ARTE_MAX_PAGES, nums.length ? Math.max(...nums) : 1);
-  const rest = [];
-  for (let p = 2; p <= pages; p++) {
-    const path = "/calendario_mese.php?pro_nome=" + encodeURIComponent(prov) + "&a=" + mp.y + "&m=" + mp.m + "&lang=it&q=&p=" + p;
-    rest.push(arteFetch(path, fresh, ctx, {}).catch(() => ""));
-  }
-  const htmls = [first].concat(await Promise.all(rest));
-  const seen = {}, items = [];
-  htmls.forEach((h) => parseArteCalendar(h).forEach((x) => { if (!seen[x.id]) { seen[x.id] = 1; items.push(x); } }));
-  return { prov, pages, items };
+  const get = async (path) => {
+    const r = await fetch(ARTE_BASE + path, { headers: { "User-Agent": ARTE_UA, Accept: "text/html", "Accept-Language": "it-IT,it;q=0.9" }, redirect: "follow" });
+    if (!r.ok) throw new Error("arte.it HTTP " + r.status);
+    return r.text();
+  };
+  const text = await cachedText("arteprov:" + prov + ":" + mp.y + mp.m, ARTE_CACHE_SECONDS, ctx, async () => {
+    const first = await get(mp.path);
+    const nums = [...first.matchAll(/calendario_mese\.php\?[^"'\s>]*?p=(\d+)/gi)].map((x) => +x[1]);
+    const pages = Math.min(ARTE_MAX_PAGES, nums.length ? Math.max(...nums) : 1);
+    const rest = [];
+    for (let p = 2; p <= pages; p++) {
+      rest.push(get("/calendario_mese.php?pro_nome=" + encodeURIComponent(prov) + "&a=" + mp.y + "&m=" + mp.m + "&lang=it&q=&p=" + p).catch(() => ""));
+    }
+    const htmls = [first].concat(await Promise.all(rest));
+    const seen = {}, items = [];
+    htmls.forEach((h) => parseArteCalendar(h).forEach((x) => { if (!seen[x.id]) { seen[x.id] = 1; items.push(x); } }));
+    return JSON.stringify({ pages, items });
+  }, fresh);
+  return Object.assign({ prov }, JSON.parse(text));
 }
 
 // capoluoghi di provincia (nome come nei percorsi di arte.it) per scegliere le province vicine alla località
@@ -1216,7 +1224,7 @@ const ARTE_PROV = {
   vicenza: [45.546, 11.546], padova: [45.406, 11.877], venezia: [45.44, 12.316], treviso: [45.666, 12.243],
   trento: [46.067, 11.121], bolzano: [46.498, 11.354], udine: [46.071, 13.235], trieste: [45.65, 13.777],
   firenze: [43.769, 11.256], pisa: [43.716, 10.402], lucca: [43.843, 10.505], siena: [43.318, 11.331],
-  roma: [41.903, 12.496], napoli: [40.852, 14.268],
+  roma: [41.903, 12.496], napoli: [40.852, 14.268], lugano: [46.005, 8.952],
 };
 function kmBetween(a, b, c, d) {
   const R = 6371, toR = Math.PI / 180;
@@ -1231,8 +1239,13 @@ function nearProvinces(lat, lon, radius, max) {
   return near.length ? near : all.slice(0, 1);
 }
 
-async function arteExhibitions(lat, lon, radius, fresh, ctx) {
-  const provs = nearProvinces(lat, lon, radius, 4);
+// extra = zone sempre incluse (es. torino, lugano), oltre a quelle vicine
+async function arteExhibitions(lat, lon, radius, extra, fresh, ctx) {
+  const provs = nearProvinces(lat, lon, radius, extra.length ? 3 : 4);
+  extra.forEach((k) => {
+    if (ARTE_PROV[k] && !provs.some((p) => p.prov === k))
+      provs.push({ prov: k, km: Math.round(kmBetween(lat, lon, ARTE_PROV[k][0], ARTE_PROV[k][1])), extra: true });
+  });
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
   const res = await Promise.all(provs.map((p) => arteProvince(p.prov, fresh, ctx).then((r) => Object.assign(r, { km: p.km }))
     .catch((e) => ({ prov: p.prov, km: p.km, items: [], error: String((e && e.message) || e) }))));
@@ -1248,7 +1261,7 @@ async function arteExhibitions(lat, lon, radius, fresh, ctx) {
   }));
   // in corso dalla chiusura più vicina, poi le prossime aperture
   items.sort((a, b) => (a.upcoming - b.upcoming) || (a.upcoming ? a.from.localeCompare(b.from) : a.to.localeCompare(b.to)));
-  return { source: "arte.it", provinces: res.map((r) => ({ prov: r.prov, km: r.km, pages: r.pages || 0, n: r.items.length, error: r.error || null })), items };
+  return { source: "arte.it", provinces: res.map((r, i) => ({ prov: r.prov, km: r.km, extra: !!provs[i].extra, pages: r.pages || 0, n: r.items.length, error: r.error || null })), items };
 }
 
 // ---------------------------------------------------------------- Sport
@@ -1715,7 +1728,8 @@ export default {
           if (!isFinite(lat) || !isFinite(lon)) return json({ error: "parametri lat/lon mancanti o non validi" }, 400);
           const radius = Math.min(300, Math.max(1, parseInt(url.searchParams.get("radius") || "50", 10) || 50));
           const fresh = url.searchParams.get("fresh") === "1";
-          const data = await arteExhibitions(lat, lon, radius, fresh, ctx);
+          const extra = [...new Set((url.searchParams.get("extra") || "").toLowerCase().split(",").map((k) => k.trim()).filter((k) => ARTE_PROV[k]))].slice(0, 3);
+          const data = await arteExhibitions(lat, lon, radius, extra, fresh, ctx);
           return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=3600" });
         }
         if (sub === "exhibitions/debug") {
