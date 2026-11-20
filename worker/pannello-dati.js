@@ -88,7 +88,9 @@
 //       genre, artists:[nome,...]} ] }
 //
 // ---- Eventi (mostre: arte.it, in prova) ----
-// GET /events/exhibitions?lat=45.4642&lon=9.19&radius=50&extra=torino,lugano
+// GET /events/exhibitions?lat=45.4642&lon=9.19&zones=milano,como,varese,torino,lugano
+//     zones = zone scelte nel pannello (max 6, nomi di ARTE_PROV): si leggono solo quelle, ordinate per distanza.
+// GET /events/exhibitions?lat=45.4642&lon=9.19&radius=50&extra=torino,lugano   (vecchio modo, senza zones)
 //     mostre in corso e in arrivo nelle province vicine (calendario mensile di arte.it, fino a 5 pagine;
 //     al massimo 4 province, 3 se ci sono zone extra) più le zone extra sempre incluse (max 3, nomi di ARTE_PROV).
 //     Cache 24 h per provincia.
@@ -1257,13 +1259,18 @@ function nearProvinces(lat, lon, radius, max) {
   return near.length ? near : all.slice(0, 1);
 }
 
-// extra = zone sempre incluse (es. torino, lugano), oltre a quelle vicine
-async function arteExhibitions(lat, lon, radius, extra, fresh, ctx) {
-  const provs = nearProvinces(lat, lon, radius, extra.length ? 3 : 4);
-  extra.forEach((k) => {
-    if (ARTE_PROV[k] && !provs.some((p) => p.prov === k))
-      provs.push({ prov: k, km: Math.round(kmBetween(lat, lon, ARTE_PROV[k][0], ARTE_PROV[k][1])), extra: true });
-  });
+// zones = zone scelte a mano nel pannello (al massimo ARTE_MAX_ZONES): si leggono esattamente quelle.
+// Senza zones (versioni precedenti del pannello): province vicine nel raggio + extra sempre incluse.
+const ARTE_MAX_ZONES = 6;
+async function arteExhibitions(lat, lon, radius, extra, fresh, ctx, zones) {
+  const km = (k) => Math.round(kmBetween(lat, lon, ARTE_PROV[k][0], ARTE_PROV[k][1]));
+  let provs;
+  if (zones && zones.length) {
+    provs = zones.map((k) => ({ prov: k, km: km(k) })).sort((a, b) => a.km - b.km);
+  } else {
+    provs = nearProvinces(lat, lon, radius, extra.length ? 3 : 4);
+    extra.forEach((k) => { if (ARTE_PROV[k] && !provs.some((p) => p.prov === k)) provs.push({ prov: k, km: km(k), extra: true }); });
+  }
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
   const res = await Promise.all(provs.map((p) => arteProvince(p.prov, fresh, ctx).then((r) => Object.assign(r, { km: p.km }))
     .catch((e) => ({ prov: p.prov, km: p.km, items: [], error: String((e && e.message) || e) }))));
@@ -1747,7 +1754,8 @@ export default {
           const radius = Math.min(300, Math.max(1, parseInt(url.searchParams.get("radius") || "50", 10) || 50));
           const fresh = url.searchParams.get("fresh") === "1";
           const extra = [...new Set((url.searchParams.get("extra") || "").toLowerCase().split(",").map((k) => k.trim()).filter((k) => ARTE_PROV[k]))].slice(0, 3);
-          const data = await arteExhibitions(lat, lon, radius, extra, fresh, ctx);
+          const zones = [...new Set((url.searchParams.get("zones") || "").toLowerCase().split(",").map((k) => k.trim()).filter((k) => ARTE_PROV[k]))].slice(0, ARTE_MAX_ZONES);
+          const data = await arteExhibitions(lat, lon, radius, extra, fresh, ctx, zones);
           return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=3600" });
         }
         if (sub === "exhibitions/search") {

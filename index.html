@@ -367,6 +367,10 @@ html,body{margin:0}
 .exr.hit{background:var(--accent-soft)}.exr{transition:background-color .6s ease}
 .exh{margin:18px 0 4px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}.exh.up{color:var(--up)}.exh .mut{font-weight:400;margin-left:6px}
 #sEvPl .chip.on{border-color:var(--accent);color:var(--accent)}
+.zcount{margin-left:8px;font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:0;text-transform:none}.zcount.full{color:var(--accent)}
+.zchip{border:1px solid var(--line);background:transparent;color:var(--text-2);border-radius:16px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+.zchip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}.zchip:disabled{opacity:.35;cursor:default}
+#sZnOther .chip.on{border-color:var(--accent)}
 .pchips button.exz0{opacity:.45;cursor:default}
 .exloc{display:flex;align-items:center;gap:10px;margin:0 0 12px}.exloc>.mut{font-size:13px}
 .exbar input{width:100%;box-sizing:border-box;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px;-webkit-appearance:none;-webkit-user-select:text;user-select:text}
@@ -584,10 +588,7 @@ html,body{margin:0}
           <div class="set" style="margin-bottom:0">
             <div class="fld" style="grid-column:1 / -1"><div class="chips" id="sVenues"></div>
               <div class="add"><input type="text" id="sVenN" placeholder="Nome sede, es. Palazzo Reale" aria-label="Nome sede" maxlength="60" style="width:220px;text-transform:none"><input type="text" id="sVenC" placeholder="Città" aria-label="Città" maxlength="40" style="width:140px;text-transform:none"><button class="btn sm" id="sVenAdd">Aggiungi</button></div>
-              <div class="note" style="margin-top:8px">Le mostre arrivano da arte.it per le province vicine alla località scelta qui sotto. Le sedi che aggiungi qui sono le tue preferite: le loro mostre vanno in cima, con ★. Basta una parte del nome, es. «Palazzo Reale» o «Camera».</div></div>
-            <div class="fld" style="grid-column:1 / -1"><span class="lab">Zone sempre incluse</span><div class="chips" id="sExZ"></div>
-              <div class="add"><select id="sExZSel" aria-label="Zona da aggiungere"></select><button class="btn sm" id="sExZAdd">Aggiungi</button></div>
-              <div class="note" style="margin-top:8px">Zone dove vai volentieri anche se fuori dal raggio: le loro mostre si aggiungono a quelle delle province vicine alla località (al massimo 3 zone extra). Scegli dal menu: la zona si aggiunge subito. Si salva con «Salva e chiudi».</div></div>
+              <div class="note" style="margin-top:8px">Le mostre arrivano da arte.it per le zone scelte più sotto («Mostre · zone lette»). Le sedi che aggiungi qui sono le tue preferite: le loro mostre vanno in cima, con ★. Basta una parte del nome, es. «Palazzo Reale» o «Camera».</div></div>
           </div>
 
           <div class="sect" style="margin-top:20px">Fiere e mercatini ricorrenti</div>
@@ -606,7 +607,15 @@ html,body{margin:0}
           <div class="sect" style="margin-top:20px">Località e raggio</div>
           <div class="set">
             <div class="fld" style="grid-column:1 / -1"><span class="lab">Località</span><div class="chips" id="sEvPl"></div><div class="add"><input type="text" id="sEvPlQ" placeholder="Cerca una località" aria-label="Cerca una località" maxlength="60" style="width:300px;text-transform:none"><button class="btn sm" id="sEvPlGo">Cerca</button><span class="mut" id="sEvPlMsg" style="font-size:13px;align-self:center"></span></div><div class="pm-av" id="sEvPlRes"></div></div>
-            <div class="fld"><label for="sEvRad">Raggio (mostre e concerti)</label><div class="rng"><input type="range" id="sEvRad" min="10" max="200" step="10"><output id="oEvRad" class="num"></output></div></div>
+            <div class="fld"><label for="sEvRad">Raggio</label><div class="rng"><input type="range" id="sEvRad" min="10" max="200" step="10"><output id="oEvRad" class="num"></output></div></div>
+          </div>
+
+          <div class="sect" style="margin-top:20px">Mostre · zone lette <span class="zcount" id="sZnCnt"></span></div>
+          <div class="set" style="margin-bottom:0">
+            <div class="fld" style="grid-column:1 / -1"><span class="lab" id="sZnLab">Entro il raggio</span><div class="chips" id="sZnNear"></div></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Altre zone</span><div class="chips" id="sZnOther"></div>
+              <div class="add"><select id="sExZSel" aria-label="Zona da aggiungere"></select></div>
+              <div class="note" style="margin-top:8px">Le mostre si leggono solo dalle zone selezionate (in oro), al massimo 6. Tocca una provincia entro il raggio per includerla o escluderla; le zone più lontane si aggiungono dal menu. Arrivato a 6, le altre non si possono scegliere finché non ne togli una. Il raggio vale anche per i concerti.</div></div>
           </div>
 
           <div class="sect">Aggiornamento</div>
@@ -1090,7 +1099,7 @@ var DEF={api:'https://pannello-dati.marco-foto.workers.dev',tr:true,order:'marke
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
   foto:{user:'',tag:'digitalportfolio',ph:15,places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
   sport:{fav:{k:'inter',n:'Inter'},follow:null},
-  eventi:{venues:[],fairs:[],artists:[],extra:['torino','lugano'],flags:{},places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
+  eventi:{venues:[],fairs:[],artists:[],flags:{},places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
   corso:{status:{}}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
@@ -1172,6 +1181,20 @@ var EX_ZONES={milano:'Milano',como:'Como',varese:'Varese',lecco:'Lecco',bergamo:
   vicenza:'Vicenza',padova:'Padova',venezia:'Venezia',treviso:'Treviso',trento:'Trento',bolzano:'Bolzano',udine:'Udine',trieste:'Trieste',
   firenze:'Firenze',pisa:'Pisa',lucca:'Lucca',siena:'Siena',roma:'Roma',napoli:'Napoli',lugano:'Lugano'};
 function exExtra(c){c=c||eventiCfg();return Array.isArray(c.extra)?c.extra:['torino','lugano']}
+/* capoluoghi (stessi del ponte dati) per le distanze dalla località */
+var EX_COORD={milano:[45.464,9.19],como:[45.81,9.085],varese:[45.82,8.825],lecco:[45.856,9.393],bergamo:[45.698,9.677],brescia:[45.541,10.211],pavia:[45.185,9.155],lodi:[45.314,9.503],cremona:[45.133,10.022],mantova:[45.156,10.791],
+  sondrio:[46.17,9.872],novara:[45.446,8.622],vercelli:[45.32,8.42],biella:[45.566,8.054],torino:[45.07,7.686],asti:[44.9,8.206],cuneo:[44.384,7.542],alessandria:[44.912,8.615],aosta:[45.737,7.315],genova:[44.405,8.946],
+  piacenza:[45.052,9.693],parma:[44.801,10.328],'reggio-emilia':[44.698,10.631],modena:[44.647,10.925],bologna:[44.494,11.343],ferrara:[44.838,11.62],ravenna:[44.418,12.204],verona:[45.438,10.992],
+  vicenza:[45.546,11.546],padova:[45.406,11.877],venezia:[45.44,12.316],treviso:[45.666,12.243],trento:[46.067,11.121],bolzano:[46.498,11.354],udine:[46.071,13.235],trieste:[45.65,13.777],
+  firenze:[43.769,11.256],pisa:[43.716,10.402],lucca:[43.843,10.505],siena:[43.318,11.331],roma:[41.903,12.496],napoli:[40.852,14.268],lugano:[46.005,8.952]};
+var EX_MAX_Z=6;
+function exKm(k,p){var c=EX_COORD[k];if(!c||!p)return 9999;var R=6371,t=Math.PI/180,a=Math.sin((c[0]-p.lat)*t/2),b=Math.sin((c[1]-p.lon)*t/2);return Math.round(2*R*Math.asin(Math.sqrt(a*a+Math.cos(p.lat*t)*Math.cos(c[0]*t)*b*b)))}
+/* province con il capoluogo entro il raggio dalla località, dalla più vicina */
+function exNear(c){c=c||eventiCfg();var P=(c.places&&c.places.length)?c.places:DEF.eventi.places,p=P[Math.min(c.place||0,P.length-1)],r=+c.radius||50;
+  return Object.keys(EX_COORD).map(function(k){return {k:k,km:exKm(k,p)}}).filter(function(z){return z.km<=r}).sort(function(a,b){return a.km-b.km})}
+/* zone lette: scelte a mano; prima volta = le 3 più vicine entro il raggio + le extra di prima */
+function exZoneList(c){c=c||eventiCfg();if(Array.isArray(c.zones))return c.zones;var Z=exNear(c).slice(0,3).map(function(z){return z.k});
+  exExtra(c).forEach(function(k){if(Z.indexOf(k)<0)Z.push(k)});return Z.slice(0,EX_MAX_Z)}
 function evPlaces(){var c=eventiCfg();return (c.places&&c.places.length)?c.places:DEF.eventi.places}
 function curEvPlace(){var P=evPlaces(),i=eventiCfg().place||0;return P[Math.min(i,P.length-1)]}
 function evPlaceChips(){var P=evPlaces(),cur=eventiCfg().place||0;return '<div class="pchips">'+P.map(function(p,i){return '<button data-evplc="'+i+'" class="'+(i===cur?'on':'')+'">'+esc(p.n)+'</button>'}).join('')+'</div>'}
@@ -1184,7 +1207,7 @@ function fairNext(f){var now=new Date();now.setHours(0,0,0,0);
 function fairList(){return (eventiCfg().fairs||[]).map(function(f){return {f:f,d:fairNext(f)}}).sort(function(a,b){return a.d-b.d})}
 var EX={items:null,err:null,at:null,loading:false,provs:[]};
 function refreshExhib(){var p=curEvPlace();if(!p||EX.loading)return;EX.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
-  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&extra='+exExtra().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;exRedrawTile();exRedrawDetail()})}
+  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&zones='+exZoneList().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;exRedrawTile();exRedrawDetail()})}
 setTimeout(function(){refreshExhib();setInterval(refreshExhib,6*3600000)},7000);
 /* sede preferita: il nome in Impostazioni › Eventi compare nel nome della sede (o viceversa) */
 function exFav(x){var V=eventiCfg().venues||[],v=(x.venue||'').toLowerCase();if(!v||!V.length)return false;return V.some(function(s){var n=String(s.n||'').toLowerCase().trim();return n&&(v.indexOf(n)>=0||n.indexOf(v)>=0)})}
@@ -1912,7 +1935,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sTr').checked=W.tr!==false;$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
   migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));
-  if(!Array.isArray(W.eventi.extra))W.eventi.extra=exExtra(W.eventi).slice();renderExZ();renderVenues();renderFairs();renderArtists();renderEvPl();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
+  if(!Array.isArray(W.eventi.zones))W.eventi.zones=exZoneList(W.eventi).slice();renderVenues();renderFairs();renderArtists();renderEvPl();renderExZ();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
   renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
@@ -1976,12 +1999,17 @@ function renderFairs(){var F=W.eventi.fairs;$('sFairs').innerHTML=F.length?F.map
 $('sFrType').addEventListener('change',function(){var m=this.value==='weekly';$('sFrDom').style.display=m?'none':'';$('sFrWd').style.display=m?'':'none'});
 $('sFrAdd').addEventListener('click',function(){var n=($('sFrN').value||'').trim();if(!n)return;var type=$('sFrType').value;W.eventi.fairs.push(type==='weekly'?{n:n,type:'weekly',wd:$('sFrWd').value}:{n:n,type:'monthly',dom:$('sFrDom').value});$('sFrN').value='';renderFairs()});
 $('sFairs').addEventListener('click',function(e){var a=e.target.getAttribute('data-dfr');if(a!==null){W.eventi.fairs.splice(+a,1);renderFairs()}});
-function renderExZ(){var Z=W.eventi.extra;$('sExZ').innerHTML=Z.length?Z.map(function(k,i){return '<span class="chip">'+esc(EX_ZONES[k]||k)+'<button data-dexz="'+i+'" aria-label="Rimuovi '+esc(EX_ZONES[k]||k)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna zona</span>';
-  $('sExZSel').innerHTML='<option value="">'+(Z.length>=3?'Massimo 3 zone: togline una':'+ Aggiungi una zona…')+'</option>'+Object.keys(EX_ZONES).filter(function(k){return Z.indexOf(k)<0}).sort(function(a,b){return EX_ZONES[a].localeCompare(EX_ZONES[b],'it')}).map(function(k){return '<option value="'+k+'">'+EX_ZONES[k]+'</option>'}).join('');$('sExZAdd').disabled=Z.length>=3;$('sExZSel').disabled=Z.length>=3}
-function addExZ(){var k=$('sExZSel').value;if(!k||W.eventi.extra.length>=3||W.eventi.extra.indexOf(k)>=0)return;W.eventi.extra.push(k);renderExZ()}
-$('sExZAdd').addEventListener('click',addExZ);
-$('sExZSel').addEventListener('change',addExZ); /* scegliere dal menu basta: la zona si aggiunge subito */
-$('sExZ').addEventListener('click',function(e){var a=e.target.getAttribute('data-dexz');if(a!==null){W.eventi.extra.splice(+a,1);renderExZ()}});
+function renderExZ(){var Z=W.eventi.zones,full=Z.length>=EX_MAX_Z;
+  var near=exNear(W.eventi),nk=near.map(function(z){return z.k}),pl=W.eventi.places[Math.min(W.eventi.place||0,W.eventi.places.length-1)];
+  $('sZnCnt').textContent=Z.length+' di '+EX_MAX_Z;$('sZnCnt').className='zcount'+(full?' full':'');
+  $('sZnLab').textContent='Entro '+W.eventi.radius+' km da '+(pl?pl.n:'');
+  $('sZnNear').innerHTML=near.length?near.map(function(z){var on=Z.indexOf(z.k)>=0,dis=!on&&full;return '<button class="zchip'+(on?' on':'')+'" data-zn="'+z.k+'"'+(dis?' disabled':'')+'>'+(on?'✓ ':'')+esc(EX_ZONES[z.k]||z.k)+' <span class="mut">'+z.km+' km</span></button>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna provincia entro il raggio</span>';
+  var oth=Z.filter(function(k){return nk.indexOf(k)<0});
+  $('sZnOther').innerHTML=oth.length?oth.map(function(k){return '<span class="chip on">'+esc(EX_ZONES[k]||k)+' <span class="mut" style="font-weight:400">'+exKm(k,pl)+' km</span><button data-zx="'+k+'" aria-label="Togli '+esc(EX_ZONES[k]||k)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna</span>';
+  $('sExZSel').innerHTML='<option value="">'+(full?'Massimo '+EX_MAX_Z+' zone: togline una':'+ Aggiungi una zona…')+'</option>'+Object.keys(EX_ZONES).filter(function(k){return Z.indexOf(k)<0&&nk.indexOf(k)<0}).sort(function(a,b){return EX_ZONES[a].localeCompare(EX_ZONES[b],'it')}).map(function(k){return '<option value="'+k+'">'+EX_ZONES[k]+' · '+exKm(k,pl)+' km</option>'}).join('');$('sExZSel').disabled=full}
+$('sExZSel').addEventListener('change',function(){var k=this.value,Z=W.eventi.zones;if(k&&Z.length<EX_MAX_Z&&Z.indexOf(k)<0)Z.push(k);renderExZ()});
+$('sZnNear').addEventListener('click',function(e){var b=e.target.closest('[data-zn]');if(!b||b.disabled)return;var k=b.getAttribute('data-zn'),Z=W.eventi.zones,i=Z.indexOf(k);if(i>=0)Z.splice(i,1);else if(Z.length<EX_MAX_Z)Z.push(k);renderExZ()});
+$('sZnOther').addEventListener('click',function(e){var b=e.target.closest('[data-zx]');if(!b)return;var Z=W.eventi.zones,i=Z.indexOf(b.getAttribute('data-zx'));if(i>=0)Z.splice(i,1);renderExZ()});
 function renderArtists(){var A=W.eventi.artists;$('sArtists').innerHTML=A.length?A.map(function(a,i){return '<span class="chip">'+esc(a)+'<button data-dart="'+i+'" aria-label="Rimuovi '+esc(a)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessun artista</span>'}
 $('sArtAdd').addEventListener('click',function(){var n=($('sArtN').value||'').trim();if(!n)return;W.eventi.artists.push(n);$('sArtN').value='';renderArtists()});
 $('sArtists').addEventListener('click',function(e){var a=e.target.getAttribute('data-dart');if(a!==null){W.eventi.artists.splice(+a,1);renderArtists()}});
@@ -1992,9 +2020,9 @@ function searchEvPl(){var q=($('sEvPlQ').value||'').trim();if(!q)return;$('sEvPl
     function(){$('sEvPlMsg').textContent='Ricerca non riuscita'})}
 $('sEvPlGo').addEventListener('click',searchEvPl);
 $('sEvPlQ').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();searchEvPl()}});
-$('sEvPlRes').addEventListener('click',function(e){var b=e.target.closest('[data-aevpl]');if(!b||b.disabled)return;var c=b.getAttribute('data-aevpl').split(',');W.eventi.places.push({n:b.getAttribute('data-aevpln'),lat:+c[0],lon:+c[1]});b.disabled=true;renderEvPl()});
-$('sEvPl').addEventListener('click',function(e){var sp=e.target.closest('[data-sevpl]');if(sp){W.eventi.place=+sp.getAttribute('data-sevpl');renderEvPl();return}var a=e.target.getAttribute('data-devpl');if(a!==null){W.eventi.places.splice(+a,1);if(W.eventi.place>=W.eventi.places.length)W.eventi.place=0;else if(+a<W.eventi.place)W.eventi.place--;renderEvPl()}});
-$('sEvRad').addEventListener('input',function(){$('oEvRad').textContent=this.value+' km'});
+$('sEvPlRes').addEventListener('click',function(e){var b=e.target.closest('[data-aevpl]');if(!b||b.disabled)return;var c=b.getAttribute('data-aevpl').split(',');W.eventi.places.push({n:b.getAttribute('data-aevpln'),lat:+c[0],lon:+c[1]});b.disabled=true;renderEvPl();renderExZ()});
+$('sEvPl').addEventListener('click',function(e){var sp=e.target.closest('[data-sevpl]');if(sp){W.eventi.place=+sp.getAttribute('data-sevpl');renderEvPl();renderExZ();return}var a=e.target.getAttribute('data-devpl');if(a!==null){W.eventi.places.splice(+a,1);if(W.eventi.place>=W.eventi.places.length)W.eventi.place=0;else if(+a<W.eventi.place)W.eventi.place--;renderEvPl();renderExZ()}});
+$('sEvRad').addEventListener('input',function(){$('oEvRad').textContent=this.value+' km';W.eventi.radius=+this.value||W.eventi.radius;renderExZ()});
 
 /* squadre: preferita (tra quelle di Serie A) e seguite (tra Serie A e Champions) */
 function spTeams(){var o={},A=[];spTb('sa').concat(spTb('cl')).forEach(function(r){if(!o[r.k]){o[r.k]=1;A.push({k:r.k,n:r.n})}});return A.sort(function(a,b){return a.n.localeCompare(b.n,'it')})}
