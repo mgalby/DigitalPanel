@@ -1,5 +1,5 @@
 // DigitalPanel – ponte dati verso Yahoo Finance (Cloudflare Worker)
-// In corso (non ancora consolidato, resta 4.4): ESPN non accetta più intervalli di date (HTTP 400, la Nazionale
+// Correzione (dopo la 4.4, inclusa nella 4.5): ESPN non accetta più intervalli di date (HTTP 400, la Nazionale
 //   risultava senza partite). Ora si legge il calendario e poi i singoli giorni di gara; /sport/italy restituisce
 //   anche group, il girone di Nations League. Stesso metodo per la riserva ESPN del calendario di Serie A e Champions.
 // In corso (20 nov 2026, non consolidato): /events/exhibitions, mostre dal calendario di arte.it per le province
