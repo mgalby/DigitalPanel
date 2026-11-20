@@ -354,6 +354,14 @@ html,body{margin:0}
 .exb.up{color:var(--up);background:rgba(63,185,122,.14)}.exb.end{color:var(--accent);background:var(--accent-soft)}
 .exend{color:var(--accent)}
 .exheart{color:var(--down)}
+/* righe del riquadro Mostre: posti fissi, titolo grande su massimo 2 righe, sede su una riga, etichetta sopra la data */
+.rows.exrows{display:grid;gap:0}
+.exrt{padding:0;min-height:0;align-items:center}
+.exrt .k{min-width:0}
+.exrt .ext{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:20px;font-weight:500;line-height:1.2}
+.exrt .k small{font-size:14px;line-height:1.3;margin-top:3px}
+.exrt .v.exv{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:16px;line-height:1.2;white-space:nowrap;text-align:right;max-width:none}
+.exv .exb{margin-right:0}
 .exr{align-items:center}.exfl{flex:none;width:40px;height:40px;margin:0 6px 0 -8px;border:0;background:transparent;color:var(--text-3);font-size:22px;line-height:1;cursor:pointer;border-radius:20px}
 .exfl.on{color:var(--down)}
 .exr.hit{background:var(--accent-soft)}.exr{transition:background-color .6s ease}
@@ -1190,7 +1198,12 @@ function exMine(){var t=new Date().toISOString().slice(0,10),F=exFlags();return 
 /* ordine: segnate ♥, poi sedi preferite ★, poi le altre (già ordinate dal ponte dati) */
 function exSort(L){var a=L.filter(exIsFlag),r=L.filter(function(x){return !exIsFlag(x)}),f=r.filter(exFav),o=r.filter(function(x){return !exFav(x)});return a.concat(f,o)}
 function exOfZone(k){return exSort((EX.items||[]).filter(function(x){return x.prov===k}))}
-var EX_TILE_MAX=10;
+/* righe per sotto-pagina secondo l'altezza reale del riquadro: ogni riga ha spazio per un titolo su 2 righe,
+   così l'ultima mostra non resta mai tagliata a metà. Mostre per zona nel riquadro: 2 pagine piene. */
+var EX_ROW_H=96;EX.per=4;
+function exMeasure(){var t=grid.querySelector('.tile[data-mod="mostre"] .tb');if(!t)return;var h=t.clientHeight-44;if(h<=0)return;
+  var per=Math.max(2,Math.min(5,Math.floor(h/EX_ROW_H)));if(per!==EX.per){EX.per=per;exRedrawTile()}}
+window.addEventListener('resize',function(){setTimeout(exMeasure,200)});
 /* sotto-pagine del riquadro: una zona per volta, al massimo 10 mostre per zona (5 per pagina) */
 /* sotto-pagine del riquadro: una zona per volta, al massimo 10 mostre per zona (5 per pagina).
    Sempre presenti: segnate ♥, sedi preferite ★, le 3 mostre più vicine alla chiusura; i posti rimasti girano ogni ora
@@ -1198,13 +1211,13 @@ var EX_TILE_MAX=10;
 function exPages(){var P=[],hour=Math.floor(Date.now()/3600000);exZones().forEach(function(k){var L=exOfZone(k);
     var mine=L.filter(function(x){return exIsFlag(x)||exFav(x)}),closing=L.filter(function(x){return mine.indexOf(x)<0&&exClosing(x)}).slice(0,3); /* in chiusura: al massimo 3 fisse */
     var fixed=mine.concat(closing),rest=L.filter(function(x){return fixed.indexOf(x)<0});
-    var room=Math.max(0,EX_TILE_MAX-fixed.length),pick=fixed.slice();
+    var room=Math.max(0,(EX.per*2)-fixed.length),pick=fixed.slice();
     if(room&&rest.length){var off=(hour*room)%rest.length;for(var j=0;j<Math.min(room,rest.length);j++)pick.push(rest[(off+j)%rest.length])}
     pick.sort(function(a,b){return L.indexOf(a)-L.indexOf(b)}); /* stesso ordine dell'elenco: ♥, ★, in corso per chiusura, in arrivo */
-    chunk(pick,5).forEach(function(g,i,all){P.push({zone:k,items:g,n:L.length,page:i+1,of:all.length})})});return P}
+    chunk(pick,EX.per).forEach(function(g,i,all){P.push({zone:k,items:g,n:L.length,page:i+1,of:all.length})})});return P}
 function exBadge(x){return x.upcoming?'<span class="exb up">in arrivo</span>':(exClosing(x)?'<span class="exb end">in chiusura</span>':'')}
 function exMarks(x){return (exIsFlag(x)?'<span class="exheart">♥</span> ':'')+(exFav(x)?'<span class="fstar">★</span> ':'')}
-function exRowTile(x){return '<div class="r" data-k="ex'+esc(x.id)+'"><span class="k" style="font-size:17px">'+exMarks(x)+esc(x.title||'')+'<small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to))+'</span></span></div>'}
+function exRowTile(x){return '<div class="r exrt" data-k="ex'+esc(x.id)+'"><span class="k"><span class="ext">'+exMarks(x)+esc(x.title||'')+'</span><small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v exv">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to))+'</span></span></div>'}
 function exWait(){return '<div class="nolive"><span>'+(EX.err?'Dati non disponibili':'In attesa dei dati…')+'</span></div>'}
 /* zona scelta toccando il suo nome nel riquadro: resta fissa per 5 minuti (o finché si ritocca), poi riprende la rotazione */
 var EXT={zone:null,until:0,base:0};
@@ -1216,7 +1229,7 @@ M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},n:function(){
   c:function(i){
     if(EX.items==null)return exWait();var P=exShown();if(!P.length)return '<div class="nolive"><span>Nessuna mostra trovata</span></div>';
     var pg=P[M.mostre.si(i)];
-    return '<div class="exz"><span class="exzc">'+exZones().map(function(k){return '<button data-extz="'+k+'" class="'+(k===pg.zone?'on':'')+(EXT.zone===k?' pin':'')+'">'+esc(exZoneName(k))+'</button>'}).join('')+'</span><span class="mut">'+pg.n+' mostre'+(pg.of>1?' · '+pg.page+'/'+pg.of:'')+'</span></div><div class="rows">'+pg.items.map(exRowTile).join('')+'</div>'},
+    return '<div class="exz"><span class="exzc">'+exZones().map(function(k){return '<button data-extz="'+k+'" class="'+(k===pg.zone?'on':'')+(EXT.zone===k?' pin':'')+'">'+esc(exZoneName(k))+'</button>'}).join('')+'</span><span class="mut">'+pg.n+' mostre'+(pg.of>1?' · '+pg.page+'/'+pg.of:'')+'</span></div><div class="rows exrows" style="grid-template-rows:repeat('+EX.per+',minmax(0,1fr))">'+pg.items.map(exRowTile).join('')+'</div>'+(setTimeout(exMeasure,0),'')},
   d:function(){if(EX.items==null)return exWait();
     var Z=exZones();if(EXUI.zone==='mine'&&!exMine().length)EXUI.zone=Z[0]||'all';if(EXUI.zone!=='all'&&EXUI.zone!=='mine'&&Z.indexOf(EXUI.zone)<0)EXUI.zone=Z[0]||'all';
     return '<div class="exbar"><input type="search" id="exQ" placeholder="Cerca autore, titolo o sede, es. Fan Ho" value="'+esc(EXUI.q)+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
