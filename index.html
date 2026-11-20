@@ -346,7 +346,10 @@ html,body{margin:0}
 .sl-nav.l{left:0}.sl-nav.r{right:0}
 .sl-cap{margin-top:12px}.sl-cap b{font-size:18px;font-weight:500;display:block}.sl-cap span{font-size:13px;color:var(--text-2)}
 .pchips{display:flex;flex-wrap:wrap;gap:8px}
-.exz{display:flex;justify-content:space-between;align-items:baseline;margin:-4px 0 6px;font-size:15px}.exz b{color:var(--accent);font-weight:600;letter-spacing:.02em}.exz .mut{font-size:13px}
+.exz{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-6px 0 6px;font-size:15px}.exz .mut{font-size:13px;white-space:nowrap}
+.exzc{display:flex;flex-wrap:wrap;gap:2px 4px;margin-left:-8px}
+.exzc button{border:0;background:transparent;color:var(--text-2);font:inherit;font-size:15px;padding:6px 8px;border-radius:14px;cursor:pointer}
+.exzc button.on{color:var(--accent);font-weight:600}.exzc button.pin{background:var(--accent-soft)}
 .exb{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;margin-right:8px;vertical-align:2px}
 .exb.up{color:var(--up);background:rgba(63,185,122,.14)}.exb.end{color:var(--accent);background:var(--accent-soft)}
 .exend{color:var(--accent)}
@@ -1166,7 +1169,7 @@ function fairNext(f){var now=new Date();now.setHours(0,0,0,0);
 function fairList(){return (eventiCfg().fairs||[]).map(function(f){return {f:f,d:fairNext(f)}}).sort(function(a,b){return a.d-b.d})}
 var EX={items:null,err:null,at:null,loading:false,provs:[]};
 function refreshExhib(){var p=curEvPlace();if(!p||EX.loading)return;EX.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
-  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&extra='+exExtra().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;refreshTiles();exRedrawDetail()})}
+  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&extra='+exExtra().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;exRedrawTile();exRedrawDetail()})}
 setTimeout(function(){refreshExhib();setInterval(refreshExhib,6*3600000)},7000);
 /* sede preferita: il nome in Impostazioni › Eventi compare nel nome della sede (o viceversa) */
 function exFav(x){var V=eventiCfg().venues||[],v=(x.venue||'').toLowerCase();if(!v||!V.length)return false;return V.some(function(s){var n=String(s.n||'').toLowerCase().trim();return n&&(v.indexOf(n)>=0||n.indexOf(v)>=0)})}
@@ -1203,9 +1206,17 @@ function exBadge(x){return x.upcoming?'<span class="exb up">in arrivo</span>':(e
 function exMarks(x){return (exIsFlag(x)?'<span class="exheart">♥</span> ':'')+(exFav(x)?'<span class="fstar">★</span> ':'')}
 function exRowTile(x){return '<div class="r" data-k="ex'+esc(x.id)+'"><span class="k" style="font-size:17px">'+exMarks(x)+esc(x.title||'')+'<small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to))+'</span></span></div>'}
 function exWait(){return '<div class="nolive"><span>'+(EX.err?'Dati non disponibili':'In attesa dei dati…')+'</span></div>'}
-M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},n:function(){return Math.max(1,exPages().length)},c:function(i){
-    if(EX.items==null)return exWait();var P=exPages();if(!P.length)return '<div class="nolive"><span>Nessuna mostra trovata</span></div>';
-    var pg=P[i%P.length];return '<div class="exz"><b>'+esc(exZoneName(pg.zone))+'</b><span class="mut">'+pg.n+' mostre'+(pg.of>1?' · '+pg.page+'/'+pg.of:'')+'</span></div><div class="rows">'+pg.items.map(exRowTile).join('')+'</div>'},
+/* zona scelta toccando il suo nome nel riquadro: resta fissa per 5 minuti (o finché si ritocca), poi riprende la rotazione */
+var EXT={zone:null,until:0,base:0};
+/* ridisegna solo il riquadro Mostre (contenuto e pallini delle sotto-pagine) */
+function exRedrawTile(){var t=grid.querySelector('.tile[data-mod="mostre"]');if(!t)return;var tb=t.querySelector('.tb'),sd=t.querySelector('[data-sd]');tb.innerHTML=M.mostre.c(subIdx);if(sd){var n=M.mostre.n();sd.innerHTML=n>1?dotsHtml(n,M.mostre.si(subIdx)):''}}
+function exShown(){var P=exPages();if(EXT.zone&&Date.now()<EXT.until){var Q=P.filter(function(p){return p.zone===EXT.zone});if(Q.length)return Q}EXT.zone=null;return P}
+M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},n:function(){return Math.max(1,exShown().length)},
+  si:function(i){var n=Math.max(1,exShown().length);return (((i-(EXT.zone?EXT.base:0))%n)+n)%n}, /* con una zona scelta si parte dalla sua prima pagina */
+  c:function(i){
+    if(EX.items==null)return exWait();var P=exShown();if(!P.length)return '<div class="nolive"><span>Nessuna mostra trovata</span></div>';
+    var pg=P[M.mostre.si(i)];
+    return '<div class="exz"><span class="exzc">'+exZones().map(function(k){return '<button data-extz="'+k+'" class="'+(k===pg.zone?'on':'')+(EXT.zone===k?' pin':'')+'">'+esc(exZoneName(k))+'</button>'}).join('')+'</span><span class="mut">'+pg.n+' mostre'+(pg.of>1?' · '+pg.page+'/'+pg.of:'')+'</span></div><div class="rows">'+pg.items.map(exRowTile).join('')+'</div>'},
   d:function(){if(EX.items==null)return exWait();
     var Z=exZones();if(EXUI.zone==='mine'&&!exMine().length)EXUI.zone=Z[0]||'all';if(EXUI.zone!=='all'&&EXUI.zone!=='mine'&&Z.indexOf(EXUI.zone)<0)EXUI.zone=Z[0]||'all';
     return '<div class="exbar"><input type="search" id="exQ" placeholder="Cerca autore, titolo o sede, es. Fan Ho" value="'+esc(EXUI.q)+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
@@ -2164,11 +2175,12 @@ stage.addEventListener('click',function(e){
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
   var exz=t.closest('[data-exz]');if(exz){EXUI.zone=exz.getAttribute('data-exz');EXUI.q='';EXUI.web=null;var kb=$('dBody');kb.innerHTML=M.mostre.d();touch();return}
+  var etz=t.closest('[data-extz]');if(etz){var zk=etz.getAttribute('data-extz');if(EXT.zone===zk){EXT.zone=null}else{EXT.zone=zk;EXT.until=Date.now()+300000;EXT.base=subIdx}exRedrawTile();touch();return}
   var exf=t.closest('[data-exflag]');if(exf){var fid=exf.getAttribute('data-exflag');exToggleFlag(fid);var fon=!!exFlags()[fid];
     /* il cuore cambia sul posto (la riga non salta in cima); si aggiornano solo le schede, per il conteggio di «Le mie» */
     [].forEach.call($('dBody').querySelectorAll('[data-exflag="'+fid+'"]'),function(bt){bt.classList.toggle('on',fon);bt.textContent=fon?'♥':'♡'});
     var tb=$('exTabs');if(tb){var tmp=document.createElement('div');tmp.innerHTML=M.mostre.d();var nt=tmp.querySelector('#exTabs');if(nt)tb.innerHTML=nt.innerHTML}
-    refreshTiles();touch();return}
+    exRedrawTile();touch();return}
   if(t.closest('[data-exweb]')){var wq=EXUI.q.trim();if(wq.length>=2)exWebSearch(wq);touch();return}
   if(t.closest('.panel')){touch();return}
   if(t.closest('.ov')){closeOv('detail');closeOv('settings');touch();return}
