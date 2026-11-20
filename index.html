@@ -615,7 +615,7 @@ html,body{margin:0}
             <div class="fld" style="grid-column:1 / -1"><span class="lab" id="sZnLab">Entro il raggio</span><div class="chips" id="sZnNear"></div></div>
             <div class="fld" style="grid-column:1 / -1"><span class="lab">Altre zone</span><div class="chips" id="sZnOther"></div>
               <div class="add"><select id="sExZSel" aria-label="Zona da aggiungere"></select></div>
-              <div class="note" style="margin-top:8px">Le mostre si leggono solo dalle zone selezionate (in oro), al massimo 6. Tocca una provincia entro il raggio per includerla o escluderla; le zone più lontane si aggiungono dal menu. Arrivato a 6, le altre non si possono scegliere finché non ne togli una. Il raggio vale anche per i concerti.</div></div>
+              <div class="note" style="margin-top:8px">Le mostre si leggono solo dalle zone selezionate (in oro), al massimo 6. Tocca una provincia entro il raggio per includerla o escluderla; le zone più lontane si aggiungono dal menu. Con 6 zone la scelta è completa: per cambiarne una, prima spegnine o toglierne un'altra. Il raggio vale anche per i concerti.</div></div>
           </div>
 
           <div class="sect">Aggiornamento</div>
@@ -2001,12 +2001,12 @@ $('sFrAdd').addEventListener('click',function(){var n=($('sFrN').value||'').trim
 $('sFairs').addEventListener('click',function(e){var a=e.target.getAttribute('data-dfr');if(a!==null){W.eventi.fairs.splice(+a,1);renderFairs()}});
 function renderExZ(){var Z=W.eventi.zones,full=Z.length>=EX_MAX_Z;
   var near=exNear(W.eventi),nk=near.map(function(z){return z.k}),pl=W.eventi.places[Math.min(W.eventi.place||0,W.eventi.places.length-1)];
-  $('sZnCnt').textContent=Z.length+' di '+EX_MAX_Z;$('sZnCnt').className='zcount'+(full?' full':'');
+  $('sZnCnt').textContent=Z.length+' di '+EX_MAX_Z+(full?' · completo':'');$('sZnCnt').className='zcount'+(full?' full':'');
   $('sZnLab').textContent='Entro '+W.eventi.radius+' km da '+(pl?pl.n:'');
   $('sZnNear').innerHTML=near.length?near.map(function(z){var on=Z.indexOf(z.k)>=0,dis=!on&&full;return '<button class="zchip'+(on?' on':'')+'" data-zn="'+z.k+'"'+(dis?' disabled':'')+'>'+(on?'✓ ':'')+esc(EX_ZONES[z.k]||z.k)+' <span class="mut">'+z.km+' km</span></button>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna provincia entro il raggio</span>';
   var oth=Z.filter(function(k){return nk.indexOf(k)<0});
   $('sZnOther').innerHTML=oth.length?oth.map(function(k){return '<span class="chip on">'+esc(EX_ZONES[k]||k)+' <span class="mut" style="font-weight:400">'+exKm(k,pl)+' km</span><button data-zx="'+k+'" aria-label="Togli '+esc(EX_ZONES[k]||k)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna</span>';
-  $('sExZSel').innerHTML='<option value="">'+(full?'Massimo '+EX_MAX_Z+' zone: togline una':'+ Aggiungi una zona…')+'</option>'+Object.keys(EX_ZONES).filter(function(k){return Z.indexOf(k)<0&&nk.indexOf(k)<0}).sort(function(a,b){return EX_ZONES[a].localeCompare(EX_ZONES[b],'it')}).map(function(k){return '<option value="'+k+'">'+EX_ZONES[k]+' · '+exKm(k,pl)+' km</option>'}).join('');$('sExZSel').disabled=full}
+  $('sExZSel').innerHTML='<option value="">'+(full?'Completo: '+EX_MAX_Z+' zone su '+EX_MAX_Z:'+ Aggiungi una zona…')+'</option>'+Object.keys(EX_ZONES).filter(function(k){return Z.indexOf(k)<0&&nk.indexOf(k)<0}).sort(function(a,b){return EX_ZONES[a].localeCompare(EX_ZONES[b],'it')}).map(function(k){return '<option value="'+k+'">'+EX_ZONES[k]+' · '+exKm(k,pl)+' km</option>'}).join('');$('sExZSel').disabled=full}
 $('sExZSel').addEventListener('change',function(){var k=this.value,Z=W.eventi.zones;if(k&&Z.length<EX_MAX_Z&&Z.indexOf(k)<0)Z.push(k);renderExZ()});
 $('sZnNear').addEventListener('click',function(e){var b=e.target.closest('[data-zn]');if(!b||b.disabled)return;var k=b.getAttribute('data-zn'),Z=W.eventi.zones,i=Z.indexOf(k);if(i>=0)Z.splice(i,1);else if(Z.length<EX_MAX_Z)Z.push(k);renderExZ()});
 $('sZnOther').addEventListener('click',function(e){var b=e.target.closest('[data-zx]');if(!b)return;var Z=W.eventi.zones,i=Z.indexOf(b.getAttribute('data-zx'));if(i>=0)Z.splice(i,1);renderExZ()});
