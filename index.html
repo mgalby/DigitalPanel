@@ -366,6 +366,8 @@ html,body{margin:0}
 .exfl.on{color:var(--down)}
 .exr.hit{background:var(--accent-soft)}.exr{transition:background-color .6s ease}
 .exh{margin:18px 0 4px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}.exh.up{color:var(--up)}.exh .mut{font-weight:400;margin-left:6px}
+#sEvPl .chip.on{border-color:var(--accent);color:var(--accent)}
+.exloc{display:flex;align-items:center;gap:10px;margin:0 0 12px}.exloc>.mut{font-size:13px}
 .exbar input{width:100%;box-sizing:border-box;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px;-webkit-appearance:none;-webkit-user-select:text;user-select:text}
 .exbar input:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .pchips button{border:1px solid var(--line);background:transparent;color:var(--text-2);border-radius:18px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer}
@@ -1232,7 +1234,7 @@ M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},n:function(){
     return '<div class="exz"><span class="exzc">'+exZones().map(function(k){return '<button data-extz="'+k+'" class="'+(k===pg.zone?'on':'')+(EXT.zone===k?' pin':'')+'">'+esc(exZoneName(k))+'</button>'}).join('')+'</span><span class="mut">'+pg.n+' mostre'+(pg.of>1?' · '+pg.page+'/'+pg.of:'')+'</span></div><div class="rows exrows" style="grid-template-rows:repeat('+EX.per+',minmax(0,1fr))">'+pg.items.map(exRowTile).join('')+'</div>'+(setTimeout(exMeasure,0),'')},
   d:function(){if(EX.items==null)return exWait();
     var Z=exZones();if(EXUI.zone==='mine'&&!exMine().length)EXUI.zone=Z[0]||'all';if(EXUI.zone!=='all'&&EXUI.zone!=='mine'&&Z.indexOf(EXUI.zone)<0)EXUI.zone=Z[0]||'all';
-    return '<div class="exbar"><input type="search" id="exQ" placeholder="Cerca autore, titolo o sede, es. Fan Ho" value="'+esc(EXUI.q)+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
+    return (evPlaces().length>1?'<div class="exloc"><span class="mut">Località</span>'+evPlaceChips()+'</div>':'')+'<div class="exbar"><input type="search" id="exQ" placeholder="Cerca autore, titolo o sede, es. Fan Ho" value="'+esc(EXUI.q)+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
       '<div class="pchips" id="exTabs" style="margin:12px 0 4px">'+(exMine().length?'<button data-exz="mine" class="'+(EXUI.zone==='mine'?'on':'')+'"><span class="exheart">♥</span> Le mie <span class="mut">'+exMine().length+'</span></button>':'')+Z.map(function(k){return '<button data-exz="'+k+'" class="'+(EXUI.zone===k?'on':'')+'">'+esc(exZoneName(k))+' <span class="mut">'+(EX.items||[]).filter(function(x){return x.prov===k}).length+'</span></button>'}).join('')+'<button data-exz="all" class="'+(EXUI.zone==='all'?'on':'')+'">Tutte</button></div>'+
       '<div id="exList">'+exDetailList()+'</div>'+
       '<div class="note">Mostre dal calendario di arte.it per le zone vicine alla località attiva e per quelle sempre incluse (Impostazioni › Eventi). Tocca ♡ per segnare una mostra che ti interessa: resta in cima, con ♥, anche nel riquadro. Le sedi preferite hanno ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
@@ -1277,8 +1279,8 @@ function concertWait(){return '<div class="nolive"><span>'+(CN.err?(/chiave/.tes
 M.concerti={l:'Concerti',s:function(){return eventiCfg().radius+' km'},live:true,n:function(){return Math.max(1,chunk(CN.items||[],4).length)},c:function(i){
     var L=CN.items;if(L==null)return concertWait();if(!L.length)return '<div class="nolive"><span>Nessun concerto nel raggio scelto</span></div>';
     var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(c){var fv=concertFav(c);return '<div class="r"><span class="k" style="font-size:17px">'+(fv?'<span class="fstar">★</span> ':'')+esc(c.title||c.artist)+'<small>'+esc(c.venue||'')+'</small></span><span class="v mut" style="font-size:15px">'+esc(dShort((c.date||'').slice(0,10)))+'</span></div>'}).join('')+'</div>'},
-  d:function(){var L=CN.items;if(L==null)return concertWait();if(!L.length)return '<div class="mut">Nessun concerto nel raggio scelto nei prossimi mesi.</div>';
-    return L.map(function(c){var fv=concertFav(c);return '<div class="er">'+(c.image?'<img class="thb" src="'+esc(c.image)+'" alt="" loading="lazy">':'<span class="thb"></span>')+'<div class="ei"><b>'+(fv?'<span class="fstar">★</span> ':'')+esc(c.title||c.artist)+'</b><div class="em">'+esc(c.venue||'')+' · '+esc(dLabel((c.date||'').slice(0,10)+'T12:00:00'))+(c.time?' · '+esc(c.time):'')+'</div></div></div>'}).join('')+
+  d:function(){var loc=evPlaces().length>1?'<div class="exloc" style="margin-bottom:10px"><span class="mut">Località</span>'+evPlaceChips()+'</div>':'';var L=CN.items;if(L==null)return loc+concertWait();if(!L.length)return loc+'<div class="mut">Nessun concerto nel raggio scelto nei prossimi mesi.</div>';
+    return loc+L.map(function(c){var fv=concertFav(c);return '<div class="er">'+(c.image?'<img class="thb" src="'+esc(c.image)+'" alt="" loading="lazy">':'<span class="thb"></span>')+'<div class="ei"><b>'+(fv?'<span class="fstar">★</span> ':'')+esc(c.title||c.artist)+'</b><div class="em">'+esc(c.venue||'')+' · '+esc(dLabel((c.date||'').slice(0,10)+'T12:00:00'))+(c.time?' · '+esc(c.time):'')+'</div></div></div>'}).join('')+
       '<div class="note">Dati Ticketmaster entro il raggio scelto dalla località attiva. Gli artisti preferiti sono evidenziati con ★.</div>'},
   sub:'Concerti entro il raggio scelto · Ticketmaster'};
 
@@ -1976,7 +1978,7 @@ $('sExZ').addEventListener('click',function(e){var a=e.target.getAttribute('data
 function renderArtists(){var A=W.eventi.artists;$('sArtists').innerHTML=A.length?A.map(function(a,i){return '<span class="chip">'+esc(a)+'<button data-dart="'+i+'" aria-label="Rimuovi '+esc(a)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessun artista</span>'}
 $('sArtAdd').addEventListener('click',function(){var n=($('sArtN').value||'').trim();if(!n)return;W.eventi.artists.push(n);$('sArtN').value='';renderArtists()});
 $('sArtists').addEventListener('click',function(e){var a=e.target.getAttribute('data-dart');if(a!==null){W.eventi.artists.splice(+a,1);renderArtists()}});
-function renderEvPl(){var P=W.eventi.places;$('sEvPl').innerHTML=P.map(function(p,i){return '<span class="chip">'+(i===W.eventi.place?'● ':'')+esc(p.n)+(P.length>1?'<button data-devpl="'+i+'" aria-label="Rimuovi '+esc(p.n)+'">✕</button>':'')+'</span>'}).join('')}
+function renderEvPl(){var P=W.eventi.places;$('sEvPl').innerHTML=P.map(function(p,i){var on=i===W.eventi.place;return '<span class="chip'+(on?' on':'')+'"><span data-sevpl="'+i+'" style="cursor:pointer" title="Usa questa località">'+(on?'● ':'○ ')+esc(p.n)+'</span>'+(P.length>1?'<button data-devpl="'+i+'" aria-label="Rimuovi '+esc(p.n)+'">✕</button>':'')+'</span>'}).join('')}
 function searchEvPl(){var q=($('sEvPlQ').value||'').trim();if(!q)return;$('sEvPlMsg').textContent='Ricerca…';$('sEvPlRes').innerHTML='';
   getJSON('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=8&language=it&format=json').then(function(d){var R=d.results||[];$('sEvPlMsg').textContent=R.length?'Tocca per aggiungere':'Nessun risultato';
     $('sEvPlRes').innerHTML=R.map(function(r){var sub=[r.admin2||r.admin1,r.country_code&&r.country_code!=='IT'?r.country:''].filter(Boolean).join(', ');var had=W.eventi.places.some(function(p){return Math.abs(p.lat-r.latitude)<0.02&&Math.abs(p.lon-r.longitude)<0.02});return '<button data-aevpl="'+r.latitude+','+r.longitude+'" data-aevpln="'+esc(r.name)+'"'+(had?' disabled':'')+'>+ '+esc(r.name)+(sub?' <span style="color:var(--text-3)">'+esc(sub)+'</span>':'')+'</button>'}).join('')},
@@ -1984,7 +1986,7 @@ function searchEvPl(){var q=($('sEvPlQ').value||'').trim();if(!q)return;$('sEvPl
 $('sEvPlGo').addEventListener('click',searchEvPl);
 $('sEvPlQ').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();searchEvPl()}});
 $('sEvPlRes').addEventListener('click',function(e){var b=e.target.closest('[data-aevpl]');if(!b||b.disabled)return;var c=b.getAttribute('data-aevpl').split(',');W.eventi.places.push({n:b.getAttribute('data-aevpln'),lat:+c[0],lon:+c[1]});b.disabled=true;renderEvPl()});
-$('sEvPl').addEventListener('click',function(e){var a=e.target.getAttribute('data-devpl');if(a!==null){W.eventi.places.splice(+a,1);if(W.eventi.place>=W.eventi.places.length)W.eventi.place=0;else if(+a<W.eventi.place)W.eventi.place--;renderEvPl()}});
+$('sEvPl').addEventListener('click',function(e){var sp=e.target.closest('[data-sevpl]');if(sp){W.eventi.place=+sp.getAttribute('data-sevpl');renderEvPl();return}var a=e.target.getAttribute('data-devpl');if(a!==null){W.eventi.places.splice(+a,1);if(W.eventi.place>=W.eventi.places.length)W.eventi.place=0;else if(+a<W.eventi.place)W.eventi.place--;renderEvPl()}});
 $('sEvRad').addEventListener('input',function(){$('oEvRad').textContent=this.value+' km'});
 
 /* squadre: preferita (tra quelle di Serie A) e seguite (tra Serie A e Champions) */
