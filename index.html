@@ -1306,6 +1306,7 @@ var FRGG=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sa
 /* ---------- Fiere e mercatini: catalogo curato (ricerca del 20 nov 2026) ----------
    r = regola ricorrente: t:'nth' n=[1..4 | -1 = ultima], wd = giorno (0 domenica, 6 sabato), sat = anche il sabato prima,
        ex = mesi esclusi (1-12); t:'wk' ogni settimana di wd. over = date spostate {'AAAA-MM':'AAAA-MM-GG'}.
+   extra = date in più fuori regola (es. edizioni straordinarie) ['AAAA-MM-GG', ...].
    d = fiere con date proprie [[inizio, fine], ...]; tbc = date non ancora confermate dall'organizzatore.
    cat: antiq (antiquariato e vintage), photo (fotografia), comics (fumetti), fiera (grandi fiere). */
 var FAIR_CAT=[
@@ -1314,7 +1315,7 @@ var FAIR_CAT=[
   {id:'lido',n:'Antiquari al Lido',p:'piazzale Lotto',c:'Milano',z:'milano',cat:'antiq',r:{t:'nth',n:[2],wd:0}},
   {id:'diaz',n:'Mercatino di Piazza Diaz',p:'portici di piazza Diaz',c:'Milano',z:'milano',cat:'antiq',r:{t:'nth',n:[2],wd:0,ex:[8]}},
   {id:'sinigaglia',n:'Fiera di Sinigaglia',p:'Darsena',c:'Milano',z:'milano',cat:'antiq',r:{t:'wk',wd:6}},
-  {id:'monza',n:'Mercatino del Brocantage',p:'via Bergamo',c:'Monza',z:'milano',cat:'antiq',r:{t:'nth',n:[2],wd:0,ex:[8]}},
+  {id:'monza',n:'Mercatino del Brocantage di via Bergamo',p:'via Bergamo',c:'Monza',z:'milano',cat:'antiq',r:{t:'nth',n:[2],wd:0,ex:[8]},extra:['2026-11-22'],note:'più un’edizione la quarta domenica di marzo, maggio, ottobre e novembre'},
   {id:'corsico',n:'Pulci e… non solo',p:'',c:'Corsico',z:'milano',cat:'antiq',r:{t:'nth',n:[1,3],wd:0}},
   {id:'cassano',n:'Mercatino dell’Antiquariato',p:'piazza Perrucchetti',c:'Cassano d’Adda',z:'milano',cat:'antiq',r:{t:'nth',n:[1],wd:0,ex:[8]}},
   {id:'trezzo',n:'Mercante in Piazza',p:'piazza Nazionale',c:'Trezzo sull’Adda',z:'milano',cat:'antiq',r:{t:'nth',n:[1],wd:0}},
@@ -1356,6 +1357,7 @@ function frNext(f,today){today=today||(function(){var t=new Date();t.setHours(0,
       if(f.over&&f.over[key]){var o=frDate(f.over[key]);best={s:r.sat?new Date(o.getFullYear(),o.getMonth(),o.getDate()-1):o,e:o}}
       else (r.n||[]).forEach(function(n){var d=frNth(y,m,n,r.wd);if(!d)return;var s=r.sat?new Date(d.getFullYear(),d.getMonth(),d.getDate()-1):d;
         if(d>=today&&(!best||s<best.s))best={s:s,e:d}});
+      (f.extra||[]).forEach(function(x){var d=frDate(x);if(d.getFullYear()===y&&d.getMonth()===m&&d>=today&&(!best||d<best.s))best={s:d,e:d}});
       if(best&&best.e>=today)return best}return null}
   return null}
 /* testo della regola, per elenco e impostazioni */
