@@ -94,6 +94,9 @@
 //     Cache 24 h per provincia.
 //   { updated, source, provinces:[{prov, km, pages, n, error}],
 //     items:[{id, title, city, venue, from, to, link, prov, km, upcoming}] }   km = distanza dal capoluogo
+// GET /events/exhibitions/search?q=Fan Ho
+//     ricerca su tutto arte.it (pagina /ricerca.php): mostre non ancora finite. Cache 24 h per testo cercato.
+//   { updated, q, found, ended, items:[{id, title, city, venue, from, to, link, prov, upcoming}] }
 // GET /events/exhibitions/debug?prov=milano&src=rss,cal&fresh=1
 //     diagnostica: stato delle due fonti, campi trovati, voci analizzate, un estratto dell'HTML grezzo.
 //     Solo dati essenziali (titolo, sede, date, link). Cache 24 h; fresh=1 rilegge.
@@ -1213,6 +1216,21 @@ async function arteProvince(prov, fresh, ctx) {
   return Object.assign({ prov }, JSON.parse(text));
 }
 
+// ricerca libera su arte.it (autore, titolo, sede): mostre non ancora finite, in tutta Italia e all'estero.
+// La pagina dei risultati usa lo stesso elenco del calendario (link alla scheda, date, città | sede).
+async function arteSearch(q, fresh, ctx) {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+  const diag = {};
+  const html = await arteFetch("/ricerca.php?q=" + encodeURIComponent(q), fresh, ctx, diag);
+  const all = parseArteCalendar(html);
+  const items = all.filter((x) => x.to && x.to >= today && Date.parse(x.to) - Date.parse(x.from) <= ARTE_MAX_DAYS * 86400000)
+    .map((x) => Object.assign(x, { upcoming: x.from > today }))
+    .sort((a, b) => (a.upcoming - b.upcoming) || (a.upcoming ? a.from.localeCompare(b.from) : a.to.localeCompare(b.to)));
+  // ARTE_SEARCH_DEBUG: se la pagina non ha la forma attesa, un estratto aiuta a sistemare il lettore
+  return { q, found: all.length, ended: all.length - items.length, items, status: diag.status,
+    raw: all.length ? undefined : html.replace(/\s+/g, " ").slice(html.search(/risultat|ricerca/i) > 0 ? html.search(/risultat|ricerca/i) : 0).slice(0, 1500) };
+}
+
 // capoluoghi di provincia (nome come nei percorsi di arte.it) per scegliere le province vicine alla località
 const ARTE_PROV = {
   milano: [45.464, 9.19], como: [45.81, 9.085], varese: [45.82, 8.825], lecco: [45.856, 9.393], bergamo: [45.698, 9.677],
@@ -1730,6 +1748,12 @@ export default {
           const fresh = url.searchParams.get("fresh") === "1";
           const extra = [...new Set((url.searchParams.get("extra") || "").toLowerCase().split(",").map((k) => k.trim()).filter((k) => ARTE_PROV[k]))].slice(0, 3);
           const data = await arteExhibitions(lat, lon, radius, extra, fresh, ctx);
+          return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=3600" });
+        }
+        if (sub === "exhibitions/search") {
+          const q = (url.searchParams.get("q") || "").trim().replace(/\s+/g, " ");
+          if (q.length < 2 || q.length > 60) return json({ error: "parametro q: da 2 a 60 caratteri" }, 400);
+          const data = await arteSearch(q, url.searchParams.get("fresh") === "1", ctx);
           return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=3600" });
         }
         if (sub === "exhibitions/debug") {

@@ -346,6 +346,13 @@ html,body{margin:0}
 .sl-nav.l{left:0}.sl-nav.r{right:0}
 .sl-cap{margin-top:12px}.sl-cap b{font-size:18px;font-weight:500;display:block}.sl-cap span{font-size:13px;color:var(--text-2)}
 .pchips{display:flex;flex-wrap:wrap;gap:8px}
+.exz{display:flex;justify-content:space-between;align-items:baseline;margin:-4px 0 6px;font-size:15px}.exz b{color:var(--accent);font-weight:600;letter-spacing:.02em}.exz .mut{font-size:13px}
+.exb{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;margin-right:8px;vertical-align:2px}
+.exb.up{color:var(--up);background:rgba(63,185,122,.14)}.exb.end{color:var(--accent);background:var(--accent-soft)}
+.exend{color:var(--accent)}
+.exh{margin:18px 0 4px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}.exh.up{color:var(--up)}.exh .mut{font-weight:400;margin-left:6px}
+.exbar input{width:100%;box-sizing:border-box;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px;-webkit-appearance:none;-webkit-user-select:text;user-select:text}
+.exbar input:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .pchips button{border:1px solid var(--line);background:transparent;color:var(--text-2);border-radius:18px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer}
 .pchips button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .gauge .lbl{line-height:1.4}
@@ -1153,25 +1160,60 @@ function fairNext(f){var now=new Date();now.setHours(0,0,0,0);
   var dom=Math.max(1,Math.min(31,+f.dom||1)),d2=new Date(now.getFullYear(),now.getMonth(),dom);
   if(d2<now)d2=new Date(now.getFullYear(),now.getMonth()+1,dom);return d2}
 function fairList(){return (eventiCfg().fairs||[]).map(function(f){return {f:f,d:fairNext(f)}}).sort(function(a,b){return a.d-b.d})}
-var EX={items:null,err:null,at:null,loading:false};
+var EX={items:null,err:null,at:null,loading:false,provs:[]};
 function refreshExhib(){var p=curEvPlace();if(!p||EX.loading)return;EX.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
-  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&extra='+exExtra().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;refreshTiles()})}
+  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&extra='+exExtra().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;refreshTiles();exRedrawDetail()})}
 setTimeout(function(){refreshExhib();setInterval(refreshExhib,6*3600000)},7000);
 /* sede preferita: il nome in Impostazioni › Eventi compare nel nome della sede (o viceversa) */
 function exFav(x){var V=eventiCfg().venues||[],v=(x.venue||'').toLowerCase();if(!v||!V.length)return false;return V.some(function(s){var n=String(s.n||'').toLowerCase().trim();return n&&(v.indexOf(n)>=0||n.indexOf(v)>=0)})}
-function exList(){var L=(EX.items||[]).slice();var f=L.filter(exFav),o=L.filter(function(x){return !exFav(x)});return f.concat(o)}
 function exClosing(x){return !x.upcoming&&dayDiff(x.to+'T12:00:00')<=14}
-function exWhen(x){return x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to)}
+function exZoneName(k){return EX_ZONES[k]||(k?k.charAt(0).toUpperCase()+k.slice(1):'')}
+/* zone nell'ordine del ponte dati (vicine per distanza, poi quelle sempre incluse); solo quelle con mostre */
+function exZones(){var L=EX.items||[];return (EX.provs||[]).map(function(p){return p.prov}).filter(function(k){return L.some(function(x){return x.prov===k})})}
+/* ordine dentro una zona: preferite, poi in corso dalla chiusura più vicina, poi in arrivo dall'apertura */
+function exSort(L){var f=L.filter(exFav),o=L.filter(function(x){return !exFav(x)});return f.concat(o)}
+function exOfZone(k){return exSort((EX.items||[]).filter(function(x){return x.prov===k}))}
+var EX_TILE_MAX=10;
+/* sotto-pagine del riquadro: una zona per volta, al massimo 10 mostre per zona (5 per pagina) */
+function exPages(){var P=[];exZones().forEach(function(k){var L=exOfZone(k),now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
+    var pick=now.slice(0,EX_TILE_MAX-Math.min(2,up.length)).concat(up.slice(0,2));
+    chunk(pick,5).forEach(function(g,i,all){P.push({zone:k,items:g,n:L.length,page:i+1,of:all.length})})});return P}
+function exBadge(x){return x.upcoming?'<span class="exb up">in arrivo</span>':(exClosing(x)?'<span class="exb end">in chiusura</span>':'')}
+function exRowTile(x){return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+esc(x.title||'')+'<small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to))+'</span></span></div>'}
 function exWait(){return '<div class="nolive"><span>'+(EX.err?'Dati non disponibili':'In attesa dei dati…')+'</span></div>'}
-M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},live:true,n:function(){return Math.max(1,chunk(exList(),5).length)},c:function(i){
-    if(EX.items==null)return exWait();var L=exList();if(!L.length)return '<div class="nolive"><span>Nessuna mostra trovata nel raggio scelto</span></div>';
-    var g=chunk(L,5);return '<div class="rows">'+g[i%g.length].map(function(x){var cl=exClosing(x);return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+esc(x.title||'')+'<small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v'+(cl?'':' mut')+'" style="font-size:15px;white-space:nowrap'+(cl?';color:var(--accent)':'')+'">'+esc(exWhen(x))+'</span></div>'}).join('')+'</div>'},
-  d:function(){if(EX.items==null)return exWait();var L=exList();if(!L.length)return '<div class="mut">Nessuna mostra trovata nel raggio scelto.</div>';
-    var row=function(x){var cl=exClosing(x);return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+'<a href="'+esc(x.link)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+esc(x.title||'')+'</a><small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v'+(cl?'':' mut')+'" style="font-size:15px;white-space:nowrap'+(cl?';color:var(--accent)':'')+'">'+esc(dShort(x.from))+' – '+esc(dShort(x.to))+(cl?' · in chiusura':'')+'</span></div>'};
-    var now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
-    return (now.length?'<div class="sect">In corso</div><div class="rows">'+now.map(row).join('')+'</div>':'')+(up.length?'<div class="sect">In arrivo</div><div class="rows">'+up.map(row).join('')+'</div>':'')+
-      '<div class="note">Mostre dal calendario di arte.it per le zone vicine alla località attiva e quelle sempre incluse'+((EX.provs&&EX.provs.length)?' ('+EX.provs.map(function(p){return (EX_ZONES[p.prov]||p.prov.charAt(0).toUpperCase()+p.prov.slice(1))}).join(', ')+')':'')+'. In corso: dalla chiusura più vicina. Le sedi preferite (Impostazioni › Eventi) sono evidenziate con ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
+M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},n:function(){return Math.max(1,exPages().length)},c:function(i){
+    if(EX.items==null)return exWait();var P=exPages();if(!P.length)return '<div class="nolive"><span>Nessuna mostra trovata</span></div>';
+    var pg=P[i%P.length];return '<div class="exz"><b>'+esc(exZoneName(pg.zone))+'</b><span class="mut">'+pg.n+' mostre'+(pg.of>1?' · '+pg.page+'/'+pg.of:'')+'</span></div><div class="rows">'+pg.items.map(exRowTile).join('')+'</div>'},
+  d:function(){if(EX.items==null)return exWait();
+    var Z=exZones();if(EXUI.zone!=='all'&&Z.indexOf(EXUI.zone)<0)EXUI.zone=Z[0]||'all';
+    return '<div class="exbar"><input type="search" id="exQ" placeholder="Cerca autore, titolo o sede, es. Fan Ho" value="'+esc(EXUI.q)+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
+      '<div class="pchips" id="exTabs" style="margin:12px 0 4px">'+Z.map(function(k){return '<button data-exz="'+k+'" class="'+(EXUI.zone===k?'on':'')+'">'+esc(exZoneName(k))+' <span class="mut">'+(EX.items||[]).filter(function(x){return x.prov===k}).length+'</span></button>'}).join('')+'<button data-exz="all" class="'+(EXUI.zone==='all'?'on':'')+'">Tutte</button></div>'+
+      '<div id="exList">'+exDetailList()+'</div>'+
+      '<div class="note">Mostre dal calendario di arte.it per le zone vicine alla località attiva e per quelle sempre incluse (Impostazioni › Eventi). Le sedi preferite sono evidenziate con ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
   sub:'Mostre in corso e in arrivo vicino a te · arte.it'};
+var EXUI={zone:'all',q:'',web:null};
+function exNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
+function exMatch(x,q){var h=exNorm([x.title,x.venue,x.city].join(' '));return exNorm(q).split(' ').every(function(w){return h.indexOf(w)>=0})}
+function exRowD(x,showZone){return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+'<a href="'+esc(x.link)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+esc(x.title||'')+'</a><small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+(showZone&&x.prov&&x.prov!==(x.city||'').toLowerCase()?' · '+esc(exZoneName(x.prov)):'')+'</small></span><span class="v" style="font-size:15px;white-space:nowrap;text-align:right">'+exBadge(x)+'<span class="'+(exClosing(x)?'exend':'mut')+'">'+esc(dShort(x.from))+' – '+esc(dShort(x.to))+'</span></span></div>'}
+function exSections(L,showZone){var now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
+  return (now.length?'<div class="exh">In corso <span class="mut">'+now.length+'</span></div><div class="rows">'+now.map(function(x){return exRowD(x,showZone)}).join('')+'</div>':'')+
+    (up.length?'<div class="exh up">In arrivo <span class="mut">'+up.length+'</span></div><div class="rows">'+up.map(function(x){return exRowD(x,showZone)}).join('')+'</div>':'')}
+function exDetailList(){var q=EXUI.q.trim();
+  if(q){var L=exSort((EX.items||[]).filter(function(x){return exMatch(x,q)}));
+    var h=L.length?exSections(L,true):'<div class="mut" style="margin:16px 0">Nessuna mostra con «'+esc(q)+'» nelle zone lette.</div>';
+    var W=EXUI.web;
+    if(q.length>=2){if(W&&W.q===q){h+='<div class="exh" style="margin-top:22px">Su tutto arte.it</div>'+(W.loading?'<div class="mut">Ricerca in corso…</div>':W.err?'<div class="mut">Ricerca non riuscita.</div>':
+        (W.items.length?exSections(W.items.filter(function(x){return !L.some(function(y){return y.id===x.id})}),true)||'<div class="mut">Nessun’altra mostra oltre a quelle sopra.</div>':'<div class="mut">Nessuna mostra in corso o in arrivo con «'+esc(q)+'».</div>'))}
+      else h+='<button class="btn sm" data-exweb style="margin-top:16px">Cerca «'+esc(q)+'» su tutto arte.it</button>'}
+    return h}
+  var Z=EXUI.zone==='all'?null:EXUI.zone,L2=exSort((EX.items||[]).filter(function(x){return !Z||x.prov===Z}));
+  return L2.length?exSections(L2,!Z):'<div class="mut">Nessuna mostra.</div>'}
+function exRedrawList(){var el=document.getElementById('exList');if(el)el.innerHTML=exDetailList()}
+function exRedrawDetail(){if(openMod==='mostre'&&$('detail').classList.contains('show')&&!(document.activeElement&&document.activeElement.id==='exQ')){var b=$('dBody'),st=b.scrollTop;b.innerHTML=M.mostre.d();b.scrollTop=st}}
+function exWebSearch(q){EXUI.web={q:q,loading:true,items:[]};exRedrawList();
+  getJSON(apiBase()+'/events/exhibitions/search?q='+encodeURIComponent(q),25000).then(function(d){if(EXUI.web&&EXUI.web.q===q)EXUI.web={q:q,items:d.items||[]}},function(e){if(EXUI.web&&EXUI.web.q===q)EXUI.web={q:q,items:[],err:String((e&&e.message)||e)}}).then(exRedrawList)}
+$('dBody').addEventListener('input',function(e){if(e.target&&e.target.id==='exQ'){EXUI.q=e.target.value;exRedrawList();touch()}});
+$('dBody').addEventListener('keydown',function(e){if(e.target&&e.target.id==='exQ'&&e.key==='Enter'){e.preventDefault();var q=EXUI.q.trim();if(q.length>=2)exWebSearch(q);e.target.blur()}});
 M.fiere={l:'Fiere e mercatini',s:'ricorrenti',n:function(){return Math.max(1,chunk(fairList(),4).length)},c:function(i){
     var L=fairList();if(!L.length)return '<div class="nolive"><span>Nessuna fiera in elenco</span><span style="font-size:13px">Aggiungile da Impostazioni › Eventi</span></div>';
     var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){var g2=dayDiff(x.d.toISOString());return '<div class="cd"><div class="g">'+gBox(g2)+'</div><div class="i"><b>'+esc(x.f.n)+'</b><div>'+(x.f.type==='weekly'?'Ogni '+FRGG[+x.f.wd]:'Il '+x.f.dom+' di ogni mese')+'</div><div>'+esc(dLabel(x.d.toISOString()))+'</div></div></div>'}).join('')+'</div>'},
@@ -1793,7 +1835,7 @@ function closeOv(id){$(id).classList.remove('show')}
 function focusRow(k){var b=$('dBody'),L=b.querySelectorAll('[data-k]'),el=null;for(var i=0;i<L.length;i++){if(L[i].getAttribute('data-k')===k){el=L[i];break}}if(!el)return;
   var y=0,n=el;while(n&&n!==b){y+=n.offsetTop;n=n.offsetParent}if(n!==b){y=0;n=el;var by=0,m=b;while(n){y+=n.offsetTop;n=n.offsetParent}while(m){by+=m.offsetTop;m=m.offsetParent}y-=by}
   b.scrollTop=Math.max(0,y-8);el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},1600)}
-function openDetail(mod){openMod=mod;earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];
+function openDetail(mod){openMod=mod;if(mod==='mostre'){EXUI.q='';EXUI.web=null;EXUI.zone=exZones()[0]||'all'}earnSel=null;READ=null;if(mod==='portfolioPh'&&PH.items&&PH.items.length)phIdx=subIdx%PH.items.length;var m=M[mod];
   $('dTitle').innerHTML=isCorsoMod(mod)?'<span style="display:flex;justify-content:space-between;align-items:center;padding-right:56px">'+esc(m.l||'')+corsoLogo(36)+'</span>':esc(m.l||'Portfolio');
   $('dSub').textContent=m.sub||'';$('dBody').innerHTML=m.d?m.d():m.c(0);openOv('detail')}
 
@@ -2098,6 +2140,8 @@ stage.addEventListener('click',function(e){
   if(t.closest('[data-phr]')){if(!PH.loading)refreshPhotos(true);touch();return}
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}
   var er=t.closest('[data-earn]');if(er){earnSel=er.getAttribute('data-earn')||null;$('dBody').innerHTML=M.earnings.d();$('dBody').scrollTop=0;touch();return}
+  var exz=t.closest('[data-exz]');if(exz){EXUI.zone=exz.getAttribute('data-exz');EXUI.q='';EXUI.web=null;var kb=$('dBody');kb.innerHTML=M.mostre.d();touch();return}
+  if(t.closest('[data-exweb]')){var wq=EXUI.q.trim();if(wq.length>=2)exWebSearch(wq);touch();return}
   if(t.closest('.panel')){touch();return}
   if(t.closest('.ov')){closeOv('detail');closeOv('settings');touch();return}
   var b=t.closest('[data-pg]');if(b){go(+b.getAttribute('data-pg'));touch();return}
