@@ -1187,6 +1187,7 @@ async function arteCalendar(prov, fresh, ctx) {
 
 // tutte le pagine del mese di una provincia (al massimo ARTE_MAX_PAGES)
 const ARTE_MAX_PAGES = 6;
+const ARTE_MAX_DAYS = 730; // oltre 2 anni di durata: allestimento permanente, si scarta
 async function arteProvince(prov, fresh, ctx) {
   const mp = arteMonthPath(prov);
   const d0 = {};
@@ -1238,6 +1239,10 @@ async function arteExhibitions(lat, lon, radius, fresh, ctx) {
   const seen = {}, items = [];
   res.forEach((r) => r.items.forEach((x) => {
     if (seen[x.id] || !x.to || x.to < today) return;
+    // solo le mostre della provincia letta: le province con poche mostre ricevono anche voci d'altre parti
+    if (x.prov && x.prov !== r.prov) return;
+    // allestimenti permanenti o pluriennali (es. 2013–2030): non sono mostre da segnalare
+    if (Date.parse(x.to) - Date.parse(x.from) > ARTE_MAX_DAYS * 86400000) return;
     seen[x.id] = 1;
     items.push(Object.assign({}, x, { km: r.km, upcoming: x.from > today }));
   }));
