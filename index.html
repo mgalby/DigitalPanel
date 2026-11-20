@@ -586,9 +586,9 @@ html,body{margin:0}
 
           <div class="sect">Mostre · sedi preferite</div>
           <div class="set" style="margin-bottom:0">
-            <div class="fld" style="grid-column:1 / -1"><div class="chips" id="sVenues"></div>
-              <div class="add"><input type="text" id="sVenN" placeholder="Nome sede, es. Palazzo Reale" aria-label="Nome sede" maxlength="60" style="width:220px;text-transform:none"><input type="text" id="sVenC" placeholder="Città" aria-label="Città" maxlength="40" style="width:140px;text-transform:none"><button class="btn sm" id="sVenAdd">Aggiungi</button></div>
-              <div class="note" style="margin-top:8px">Le mostre arrivano da arte.it per le zone scelte più sotto («Mostre · zone lette»). Le sedi che aggiungi qui sono le tue preferite: le loro mostre vanno in cima, con ★. Basta una parte del nome, es. «Palazzo Reale» o «Camera».</div></div>
+            <div class="fld" style="grid-column:1 / -1"><div class="chips" id="sVenues"></div><datalist id="dlVen"></datalist>
+              <div class="add"><input type="text" id="sVenN" list="dlVen" placeholder="Nome sede, es. Palazzo Reale" aria-label="Nome sede" maxlength="60" style="width:220px;text-transform:none"><input type="text" id="sVenC" placeholder="Città" aria-label="Città" maxlength="40" style="width:140px;text-transform:none"><button class="btn sm" id="sVenAdd">Aggiungi</button></div>
+              <div class="note" style="margin-top:8px">Le mostre arrivano da arte.it per le zone scelte più sotto («Mostre · zone lette»). Le sedi che aggiungi qui sono le tue preferite: le loro mostre vanno in cima, con ★. Mentre scrivi ti vengono proposte le sedi trovate nelle mostre lette; con la città, vale solo la sede di quella città.</div></div>
           </div>
 
           <div class="sect" style="margin-top:20px">Fiere e mercatini ricorrenti</div>
@@ -614,7 +614,10 @@ html,body{margin:0}
           <div class="set" style="margin-bottom:0">
             <div class="fld" style="grid-column:1 / -1"><span class="lab" id="sZnLab">Entro il raggio</span><div class="chips" id="sZnNear"></div></div>
             <div class="fld" style="grid-column:1 / -1"><span class="lab">Altre zone</span><div class="chips" id="sZnOther"></div>
-              <div class="add"><select id="sExZSel" aria-label="Zona da aggiungere"></select></div>
+              <div class="add"><select id="sExZSel" aria-label="Zona da aggiungere"></select></div></div>
+            <div class="fld" style="grid-column:1 / -1"><span class="lab">Solo sedi preferite ★ in</span><div class="chips" id="sZnFav"></div>
+              <div class="note" style="margin-top:8px">Per una zona accesa qui entrano solo le mostre delle tue sedi preferite (sezione «Mostre · sedi preferite»), es. Milano solo con Palazzo Reale e Castello Sforzesco. La zona conta comunque tra le 6, perché il suo calendario va letto.</div></div>
+            <div class="fld" style="grid-column:1 / -1">
               <div class="note" style="margin-top:8px">Le mostre si leggono solo dalle zone selezionate (in oro), al massimo 6. Tocca una provincia entro il raggio per includerla o escluderla; le zone più lontane si aggiungono dal menu. Con 6 zone la scelta è completa: per cambiarne una, prima spegnine o toglierne un'altra. Il raggio vale anche per i concerti.</div></div>
           </div>
 
@@ -1099,7 +1102,7 @@ var DEF={api:'https://pannello-dati.marco-foto.workers.dev',tr:true,order:'marke
   ent:{prov:['netflix','prime','sky','raiplay','apple'],tv:[],ex:['kids','anim','reality','talk','soap','news'],people:[]},
   foto:{user:'',tag:'digitalportfolio',ph:15,places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,src:['fuji','leica','nikon']},
   sport:{fav:{k:'inter',n:'Inter'},follow:null},
-  eventi:{venues:[],fairs:[],artists:[],flags:{},places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
+  eventi:{venues:[],fairs:[],artists:[],flags:{},onlyFav:{},places:[{n:'Milano',lat:45.4642,lon:9.19}],place:0,radius:50},
   corso:{status:{}}};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 var S=load();
@@ -1210,9 +1213,15 @@ function refreshExhib(){var p=curEvPlace();if(!p||EX.loading)return;EX.loading=t
   getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r+'&zones='+exZoneList().join(','),25000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;exRedrawTile();exRedrawDetail()})}
 setTimeout(function(){refreshExhib();setInterval(refreshExhib,6*3600000)},7000);
 /* sede preferita: il nome in Impostazioni › Eventi compare nel nome della sede (o viceversa) */
-function exFav(x){var V=eventiCfg().venues||[],v=(x.venue||'').toLowerCase();if(!v||!V.length)return false;return V.some(function(s){var n=String(s.n||'').toLowerCase().trim();return n&&(v.indexOf(n)>=0||n.indexOf(v)>=0)})}
+function exFav(x){var V=eventiCfg().venues||[],v=exNorm(x.venue);if(!v||!V.length)return false;
+  return V.some(function(s){var n=exNorm(s.n),c=exNorm(s.c);if(!n||!(v.indexOf(n)>=0||n.indexOf(v)>=0))return false;
+    /* con la città indicata, solo le sedi di quella città (Palazzo Reale di Milano, non quello di Genova) */
+    return !c||exNorm(x.city)===c||exNorm(x.prov)===c})}
+/* zone «solo sedi preferite»: del loro calendario entrano solo le mostre delle sedi ★ (e quelle segnate ♥) */
+function exOnlyFav(k){var o=eventiCfg().onlyFav;return !!(o&&o[k])}
+function exItems(){return (EX.items||[]).filter(function(x){return !exOnlyFav(x.prov)||exFav(x)||exIsFlag(x)})}
 function exClosing(x){return !x.upcoming&&dayDiff(x.to+'T12:00:00')<=14}
-function exZoneName(k){return EX_ZONES[k]||(k?k.charAt(0).toUpperCase()+k.slice(1):'')}
+function exZoneName(k){return (EX_ZONES[k]||(k?k.charAt(0).toUpperCase()+k.slice(1):''))+(exOnlyFav(k)?' ★':'')}
 /* zone nell'ordine del ponte dati (vicine per distanza, poi quelle sempre incluse); solo quelle con mostre */
 function exZones(){var L=EX.items||[];return (EX.provs||[]).map(function(p){return p.prov}).filter(function(k){return L.some(function(x){return x.prov===k})})}
 /* ordine dentro una zona: preferite, poi in corso dalla chiusura più vicina, poi in arrivo dall'apertura */
@@ -1227,7 +1236,7 @@ function exToggleFlag(id){var F=exFlags();if(F[id])delete F[id];else{var x=exFin
 function exMine(){var t=new Date().toISOString().slice(0,10),F=exFlags();return Object.keys(F).map(function(k){var x=F[k];return Object.assign({},x,{upcoming:x.from>t})}).sort(function(a,b){return (a.upcoming-b.upcoming)||(a.upcoming?a.from.localeCompare(b.from):a.to.localeCompare(b.to))})}
 /* ordine: segnate ♥, poi sedi preferite ★, poi le altre (già ordinate dal ponte dati) */
 function exSort(L){var a=L.filter(exIsFlag),r=L.filter(function(x){return !exIsFlag(x)}),f=r.filter(exFav),o=r.filter(function(x){return !exFav(x)});return a.concat(f,o)}
-function exOfZone(k){return exSort((EX.items||[]).filter(function(x){return x.prov===k}))}
+function exOfZone(k){return exSort(exItems().filter(function(x){return x.prov===k}))}
 /* righe per sotto-pagina secondo l'altezza reale del riquadro: ogni riga ha spazio per un titolo su 2 righe,
    così l'ultima mostra non resta mai tagliata a metà. Mostre per zona nel riquadro: 2 pagine piene. */
 var EX_ROW_H=96;EX.per=4;
@@ -1263,7 +1272,7 @@ M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},n:function(){
   d:function(){if(EX.items==null)return exWait();
     var Z=exZones();if(EXUI.zone==='mine'&&!exMine().length)EXUI.zone=Z[0]||'all';if(EXUI.zone!=='all'&&EXUI.zone!=='mine'&&Z.indexOf(EXUI.zone)<0)EXUI.zone=Z[0]||'all';
     return (evPlaces().length>1?'<div class="exloc"><span class="mut">Località</span>'+evPlaceChips()+'</div>':'')+'<div class="exbar"><input type="search" id="exQ" placeholder="Cerca autore, titolo o sede, es. Fan Ho" value="'+esc(EXUI.q)+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
-      '<div class="pchips" id="exTabs" style="margin:12px 0 4px">'+(exMine().length?'<button data-exz="mine" class="'+(EXUI.zone==='mine'?'on':'')+'"><span class="exheart">♥</span> Le mie <span class="mut">'+exMine().length+'</span></button>':'')+Z.map(function(k){return '<button data-exz="'+k+'" class="'+(EXUI.zone===k?'on':'')+'">'+esc(exZoneName(k))+' <span class="mut">'+(EX.items||[]).filter(function(x){return x.prov===k}).length+'</span></button>'}).join('')+(EX.provs||[]).filter(function(p){return Z.indexOf(p.prov)<0}).map(function(p){return '<button class="exz0" disabled title="'+esc(p.error?'Errore nella lettura':'Nessuna mostra in corso o in arrivo')+'">'+esc(exZoneName(p.prov))+' <span class="mut">'+(p.error?'!':'0')+'</span></button>'}).join('')+'<button data-exz="all" class="'+(EXUI.zone==='all'?'on':'')+'">Tutte</button></div>'+
+      '<div class="pchips" id="exTabs" style="margin:12px 0 4px">'+(exMine().length?'<button data-exz="mine" class="'+(EXUI.zone==='mine'?'on':'')+'"><span class="exheart">♥</span> Le mie <span class="mut">'+exMine().length+'</span></button>':'')+Z.map(function(k){return '<button data-exz="'+k+'" class="'+(EXUI.zone===k?'on':'')+'">'+esc(exZoneName(k))+' <span class="mut">'+exItems().filter(function(x){return x.prov===k}).length+'</span></button>'}).join('')+(EX.provs||[]).filter(function(p){return Z.indexOf(p.prov)<0}).map(function(p){return '<button class="exz0" disabled title="'+esc(p.error?'Errore nella lettura':'Nessuna mostra in corso o in arrivo')+'">'+esc(exZoneName(p.prov))+' <span class="mut">'+(p.error?'!':'0')+'</span></button>'}).join('')+'<button data-exz="all" class="'+(EXUI.zone==='all'?'on':'')+'">Tutte</button></div>'+
       '<div id="exList">'+exDetailList()+'</div>'+
       '<div class="note">Mostre dal calendario di arte.it per le zone vicine alla località attiva e per quelle sempre incluse (Impostazioni › Eventi). Tocca ♡ per segnare una mostra che ti interessa: resta in cima, con ♥, anche nel riquadro. Le sedi preferite hanno ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
   sub:'Mostre in corso e in arrivo vicino a te · arte.it'};
@@ -1275,7 +1284,7 @@ function exSections(L,showZone){var now=L.filter(function(x){return !x.upcoming}
   return (now.length?'<div class="exh">In corso <span class="mut">'+now.length+'</span></div><div class="rows">'+now.map(function(x){return exRowD(x,showZone)}).join('')+'</div>':'')+
     (up.length?'<div class="exh up">In arrivo <span class="mut">'+up.length+'</span></div><div class="rows">'+up.map(function(x){return exRowD(x,showZone)}).join('')+'</div>':'')}
 function exDetailList(){var q=EXUI.q.trim();
-  if(q){var L=exSort((EX.items||[]).filter(function(x){return exMatch(x,q)}));
+  if(q){var L=exSort(exItems().filter(function(x){return exMatch(x,q)}));
     var h=L.length?exSections(L,true):'<div class="mut" style="margin:16px 0">Nessuna mostra con «'+esc(q)+'» nelle zone lette.</div>';
     var W=EXUI.web;
     if(q.length>=2){if(W&&W.q===q){h+='<div class="exh" style="margin-top:22px">Su tutto arte.it</div>'+(W.loading?'<div class="mut">Ricerca in corso…</div>':W.err?'<div class="mut">Ricerca non riuscita.</div>':
@@ -1283,7 +1292,7 @@ function exDetailList(){var q=EXUI.q.trim();
       else h+='<button class="btn sm" data-exweb style="margin-top:16px">Cerca «'+esc(q)+'» su tutto arte.it</button>'}
     return h}
   if(EXUI.zone==='mine'){var M2=exMine();return M2.length?exSections(M2,true):'<div class="mut">Nessuna mostra segnata.</div>'}
-  var Z=EXUI.zone==='all'?null:EXUI.zone,L2=exSort((EX.items||[]).filter(function(x){return !Z||x.prov===Z}));
+  var Z=EXUI.zone==='all'?null:EXUI.zone,L2=exSort(exItems().filter(function(x){return !Z||x.prov===Z}));
   return L2.length?exSections(L2,!Z):'<div class="mut">Nessuna mostra.</div>'}
 function exRedrawList(){var el=document.getElementById('exList');if(el)el.innerHTML=exDetailList()}
 function exRedrawDetail(){if(openMod==='mostre'&&$('detail').classList.contains('show')&&!(document.activeElement&&document.activeElement.id==='exQ')){var b=$('dBody'),st=b.scrollTop;b.innerHTML=M.mostre.d();b.scrollTop=st}}
@@ -1935,7 +1944,7 @@ $('sLive').value=String(W.liveN);$('sNight').checked=false;
   $('sSimEv').innerHTML=EVT_KEYS.map(function(k){return '<option value="'+k+'">'+EVT[k].lab+'</option>'}).join('');
   $('sApi').value=W.api||'';$('sTr').checked=W.tr!==false;$('sOrder').value=W.order;$('sFqB').value=W.fqB;$('sFqBoff').value=W.fqBoff;$('sFqC').value=W.fqC;$('sFqCscope').value=W.fqCscope;budget();
   migrate(W);renderEnt();renderEnt2();$('sFkUser').value=W.foto.user||'';renderPl();$('sFsrc').innerHTML=FSRC.map(function(f){return '<label for="fs_'+f[0]+'"><input type="checkbox" id="fs_'+f[0]+'"'+((W.foto.src||[]).indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'}).join('');$('sFkTag').value=W.foto.tag||'';$('sFkFq').value=String(phMin(W.foto));
-  if(!Array.isArray(W.eventi.zones))W.eventi.zones=exZoneList(W.eventi).slice();renderVenues();renderFairs();renderArtists();renderEvPl();renderExZ();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
+  if(!Array.isArray(W.eventi.zones))W.eventi.zones=exZoneList(W.eventi).slice();renderVenues();renderFairs();renderArtists();renderEvPl();renderExZ();fillVenueList();var frd=$('sFrDom');frd.innerHTML='';for(var dmi=1;dmi<=31;dmi++)frd.innerHTML+='<option value="'+dmi+'">'+dmi+'</option>';$('sEvRad').value=W.eventi.radius;$('oEvRad').textContent=W.eventi.radius+' km';
   renderPageMods();renderLists();renderSp();showTab(sTab);openOv('settings');
 }
 /* frequenze in minuti e stima delle chiamate giornaliere */
@@ -2006,7 +2015,14 @@ function renderExZ(){var Z=W.eventi.zones,full=Z.length>=EX_MAX_Z;
   $('sZnNear').innerHTML=near.length?near.map(function(z){var on=Z.indexOf(z.k)>=0,dis=!on&&full;return '<button class="zchip'+(on?' on':'')+'" data-zn="'+z.k+'"'+(dis?' disabled':'')+'>'+(on?'✓ ':'')+esc(EX_ZONES[z.k]||z.k)+' <span class="mut">'+z.km+' km</span></button>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna provincia entro il raggio</span>';
   var oth=Z.filter(function(k){return nk.indexOf(k)<0});
   $('sZnOther').innerHTML=oth.length?oth.map(function(k){return '<span class="chip on">'+esc(EX_ZONES[k]||k)+' <span class="mut" style="font-weight:400">'+exKm(k,pl)+' km</span><button data-zx="'+k+'" aria-label="Togli '+esc(EX_ZONES[k]||k)+'">✕</button></span>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna</span>';
-  $('sExZSel').innerHTML='<option value="">'+(full?'Completo: '+EX_MAX_Z+' zone su '+EX_MAX_Z:'+ Aggiungi una zona…')+'</option>'+Object.keys(EX_ZONES).filter(function(k){return Z.indexOf(k)<0&&nk.indexOf(k)<0}).sort(function(a,b){return EX_ZONES[a].localeCompare(EX_ZONES[b],'it')}).map(function(k){return '<option value="'+k+'">'+EX_ZONES[k]+' · '+exKm(k,pl)+' km</option>'}).join('');$('sExZSel').disabled=full}
+  $('sExZSel').innerHTML='<option value="">'+(full?'Completo: '+EX_MAX_Z+' zone su '+EX_MAX_Z:'+ Aggiungi una zona…')+'</option>'+Object.keys(EX_ZONES).filter(function(k){return Z.indexOf(k)<0&&nk.indexOf(k)<0}).sort(function(a,b){return EX_ZONES[a].localeCompare(EX_ZONES[b],'it')}).map(function(k){return '<option value="'+k+'">'+EX_ZONES[k]+' · '+exKm(k,pl)+' km</option>'}).join('');$('sExZSel').disabled=full;renderZnFav()}
+function renderZnFav(){var Z=W.eventi.zones,o=W.eventi.onlyFav||(W.eventi.onlyFav={});
+  $('sZnFav').innerHTML=Z.length?Z.map(function(k){var on=!!o[k];return '<button class="zchip'+(on?' on':'')+'" data-zof="'+k+'">'+(on?'★ ':'')+esc(EX_ZONES[k]||k)+'</button>'}).join(''):'<span class="mut" style="font-size:13px">Nessuna zona</span>'}
+$('sZnFav').addEventListener('click',function(e){var b=e.target.closest('[data-zof]');if(!b)return;var k=b.getAttribute('data-zof'),o=W.eventi.onlyFav||(W.eventi.onlyFav={});if(o[k])delete o[k];else o[k]=true;renderZnFav()});
+/* proposte per il nome della sede: le sedi delle mostre lette, con la città */
+function fillVenueList(){var seen={},L=[];(EX.items||[]).forEach(function(x){if(!x.venue)return;var key=x.venue+'|'+(x.city||'');if(!seen[key]){seen[key]=1;L.push(x)}});
+  L.sort(function(a,b){return a.venue.localeCompare(b.venue,'it')});$('dlVen').innerHTML=L.map(function(x){return '<option value="'+esc(x.venue)+'">'+esc(x.city||'')+'</option>'}).join('')}
+$('sVenN').addEventListener('change',function(){var v=this.value.trim(),c=$('sVenC');if(c.value)return;var x=(EX.items||[]).filter(function(y){return y.venue===v})[0];if(x&&x.city)c.value=x.city});
 $('sExZSel').addEventListener('change',function(){var k=this.value,Z=W.eventi.zones;if(k&&Z.length<EX_MAX_Z&&Z.indexOf(k)<0)Z.push(k);renderExZ()});
 $('sZnNear').addEventListener('click',function(e){var b=e.target.closest('[data-zn]');if(!b||b.disabled)return;var k=b.getAttribute('data-zn'),Z=W.eventi.zones,i=Z.indexOf(k);if(i>=0)Z.splice(i,1);else if(Z.length<EX_MAX_Z)Z.push(k);renderExZ()});
 $('sZnOther').addEventListener('click',function(e){var b=e.target.closest('[data-zx]');if(!b)return;var Z=W.eventi.zones,i=Z.indexOf(b.getAttribute('data-zx'));if(i>=0)Z.splice(i,1);renderExZ()});
