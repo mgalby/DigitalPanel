@@ -555,11 +555,11 @@ html,body{margin:0}
           <div class="sect">Riquadri</div>
           <div class="pmx" id="sPM_eventi"></div>
 
-          <div class="sect">Mostre · sedi da seguire</div>
+          <div class="sect">Mostre · sedi preferite</div>
           <div class="set" style="margin-bottom:0">
             <div class="fld" style="grid-column:1 / -1"><div class="chips" id="sVenues"></div>
               <div class="add"><input type="text" id="sVenN" placeholder="Nome sede, es. Palazzo Reale" aria-label="Nome sede" maxlength="60" style="width:220px;text-transform:none"><input type="text" id="sVenC" placeholder="Città" aria-label="Città" maxlength="40" style="width:140px;text-transform:none"><button class="btn sm" id="sVenAdd">Aggiungi</button></div>
-              <div class="note" style="margin-top:8px">Nessuna fonte online copre bene le mostre di fotografia e pittura in Italia: qui si tiene un elenco manuale delle sedi che segui. Il riquadro mostra l’elenco come promemoria; aggiorna il campo «nota» con la mostra in corso quando lo sai.</div></div>
+              <div class="note" style="margin-top:8px">Le mostre arrivano da arte.it per le province vicine alla località scelta qui sotto. Le sedi che aggiungi qui sono le tue preferite: le loro mostre vanno in cima, con ★. Basta una parte del nome, es. «Palazzo Reale» o «Camera».</div></div>
           </div>
 
           <div class="sect" style="margin-top:20px">Fiere e mercatini ricorrenti</div>
@@ -1147,13 +1147,25 @@ function fairNext(f){var now=new Date();now.setHours(0,0,0,0);
   var dom=Math.max(1,Math.min(31,+f.dom||1)),d2=new Date(now.getFullYear(),now.getMonth(),dom);
   if(d2<now)d2=new Date(now.getFullYear(),now.getMonth()+1,dom);return d2}
 function fairList(){return (eventiCfg().fairs||[]).map(function(f){return {f:f,d:fairNext(f)}}).sort(function(a,b){return a.d-b.d})}
-M.mostre={l:'Mostre',s:'sedi da seguire',n:function(){return Math.max(1,chunk(eventiCfg().venues||[],5).length)},c:function(i){
-    var V=eventiCfg().venues||[];if(!V.length)return '<div class="nolive"><span>Nessuna sede in elenco</span><span style="font-size:13px">Aggiungile da Impostazioni › Eventi</span></div>';
-    var g=chunk(V,5);return '<div class="rows">'+g[i%g.length].map(function(v){return '<div class="r"><span class="k" style="font-size:17px">'+esc(v.n)+(v.c?'<small>'+esc(v.c)+'</small>':'')+'</span></div>'}).join('')+'</div>'},
-  d:function(){var V=eventiCfg().venues||[];if(!V.length)return '<div class="mut">Nessuna sede in elenco. Aggiungile da Impostazioni › Eventi.</div>';
-    return '<div class="rows">'+V.map(function(v){return '<div class="r"><span class="k" style="font-size:17px">'+esc(v.n)+(v.c?'<small>'+esc(v.c)+'</small>':'')+'</span></div>'}).join('')+'</div>'+
-      '<div class="note">Elenco manuale: nessuna fonte online copre bene le mostre di fotografia e pittura in Italia. Aggiorna qui le sedi che segui, da Impostazioni › Eventi.</div>'},
-  sub:'Sedi di mostre da tenere d’occhio · elenco manuale'};
+var EX={items:null,err:null,at:null,loading:false};
+function refreshExhib(){var p=curEvPlace();if(!p||EX.loading)return;EX.loading=true;var r=Math.max(10,Math.min(300,+eventiCfg().radius||50));
+  getJSON(apiBase()+'/events/exhibitions?lat='+p.lat+'&lon='+p.lon+'&radius='+r,20000).then(function(d){EX.items=d.items||[];EX.provs=d.provinces||[];EX.err=null;EX.at=new Date()},function(e){EX.err=String((e&&e.message)||e);setTimeout(refreshExhib,120000)}).then(function(){EX.loading=false;refreshTiles()})}
+setTimeout(function(){refreshExhib();setInterval(refreshExhib,6*3600000)},7000);
+/* sede preferita: il nome in Impostazioni › Eventi compare nel nome della sede (o viceversa) */
+function exFav(x){var V=eventiCfg().venues||[],v=(x.venue||'').toLowerCase();if(!v||!V.length)return false;return V.some(function(s){var n=String(s.n||'').toLowerCase().trim();return n&&(v.indexOf(n)>=0||n.indexOf(v)>=0)})}
+function exList(){var L=(EX.items||[]).slice();var f=L.filter(exFav),o=L.filter(function(x){return !exFav(x)});return f.concat(o)}
+function exClosing(x){return !x.upcoming&&dayDiff(x.to+'T12:00:00')<=14}
+function exWhen(x){return x.upcoming?'dal '+dShort(x.from):'fino al '+dShort(x.to)}
+function exWait(){return '<div class="nolive"><span>'+(EX.err?'Dati non disponibili':'In attesa dei dati…')+'</span></div>'}
+M.mostre={l:'Mostre',s:function(){return eventiCfg().radius+' km'},live:true,n:function(){return Math.max(1,chunk(exList(),5).length)},c:function(i){
+    if(EX.items==null)return exWait();var L=exList();if(!L.length)return '<div class="nolive"><span>Nessuna mostra trovata nel raggio scelto</span></div>';
+    var g=chunk(L,5);return '<div class="rows">'+g[i%g.length].map(function(x){var cl=exClosing(x);return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+esc(x.title||'')+'<small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v'+(cl?'':' mut')+'" style="font-size:15px;white-space:nowrap'+(cl?';color:var(--accent)':'')+'">'+esc(exWhen(x))+'</span></div>'}).join('')+'</div>'},
+  d:function(){if(EX.items==null)return exWait();var L=exList();if(!L.length)return '<div class="mut">Nessuna mostra trovata nel raggio scelto.</div>';
+    var row=function(x){var cl=exClosing(x);return '<div class="r"><span class="k" style="font-size:17px">'+(exFav(x)?'<span class="fstar">★</span> ':'')+'<a href="'+esc(x.link)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+esc(x.title||'')+'</a><small>'+esc([x.venue,x.city].filter(Boolean).join(' · '))+'</small></span><span class="v'+(cl?'':' mut')+'" style="font-size:15px;white-space:nowrap'+(cl?';color:var(--accent)':'')+'">'+esc(dShort(x.from))+' – '+esc(dShort(x.to))+(cl?' · in chiusura':'')+'</span></div>'};
+    var now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
+    return (now.length?'<div class="sect">In corso</div><div class="rows">'+now.map(row).join('')+'</div>':'')+(up.length?'<div class="sect">In arrivo</div><div class="rows">'+up.map(row).join('')+'</div>':'')+
+      '<div class="note">Mostre dal calendario di arte.it per le province vicine alla località attiva'+((EX.provs&&EX.provs.length)?' ('+EX.provs.map(function(p){return p.prov}).join(', ')+')':'')+'. In corso: dalla chiusura più vicina. Le sedi preferite (Impostazioni › Eventi) sono evidenziate con ★. Tocca un titolo per aprire la scheda su arte.it.</div>'},
+  sub:'Mostre in corso e in arrivo vicino a te · arte.it'};
 M.fiere={l:'Fiere e mercatini',s:'ricorrenti',n:function(){return Math.max(1,chunk(fairList(),4).length)},c:function(i){
     var L=fairList();if(!L.length)return '<div class="nolive"><span>Nessuna fiera in elenco</span><span style="font-size:13px">Aggiungile da Impostazioni › Eventi</span></div>';
     var g=chunk(L,4);return '<div class="rows">'+g[i%g.length].map(function(x){var g2=dayDiff(x.d.toISOString());return '<div class="cd"><div class="g">'+gBox(g2)+'</div><div class="i"><b>'+esc(x.f.n)+'</b><div>'+(x.f.type==='weekly'?'Ogni '+FRGG[+x.f.wd]:'Il '+x.f.dom+' di ogni mese')+'</div><div>'+esc(dLabel(x.d.toISOString()))+'</div></div></div>'}).join('')+'</div>'},
@@ -1947,7 +1959,7 @@ function collect(){
   Array.prototype.forEach.call(document.querySelectorAll('#sAlerts input'),function(c){W.alerts[c.getAttribute('data-al')]=c.checked});
   W.tr=$('sTr').checked;W.api=($('sApi').value||'').trim()||DEF.api}
 $('sSave').addEventListener('click',function(){
-  collect();S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);schedulePhotos();WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);CN.items=null;setTimeout(refreshConcerts,3500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
+  collect();S=W;save();closeOv('settings');refreshQuotes();setTimeout(refreshEnt,2500);setTimeout(refreshPhotos,3000);schedulePhotos();WX.data=null;setTimeout(refreshWx,1000);setTimeout(refreshFotoNews,3500);if(extraStarted){refreshEarnings();setTimeout(refreshNews,4000)}scheduleQuotes();setTimeout(refreshSportLive,1500);CN.items=null;setTimeout(refreshConcerts,3500);EX.items=null;setTimeout(refreshExhib,4500);subIdx=0;renderPage();startSub();if($('sNight').checked)setNight(true);schedule();
 });
 var RESET={
   gen:function(D){W.rot=D.rot;W.sub=D.sub;W.idle=D.idle;W.pages=clone(D.pages);W.api=D.api;W.tr=D.tr},
@@ -2071,7 +2083,7 @@ stage.addEventListener('click',function(e){
   var ro=t.closest('[data-readorig]');if(ro&&READ){openReader(READ.url,ro.getAttribute('data-readorig')==='1');touch();return}
   var rd=t.closest('[data-read]');if(rd){var keep=$('dBody').scrollTop;openReader(rd.getAttribute('data-read'));READ.st=keep;touch();return}
   var pc=t.closest('[data-plc]');if(pc){S.foto.place=+pc.getAttribute('data-plc');save();WX.data=null;$('dBody').innerHTML=M[openMod].d();refreshWx();renderPage();touch();return}
-  var epc=t.closest('[data-evplc]');if(epc){S.eventi.place=+epc.getAttribute('data-evplc');save();CN.items=null;$('dBody').innerHTML=M[openMod].d();refreshConcerts();renderPage();touch();return}
+  var epc=t.closest('[data-evplc]');if(epc){S.eventi.place=+epc.getAttribute('data-evplc');save();CN.items=null;EX.items=null;$('dBody').innerHTML=M[openMod].d();refreshConcerts();refreshExhib();renderPage();touch();return}
   var cso=t.closest('[data-corso]');if(cso){corsoCycle(cso.getAttribute('data-corso'));if(openMod&&M[openMod]&&M[openMod].d)$('dBody').innerHTML=M[openMod].d();renderPage();touch();return}
   if(t.closest('[data-phr]')){if(!PH.loading)refreshPhotos(true);touch();return}
   var pn=t.closest('[data-ph]');if(pn){phIdx+=pn.getAttribute('data-ph')==='next'?1:-1;$('dBody').innerHTML=phSlide();touch();return}

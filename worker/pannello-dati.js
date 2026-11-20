@@ -2,8 +2,8 @@
 // In corso (non ancora consolidato, resta 4.4): ESPN non accetta più intervalli di date (HTTP 400, la Nazionale
 //   risultava senza partite). Ora si legge il calendario e poi i singoli giorni di gara; /sport/italy restituisce
 //   anche group, il girone di Nations League. Stesso metodo per la riserva ESPN del calendario di Serie A e Champions.
-// In prova (20 nov 2026, non consolidato): /events/exhibitions/debug legge arte.it (feed RSS e calendario di una
-//   provincia) e restituisce le voci analizzate, per decidere la fonte del riquadro Mostre.
+// In corso (20 nov 2026, non consolidato): /events/exhibitions, mostre dal calendario di arte.it per le province
+//   vicine alla località; /events/exhibitions/debug per la diagnostica (feed RSS e calendario).
 // Versione 4.5 (13 nov 2026): /events/concerts per la pagina Eventi (serve il segreto TICKETMASTER_KEY, vedi sotto).
 // Versione 4.4 (13 nov 2026): la traduzione si ferma dopo 6 secondi per richiesta (il resto alla successiva),
 //   così la prima lettura non va oltre l'attesa massima del pannello.
@@ -88,6 +88,11 @@
 //       genre, artists:[nome,...]} ] }
 //
 // ---- Eventi (mostre: arte.it, in prova) ----
+// GET /events/exhibitions?lat=45.4642&lon=9.19&radius=50
+//     mostre in corso e in arrivo nelle province vicine (calendario mensile di arte.it, tutte le pagine;
+//     al massimo 4 province). Cache 24 h per pagina letta.
+//   { updated, source, provinces:[{prov, km, pages, n, error}],
+//     items:[{id, title, city, venue, from, to, link, prov, km, upcoming}] }   km = distanza dal capoluogo
 // GET /events/exhibitions/debug?prov=milano&src=rss,cal&fresh=1
 //     diagnostica: stato delle due fonti, campi trovati, voci analizzate, un estratto dell'HTML grezzo.
 //     Solo dati essenziali (titolo, sede, date, link). Cache 24 h; fresh=1 rilegge.
@@ -1122,62 +1127,123 @@ async function arteRss(fresh, ctx) {
   return diag;
 }
 
-// voci del calendario mensile: ogni link a una scheda "mostra-<slug>-<id>" con il testo attorno
-function parseArteCalendar(html, prov) {
+// voci del calendario mensile. Struttura di arte.it (verificata il 20 nov 2026):
+// <a href="/calendario-arte/<prov>/mostra-<slug>-<id>" class="link_mostre_list"> … <span class="data">Dal … al …</span>
+//   <span class="occhiello"><span class="citta">Milano</span> | Sede</span> <span class="title"><h2>Titolo</h2></span> …</a>
+// Le «aperture del prossimo mese» hanno un'altra impaginazione: titolo e date nel testo attorno al link.
+function parseArteCalendar(html) {
   const out = [], seen = {};
-  const re = new RegExp('<a[^>]+href=["\']((?:https?://(?:www\\.)?arte\\.it)?/calendario-arte/[a-z\\-]+/mostra-[^"\'#?]*?-(\\d+))/?["\']', "gi");
+  const re = /<a\s[^>]*href=["']((?:https?:\/\/(?:www\.)?arte\.it)?\/calendario-arte\/[^"'#?]*?\/mostra-[^"'#?]*?-(\d+))\/?["'][^>]*>([\s\S]*?)<\/a>/gi;
   let m;
   while ((m = re.exec(html))) {
-    const id = m[2];
+    const id = m[2], inner = m[3];
     if (seen[id]) continue;
+    const span = (cls) => { const x = inner.match(new RegExp('<span[^>]*class=["\'][^"\']*\\b' + cls + '\\b[^"\']*["\'][^>]*>([\\s\\S]*?)</span>', "i")); return x ? x[1] : ""; };
+    const innerText = cleanText(inner, 0);
+    let dr = cleanText(span("data"), 0).match(DATE_RANGE) || innerText.match(DATE_RANGE);
+    if (!dr) {
+      // impaginazione alternativa: le date stanno subito dopo il link (prima del link seguente)
+      const next = html.slice(re.lastIndex, re.lastIndex + 1200);
+      const cut = next.search(/\/mostra-/i);
+      dr = cleanText(cut > 0 ? next.slice(0, cut) : next, 0).match(DATE_RANGE);
+    }
+    const from = dr ? itDate(dr[1]) : null, to = dr ? itDate(dr[2]) : null;
+    if (!from) continue; // link senza date (es. un titolo ripetuto): si scarta
     seen[id] = 1;
-    // testo attorno al link: prima stanno date e sede, poi titolo ed estratto
-    const before = cleanText(html.slice(Math.max(0, m.index - 900), m.index), 0);
-    const after = cleanText(html.slice(m.index, m.index + 900), 0);
-    const ctxText = before.slice(-300) + " ¦ " + after.slice(0, 300);
-    const titleM = html.slice(m.index, m.index + 600).match(/<a[^>]*>([\s\S]*?)<\/a>/i);
-    let title = titleM ? cleanText(titleM[1], 160) : "";
-    // date e sede: la voce più vicina prima del link (quello che viene dopo appartiene alla mostra seguente)
-    const tail = before.slice(-300);
-    const drAll = [...tail.matchAll(new RegExp(DATE_RANGE.source, "gi"))];
-    const dr = drAll.length ? drAll[drAll.length - 1] : null;
-    const rest = dr ? tail.slice(dr.index + dr[0].length) : tail.slice(-160);
-    const vm = rest.match(/([A-ZÀ-Ú][\wÀ-ú'’ .\-]{1,40}?)\s*\|\s*([^|¦]{2,90}?)\s*$/);
-    out.push({
-      id,
-      link: (m[1].startsWith("http") ? m[1] : ARTE_BASE + m[1]),
-      title: title || null,
-      city: vm ? vm[1].trim() : null,
-      venue: vm ? vm[2].trim() : null,
-      from: dr ? itDate(dr[1]) : null,
-      to: dr ? itDate(dr[2]) : null,
-      around: ctxText.slice(0, 260), // per controllare il parser, non da mostrare
-    });
+    // l'occhiello contiene a sua volta lo span della città: si prende fino all'inizio del titolo
+    const om = inner.match(/class=["'][^"']*\bocchiello\b[^"']*["'][^>]*>([\s\S]*?)(?:<span[^>]*class=["'][^"']*\btitle\b|<h[23]|$)/i);
+    const occ = om ? cleanText(om[1], 0) : "";
+    const city = cleanText(span("citta"), 60) || (occ.split("|")[0] || "").trim() || null;
+    const venue = occ.indexOf("|") >= 0 ? occ.slice(occ.indexOf("|") + 1).trim().slice(0, 90) : null;
+    const h2 = inner.match(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/i);
+    const alt = inner.match(/<img[^>]+alt=["']([^"']+)["']/i);
+    const title = (h2 && cleanText(h2[1], 160)) || cleanText(span("title"), 160) || (alt && cleanText(alt[1], 160)) || (innerText.length > 2 && innerText.length < 200 ? innerText : null);
+    const path = m[1].replace(/^https?:\/\/(?:www\.)?arte\.it/, "");
+    out.push({ id, title, city, venue: venue || null, from, to, link: ARTE_BASE + path, prov: (path.split("/")[2] || "").toLowerCase() });
   }
   return out;
 }
 
+function arteMonthPath(prov) {
+  const ym = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit" }).format(new Date()).split("-");
+  return { y: ym[0], m: ym[1], path: "/calendario-arte/" + prov + "/" + ym[0] + "/" + ym[1] + "/" };
+}
+
 async function arteCalendar(prov, fresh, ctx) {
-  const now = new Date();
-  const ym = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit" }).format(now).split("-");
-  const path = "/calendario-arte/" + prov + "/" + ym[0] + "/" + ym[1] + "/";
-  const diag = { url: ARTE_BASE + path };
+  const mp = arteMonthPath(prov);
+  const diag = { url: ARTE_BASE + mp.path };
   try {
-    const html = await arteFetch(path, fresh, ctx, diag);
+    const html = await arteFetch(mp.path, fresh, ctx, diag);
     const pages = [...html.matchAll(/calendario_mese\.php\?[^"'\s>]*?p=(\d+)/gi)].map((x) => +x[1]);
     diag.pages = pages.length ? Math.max(...pages) : 1;
     diag.pageLink = (html.match(/calendario_mese\.php\?[^"'\s>]+/i) || [null])[0];
-    diag.hasJsonLd = /application\/ld\+json/i.test(html);
-    const items = parseArteCalendar(html, prov);
+    const items = parseArteCalendar(html);
     diag.count = items.length;
-    diag.withDates = items.filter((i) => i.from).length;
     diag.withVenue = items.filter((i) => i.venue).length;
-    diag.items = items.slice(0, 30);
-    // estratto grezzo attorno alla prima voce, per rifinire il parser
-    const first = html.search(/\/calendario-arte\/[a-z\-]+\/mostra-/i);
-    diag.rawAroundFirst = first >= 0 ? html.slice(Math.max(0, first - 1500), first + 1000) : html.slice(0, 2000);
+    diag.items = items.slice(0, 40);
   } catch (e) { diag.error = String((e && e.message) || e); }
   return diag;
+}
+
+// tutte le pagine del mese di una provincia (al massimo ARTE_MAX_PAGES)
+const ARTE_MAX_PAGES = 6;
+async function arteProvince(prov, fresh, ctx) {
+  const mp = arteMonthPath(prov);
+  const d0 = {};
+  const first = await arteFetch(mp.path, fresh, ctx, d0);
+  const nums = [...first.matchAll(/calendario_mese\.php\?[^"'\s>]*?p=(\d+)/gi)].map((x) => +x[1]);
+  const pages = Math.min(ARTE_MAX_PAGES, nums.length ? Math.max(...nums) : 1);
+  const rest = [];
+  for (let p = 2; p <= pages; p++) {
+    const path = "/calendario_mese.php?pro_nome=" + encodeURIComponent(prov) + "&a=" + mp.y + "&m=" + mp.m + "&lang=it&q=&p=" + p;
+    rest.push(arteFetch(path, fresh, ctx, {}).catch(() => ""));
+  }
+  const htmls = [first].concat(await Promise.all(rest));
+  const seen = {}, items = [];
+  htmls.forEach((h) => parseArteCalendar(h).forEach((x) => { if (!seen[x.id]) { seen[x.id] = 1; items.push(x); } }));
+  return { prov, pages, items };
+}
+
+// capoluoghi di provincia (nome come nei percorsi di arte.it) per scegliere le province vicine alla località
+const ARTE_PROV = {
+  milano: [45.464, 9.19], como: [45.81, 9.085], varese: [45.82, 8.825], lecco: [45.856, 9.393], bergamo: [45.698, 9.677],
+  brescia: [45.541, 10.211], pavia: [45.185, 9.155], lodi: [45.314, 9.503], cremona: [45.133, 10.022], mantova: [45.156, 10.791],
+  sondrio: [46.17, 9.872], novara: [45.446, 8.622], vercelli: [45.32, 8.42], biella: [45.566, 8.054], torino: [45.07, 7.686],
+  asti: [44.9, 8.206], cuneo: [44.384, 7.542], alessandria: [44.912, 8.615], aosta: [45.737, 7.315], genova: [44.405, 8.946],
+  piacenza: [45.052, 9.693], parma: [44.801, 10.328], "reggio-emilia": [44.698, 10.631], modena: [44.647, 10.925],
+  bologna: [44.494, 11.343], ferrara: [44.838, 11.62], ravenna: [44.418, 12.204], verona: [45.438, 10.992],
+  vicenza: [45.546, 11.546], padova: [45.406, 11.877], venezia: [45.44, 12.316], treviso: [45.666, 12.243],
+  trento: [46.067, 11.121], bolzano: [46.498, 11.354], udine: [46.071, 13.235], trieste: [45.65, 13.777],
+  firenze: [43.769, 11.256], pisa: [43.716, 10.402], lucca: [43.843, 10.505], siena: [43.318, 11.331],
+  roma: [41.903, 12.496], napoli: [40.852, 14.268],
+};
+function kmBetween(a, b, c, d) {
+  const R = 6371, toR = Math.PI / 180;
+  const x = Math.sin(((c - a) * toR) / 2) ** 2 + Math.cos(a * toR) * Math.cos(c * toR) * Math.sin(((d - b) * toR) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+// province entro il raggio (più 25 km: le mostre stanno anche fuori dal capoluogo), dalla più vicina; almeno una
+function nearProvinces(lat, lon, radius, max) {
+  const all = Object.keys(ARTE_PROV).map((k) => ({ prov: k, km: Math.round(kmBetween(lat, lon, ARTE_PROV[k][0], ARTE_PROV[k][1])) }))
+    .sort((a, b) => a.km - b.km);
+  const near = all.filter((p) => p.km <= radius + 25).slice(0, max);
+  return near.length ? near : all.slice(0, 1);
+}
+
+async function arteExhibitions(lat, lon, radius, fresh, ctx) {
+  const provs = nearProvinces(lat, lon, radius, 4);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+  const res = await Promise.all(provs.map((p) => arteProvince(p.prov, fresh, ctx).then((r) => Object.assign(r, { km: p.km }))
+    .catch((e) => ({ prov: p.prov, km: p.km, items: [], error: String((e && e.message) || e) }))));
+  const seen = {}, items = [];
+  res.forEach((r) => r.items.forEach((x) => {
+    if (seen[x.id] || !x.to || x.to < today) return;
+    seen[x.id] = 1;
+    items.push(Object.assign({}, x, { km: r.km, upcoming: x.from > today }));
+  }));
+  // in corso dalla chiusura più vicina, poi le prossime aperture
+  items.sort((a, b) => (a.upcoming - b.upcoming) || (a.upcoming ? a.from.localeCompare(b.from) : a.to.localeCompare(b.to)));
+  return { source: "arte.it", provinces: res.map((r) => ({ prov: r.prov, km: r.km, pages: r.pages || 0, n: r.items.length, error: r.error || null })), items };
 }
 
 // ---------------------------------------------------------------- Sport
@@ -1539,7 +1605,7 @@ export default {
       return json({
         service: "DigitalPanel data bridge",
         version: "4.5",
-        usage: ["/quotes?symbols=AAPL,ENEL.MI,EURUSD=X", "/earnings?symbols=AAPL,ENEL.MI", "/news?symbols=AAPL,ENEL.MI&days=30", "/spark?symbols=^GSPC,FTSEMIB.MI", "/tmdb/cinema", "/tmdb/streaming?p=netflix,prime", "/tmdb/tv?ids=1399", "/tmdb/search?q=titolo", "/flickr?user=marco_galb&tag=digitalportfolio&ttl=900", "/rss?src=fuji,leica,nikon", "/sport/live", "/sport/fixtures?c=sa", "/sport/table?c=sa", "/sport/italy", "/events/concerts?lat=45.4642&lon=9.19&radius=50&days=90", "/events/exhibitions/debug?prov=milano"],
+        usage: ["/quotes?symbols=AAPL,ENEL.MI,EURUSD=X", "/earnings?symbols=AAPL,ENEL.MI", "/news?symbols=AAPL,ENEL.MI&days=30", "/spark?symbols=^GSPC,FTSEMIB.MI", "/tmdb/cinema", "/tmdb/streaming?p=netflix,prime", "/tmdb/tv?ids=1399", "/tmdb/search?q=titolo", "/flickr?user=marco_galb&tag=digitalportfolio&ttl=900", "/rss?src=fuji,leica,nikon", "/sport/live", "/sport/fixtures?c=sa", "/sport/table?c=sa", "/sport/italy", "/events/concerts?lat=45.4642&lon=9.19&radius=50&days=90", "/events/exhibitions?lat=45.4642&lon=9.19&radius=50"],
         tmdb: !!(env && env.TMDB_TOKEN),
         footballData: !!(env && env.FD_TOKEN),
         ticketmaster: !!(env && env.TICKETMASTER_KEY),
@@ -1637,6 +1703,15 @@ export default {
           const days = Math.min(180, Math.max(1, parseInt(url.searchParams.get("days") || "90", 10) || 90));
           const data = await tmConcerts(env, ctx, lat, lon, radius, days);
           return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=1800" });
+        }
+        if (sub === "exhibitions") {
+          const lat = parseFloat(url.searchParams.get("lat"));
+          const lon = parseFloat(url.searchParams.get("lon"));
+          if (!isFinite(lat) || !isFinite(lon)) return json({ error: "parametri lat/lon mancanti o non validi" }, 400);
+          const radius = Math.min(300, Math.max(1, parseInt(url.searchParams.get("radius") || "50", 10) || 50));
+          const fresh = url.searchParams.get("fresh") === "1";
+          const data = await arteExhibitions(lat, lon, radius, fresh, ctx);
+          return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=3600" });
         }
         if (sub === "exhibitions/debug") {
           const prov = (url.searchParams.get("prov") || "milano").trim().toLowerCase();
