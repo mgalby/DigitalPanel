@@ -370,7 +370,9 @@ html,body{margin:0}
 .frr{padding:0;min-height:0;align-items:center;gap:14px}
 .frbox{flex:none}.frd{display:flex;flex-direction:column;align-items:center;width:52px;line-height:1.05}.frd b{font-size:26px;font-weight:400}.frd small{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
 .frr .frt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:18px;font-weight:500;line-height:1.2}
-.frr .k{flex:1;min-width:0;overflow:hidden}.frr .k small{font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.frr .v.frv{font-size:15px;white-space:nowrap;flex:none;max-width:none}
+.frr .k{flex:1;min-width:0;overflow:hidden}
+.frr.frwe{background:var(--accent-soft);border-radius:10px;padding-left:8px;padding-right:10px;box-sizing:border-box}
+.frv{display:flex;flex-direction:column;align-items:flex-end;gap:3px}.frweb{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--bg);background:var(--accent);border-radius:6px;padding:2px 7px}.frr .k small{font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.frr .v.frv{font-size:15px;white-space:nowrap;flex:none;max-width:none}
 #dBody .frr{padding:7px 0}
 .frc{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:5px;padding:1px 6px;margin-right:4px;vertical-align:1px;color:var(--accent);background:var(--accent-soft)}
 .frc.fc-photo{color:#7FB2E5;background:rgba(127,178,229,.14)}.frc.fc-comics{color:#C792EA;background:rgba(199,146,234,.14)}.frc.fc-fiera{color:var(--up);background:rgba(63,185,122,.14)}.frc.fc-mine{color:var(--text-2);background:var(--surface-2)}
@@ -1381,10 +1383,14 @@ function fairList(days){var c=eventiCfg(),sel=frSel(c),t=new Date();t.setHours(0
     .concat(frCustom(c).map(function(f){return {f:f,o:frNextCustom(f,new Date(t))}}))
     .filter(function(x){return x.o&&x.o.s<=lim});
   return L.sort(function(a,b){return a.o.s-b.o.s||a.f.n.localeCompare(b.f.n)})}
+/* il weekend in arrivo (sabato e domenica di questa settimana; di domenica, quello in corso) */
+function frWeekend(){var t=new Date();t.setHours(0,0,0,0);var sat=new Date(t);if(t.getDay()===0)sat.setDate(t.getDate()-1);else sat.setDate(t.getDate()+(6-t.getDay()));var sun=new Date(sat);sun.setDate(sat.getDate()+1);return {s:sat,e:sun}}
+function frIsWe(o){var w=frWeekend();return o.s<=w.e&&o.e>=w.s}
 function frCount(o){var t=new Date();t.setHours(0,0,0,0);if(o.s<=t&&o.e>=t)return 'in corso';var g=Math.round((o.s-t)/86400000);return g===1?'domani':'tra '+g+' giorni'}
 function frBox(o){var s=o.s;return '<span class="frd"><small>'+FRGG[s.getDay()].slice(0,3)+'</small><b>'+s.getDate()+'</b><small>'+FR_MESI[s.getMonth()]+'</small></span>'}
 function frRow(x,big){var f=x.f,o=x.o,multi=+o.s!==+o.e;
-  return '<div class="r frr"><span class="frbox">'+frBox(o)+'</span><span class="k"><span class="frt">'+esc(f.n)+'</span><small><span class="frc fc-'+f.cat+'">'+FR_CATS[f.cat]+'</span> '+esc([f.c,f.p].filter(Boolean).join(' · '))+(multi?' · '+frRange(o.s,o.e):'')+(big&&f.r?' · '+esc(frRule(f)):'')+'</small></span><span class="v mut frv">'+esc(frCount(o))+'</span></div>'}
+  var we=frIsWe(o);
+  return '<div class="r frr'+(we?' frwe':'')+'"><span class="frbox">'+frBox(o)+'</span><span class="k"><span class="frt">'+esc(f.n)+'</span><small><span class="frc fc-'+f.cat+'">'+FR_CATS[f.cat]+'</span> '+esc([f.c,f.p].filter(Boolean).join(' · '))+(multi?' · '+frRange(o.s,o.e):'')+(big&&f.r?' · '+esc(frRule(f)):'')+'</small></span><span class="v mut frv">'+(we?'<span class="frweb">questo weekend</span>':'')+esc(frCount(o))+'</span></div>'}
 var FR={per:3};
 function frMeasure(){var t=grid.querySelector('.tile[data-mod="fiere"] .tb');if(!t)return;var h=t.clientHeight;if(h<=0)return;var per=Math.max(2,Math.min(6,Math.floor(h/84)));
   if(per!==FR.per){FR.per=per;var tb=t;tb.innerHTML=M.fiere.c(subIdx);var sd=grid.querySelector('.tile[data-mod="fiere"] [data-sd]');if(sd)sd.innerHTML=dotsHtml(M.fiere.n(),subIdx)}}
