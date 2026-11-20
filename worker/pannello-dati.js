@@ -2,6 +2,9 @@
 // In corso (non ancora consolidato, resta 4.4): ESPN non accetta più intervalli di date (HTTP 400, la Nazionale
 //   risultava senza partite). Ora si legge il calendario e poi i singoli giorni di gara; /sport/italy restituisce
 //   anche group, il girone di Nations League. Stesso metodo per la riserva ESPN del calendario di Serie A e Champions.
+// In prova (20 nov 2026, non consolidato): /events/exhibitions/debug legge arte.it (feed RSS e calendario di una
+//   provincia) e restituisce le voci analizzate, per decidere la fonte del riquadro Mostre.
+// Versione 4.5 (13 nov 2026): /events/concerts per la pagina Eventi (serve il segreto TICKETMASTER_KEY, vedi sotto).
 // Versione 4.4 (13 nov 2026): la traduzione si ferma dopo 6 secondi per richiesta (il resto alla successiva),
 //   così la prima lettura non va oltre l'attesa massima del pannello.
 // Versione 4.3 (13 nov 2026): traduzione frase per frase (m2m100 tagliava i testi lunghi), prefissi come RUMOR: non tradotti,
@@ -75,6 +78,19 @@
 //   partita: {id, lg, comp, date, state: pre|in|post|off, ht, clock, detail,
 //             home:{n, k, s}, away:{n, k, s}, ev:[{t: goal|pg|og|red|pmiss, m, side: h|a, who}], venue}
 //   n = nome italiano breve, k = chiave per riconoscere la squadra, s = gol
+//
+// ---- Eventi (concerti: Ticketmaster Discovery API) ----
+// La chiave Ticketmaster (piano gratuito, Discovery API) va salvata come segreto TICKETMASTER_KEY,
+// come TMDB_TOKEN e FD_TOKEN. Richiesta su developer.ticketmaster.com (Consumer Key).
+// GET /events/concerts?lat=45.4642&lon=9.19&radius=50&days=90
+//     concerti entro "radius" km dal punto, nei prossimi "days" giorni (Italia). Cache 6 h
+//   { updated, events: [ {id, name, date, dateEnd, venue, city, url, image,
+//       genre, artists:[nome,...]} ] }
+//
+// ---- Eventi (mostre: arte.it, in prova) ----
+// GET /events/exhibitions/debug?prov=milano&src=rss,cal&fresh=1
+//     diagnostica: stato delle due fonti, campi trovati, voci analizzate, un estratto dell'HTML grezzo.
+//     Solo dati essenziali (titolo, sede, date, link). Cache 24 h; fresh=1 rilegge.
 //
 // Note:
 // - Valuta e nome delle quotazioni arrivano da Yahoo, non dal suffisso.
@@ -995,6 +1011,175 @@ async function tmdbTitle(env, ctx, type, id) {
   return JSON.parse(text);
 }
 
+// ---------------------------------------------------------------- Eventi: concerti (Ticketmaster Discovery API)
+// Chiave gratuita (Consumer Key) salvata come segreto TICKETMASTER_KEY. Ricerca per raggio km da un punto.
+
+const TM_CACHE_SECONDS = 6 * 3600;
+
+async function tmConcerts(env, ctx, lat, lon, radiusKm, days) {
+  if (!env || !env.TICKETMASTER_KEY) throw new Error("chiave Ticketmaster mancante: aggiungi il segreto TICKETMASTER_KEY al Worker");
+  const key = "tm:concerts:" + lat.toFixed(2) + "," + lon.toFixed(2) + ":" + radiusKm + ":" + days;
+  const text = await cachedText(key, TM_CACHE_SECONDS, ctx, async () => {
+    const startISO = new Date().toISOString().slice(0, 19) + "Z";
+    const endISO = new Date(Date.now() + days * 86400000).toISOString().slice(0, 19) + "Z";
+    const u = new URL("https://app.ticketmaster.com/discovery/v2/events.json");
+    u.searchParams.set("apikey", env.TICKETMASTER_KEY);
+    u.searchParams.set("latlong", lat + "," + lon);
+    u.searchParams.set("radius", String(radiusKm));
+    u.searchParams.set("unit", "km");
+    u.searchParams.set("classificationName", "music");
+    u.searchParams.set("countryCode", "IT");
+    u.searchParams.set("startDateTime", startISO);
+    u.searchParams.set("endDateTime", endISO);
+    u.searchParams.set("sort", "date,asc");
+    u.searchParams.set("size", "100");
+    const r = await fetch(u.toString(), { headers: { Accept: "application/json" } });
+    if (r.status === 401) throw new Error("chiave Ticketmaster non valida");
+    if (!r.ok) throw new Error("Ticketmaster HTTP " + r.status);
+    return r.text();
+  });
+  const data = JSON.parse(text);
+  const list = (data._embedded && data._embedded.events) || [];
+  const events = list.map((e) => {
+    const venueObj = ((e._embedded && e._embedded.venues) || [])[0] || {};
+    const attractions = ((e._embedded && e._embedded.attractions) || []).map((a) => a.name).filter(Boolean);
+    const img = (e.images || []).sort((a, b) => (b.width || 0) - (a.width || 0))[0];
+    const start = e.dates && e.dates.start;
+    return {
+      id: e.id,
+      name: e.name,
+      date: (start && (start.dateTime || (start.localDate ? start.localDate + "T00:00:00Z" : null))) || null,
+      dateless: !!(start && start.noSpecificTime),
+      venue: venueObj.name || null,
+      city: (venueObj.city && venueObj.city.name) || null,
+      url: e.url || null,
+      image: img ? img.url : null,
+      genre: ((e.classifications && e.classifications[0] && e.classifications[0].genre) || {}).name || null,
+      artists: attractions.length ? attractions : [e.name],
+    };
+  }).filter((e) => e.date).sort((a, b) => a.date.localeCompare(b.date));
+  return { events };
+}
+
+// ---------------------------------------------------------------- Eventi: mostre (arte.it, in prova)
+// Uso personale: si tengono solo titolo, sede, città, date e link (niente testi o immagini).
+// Due fonti da confrontare: il feed RSS nazionale e il calendario mensile di una provincia.
+
+const ARTE_BASE = "https://www.arte.it";
+const ARTE_CACHE_SECONDS = 24 * 3600;
+const ARTE_UA = "Mozilla/5.0 (compatible; DigitalPanel/1.0; pannello personale)";
+const MESI = { gennaio: 1, febbraio: 2, marzo: 3, aprile: 4, maggio: 5, giugno: 6, luglio: 7, agosto: 8, settembre: 9,
+  ottobre: 10, novembre: 11, dicembre: 12, january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7,
+  august: 8, september: 9, october: 10, november: 11, december: 12 };
+
+// "20 novembre 2026" / "7 February 2027" → "2026-11-20"
+function itDate(s) {
+  const m = String(s || "").trim().match(/^(\d{1,2})\s+([A-Za-zÀ-ú]+)\s+(\d{4})$/);
+  if (!m) return null;
+  const mo = MESI[m[2].toLowerCase()];
+  if (!mo) return null;
+  return m[3] + "-" + String(mo).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+}
+const DATE_RANGE = /Dal\s+(\d{1,2}\s+[A-Za-zÀ-ú]+\s+\d{4})\s+al\s+(\d{1,2}\s+[A-Za-zÀ-ú]+\s+\d{4})/i;
+
+async function arteFetch(path, fresh, ctx, diag) {
+  const text = await cachedText("arte:" + path, ARTE_CACHE_SECONDS, ctx, async () => {
+    const r = await fetch(ARTE_BASE + path, { headers: { "User-Agent": ARTE_UA, Accept: "text/html,application/xml,*/*", "Accept-Language": "it-IT,it;q=0.9" }, redirect: "follow" });
+    diag.status = r.status;
+    diag.type = r.headers.get("content-type") || null;
+    diag.finalUrl = r.url || null;
+    if (!r.ok) throw new Error("arte.it HTTP " + r.status);
+    return await r.text();
+  }, fresh);
+  diag.bytes = text.length;
+  if (diag.status == null) diag.status = "cache";
+  return text;
+}
+
+async function arteRss(fresh, ctx) {
+  const diag = { url: ARTE_BASE + "/rss/feed_eventi.php" };
+  try {
+    const xml = await arteFetch("/rss/feed_eventi.php", fresh, ctx, diag);
+    const blocks = xml.match(/<item[\s>][\s\S]*?<\/item>/gi) || [];
+    diag.count = blocks.length;
+    // nomi dei campi della prima voce, per capire cosa offre il feed
+    diag.fields = blocks.length ? [...new Set((blocks[0].match(/<([a-z][\w:]*)[\s>]/gi) || []).map((t) => t.slice(1, -1).trim()))] : [];
+    diag.items = blocks.slice(0, 25).map((b) => {
+      const desc = cleanText(tag(b, "description"), 0);
+      const dr = desc.match(DATE_RANGE) || cleanText(tag(b, "title"), 0).match(DATE_RANGE);
+      return {
+        title: cleanText(tag(b, "title"), 160),
+        link: decodeEntities(tag(b, "link")).trim() || null,
+        pubDate: decodeEntities(tag(b, "pubDate")).trim() || null,
+        category: cleanText(tag(b, "category"), 60) || null,
+        from: dr ? itDate(dr[1]) : null,
+        to: dr ? itDate(dr[2]) : null,
+        descStart: desc.slice(0, 120), // solo per capire la struttura, non da mostrare
+      };
+    });
+    diag.rawStart = xml.slice(0, 1200);
+  } catch (e) { diag.error = String((e && e.message) || e); }
+  return diag;
+}
+
+// voci del calendario mensile: ogni link a una scheda "mostra-<slug>-<id>" con il testo attorno
+function parseArteCalendar(html, prov) {
+  const out = [], seen = {};
+  const re = new RegExp('<a[^>]+href=["\']((?:https?://(?:www\\.)?arte\\.it)?/calendario-arte/[a-z\\-]+/mostra-[^"\'#?]*?-(\\d+))/?["\']', "gi");
+  let m;
+  while ((m = re.exec(html))) {
+    const id = m[2];
+    if (seen[id]) continue;
+    seen[id] = 1;
+    // testo attorno al link: prima stanno date e sede, poi titolo ed estratto
+    const before = cleanText(html.slice(Math.max(0, m.index - 900), m.index), 0);
+    const after = cleanText(html.slice(m.index, m.index + 900), 0);
+    const ctxText = before.slice(-300) + " ¦ " + after.slice(0, 300);
+    const titleM = html.slice(m.index, m.index + 600).match(/<a[^>]*>([\s\S]*?)<\/a>/i);
+    let title = titleM ? cleanText(titleM[1], 160) : "";
+    // date e sede: la voce più vicina prima del link (quello che viene dopo appartiene alla mostra seguente)
+    const tail = before.slice(-300);
+    const drAll = [...tail.matchAll(new RegExp(DATE_RANGE.source, "gi"))];
+    const dr = drAll.length ? drAll[drAll.length - 1] : null;
+    const rest = dr ? tail.slice(dr.index + dr[0].length) : tail.slice(-160);
+    const vm = rest.match(/([A-ZÀ-Ú][\wÀ-ú'’ .\-]{1,40}?)\s*\|\s*([^|¦]{2,90}?)\s*$/);
+    out.push({
+      id,
+      link: (m[1].startsWith("http") ? m[1] : ARTE_BASE + m[1]),
+      title: title || null,
+      city: vm ? vm[1].trim() : null,
+      venue: vm ? vm[2].trim() : null,
+      from: dr ? itDate(dr[1]) : null,
+      to: dr ? itDate(dr[2]) : null,
+      around: ctxText.slice(0, 260), // per controllare il parser, non da mostrare
+    });
+  }
+  return out;
+}
+
+async function arteCalendar(prov, fresh, ctx) {
+  const now = new Date();
+  const ym = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit" }).format(now).split("-");
+  const path = "/calendario-arte/" + prov + "/" + ym[0] + "/" + ym[1] + "/";
+  const diag = { url: ARTE_BASE + path };
+  try {
+    const html = await arteFetch(path, fresh, ctx, diag);
+    const pages = [...html.matchAll(/calendario_mese\.php\?[^"'\s>]*?p=(\d+)/gi)].map((x) => +x[1]);
+    diag.pages = pages.length ? Math.max(...pages) : 1;
+    diag.pageLink = (html.match(/calendario_mese\.php\?[^"'\s>]+/i) || [null])[0];
+    diag.hasJsonLd = /application\/ld\+json/i.test(html);
+    const items = parseArteCalendar(html, prov);
+    diag.count = items.length;
+    diag.withDates = items.filter((i) => i.from).length;
+    diag.withVenue = items.filter((i) => i.venue).length;
+    diag.items = items.slice(0, 30);
+    // estratto grezzo attorno alla prima voce, per rifinire il parser
+    const first = html.search(/\/calendario-arte\/[a-z\-]+\/mostra-/i);
+    diag.rawAroundFirst = first >= 0 ? html.slice(Math.max(0, first - 1500), first + 1000) : html.slice(0, 2000);
+  } catch (e) { diag.error = String((e && e.message) || e); }
+  return diag;
+}
+
 // ---------------------------------------------------------------- Sport
 // Dirette, partite di oggi e Nazionale: ESPN (pubblico, senza chiave, non ufficiale).
 // Classifiche e calendario: football-data.org (segreto FD_TOKEN, piano Free), con ripiego su ESPN.
@@ -1353,10 +1538,11 @@ export default {
     if (path === "/") {
       return json({
         service: "DigitalPanel data bridge",
-        version: "4.4",
-        usage: ["/quotes?symbols=AAPL,ENEL.MI,EURUSD=X", "/earnings?symbols=AAPL,ENEL.MI", "/news?symbols=AAPL,ENEL.MI&days=30", "/spark?symbols=^GSPC,FTSEMIB.MI", "/tmdb/cinema", "/tmdb/streaming?p=netflix,prime", "/tmdb/tv?ids=1399", "/tmdb/search?q=titolo", "/flickr?user=marco_galb&tag=digitalportfolio&ttl=900", "/rss?src=fuji,leica,nikon", "/sport/live", "/sport/fixtures?c=sa", "/sport/table?c=sa", "/sport/italy"],
+        version: "4.5",
+        usage: ["/quotes?symbols=AAPL,ENEL.MI,EURUSD=X", "/earnings?symbols=AAPL,ENEL.MI", "/news?symbols=AAPL,ENEL.MI&days=30", "/spark?symbols=^GSPC,FTSEMIB.MI", "/tmdb/cinema", "/tmdb/streaming?p=netflix,prime", "/tmdb/tv?ids=1399", "/tmdb/search?q=titolo", "/flickr?user=marco_galb&tag=digitalportfolio&ttl=900", "/rss?src=fuji,leica,nikon", "/sport/live", "/sport/fixtures?c=sa", "/sport/table?c=sa", "/sport/italy", "/events/concerts?lat=45.4642&lon=9.19&radius=50&days=90", "/events/exhibitions/debug?prov=milano"],
         tmdb: !!(env && env.TMDB_TOKEN),
         footballData: !!(env && env.FD_TOKEN),
+        ticketmaster: !!(env && env.TICKETMASTER_KEY),
         translate: !!(env && env.AI),
       });
     }
@@ -1437,6 +1623,35 @@ export default {
         return json({ error: "percorso non trovato" }, 404);
       } catch (e) {
         return json({ error: String((e && e.message) || e) }, 502);
+      }
+    }
+
+    if (path.startsWith("/events/")) {
+      try {
+        const sub = path.slice(8);
+        if (sub === "concerts") {
+          const lat = parseFloat(url.searchParams.get("lat"));
+          const lon = parseFloat(url.searchParams.get("lon"));
+          if (!isFinite(lat) || !isFinite(lon)) return json({ error: "parametri lat/lon mancanti o non validi" }, 400);
+          const radius = Math.min(300, Math.max(1, parseInt(url.searchParams.get("radius") || "50", 10) || 50));
+          const days = Math.min(180, Math.max(1, parseInt(url.searchParams.get("days") || "90", 10) || 90));
+          const data = await tmConcerts(env, ctx, lat, lon, radius, days);
+          return json(Object.assign({ updated: new Date().toISOString() }, data), 200, { "Cache-Control": "public, max-age=1800" });
+        }
+        if (sub === "exhibitions/debug") {
+          const prov = (url.searchParams.get("prov") || "milano").trim().toLowerCase();
+          if (!/^[a-z\-]{2,30}$/.test(prov)) return json({ error: "parametro prov non valido" }, 400);
+          const src = (url.searchParams.get("src") || "rss,cal").toLowerCase().split(",");
+          const fresh = url.searchParams.get("fresh") === "1";
+          const [rss, cal] = await Promise.all([
+            src.indexOf("rss") >= 0 ? arteRss(fresh, ctx) : null,
+            src.indexOf("cal") >= 0 ? arteCalendar(prov, fresh, ctx) : null,
+          ]);
+          return json({ updated: new Date().toISOString(), prov, rss, cal }, 200, { "Cache-Control": "no-store" });
+        }
+        return json({ error: "percorso non trovato" }, 404);
+      } catch (e) {
+        return json({ error: String((e && e.message) || e) }, /chiave/.test(String(e && e.message)) ? 503 : 502);
       }
     }
 
