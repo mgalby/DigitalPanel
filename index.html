@@ -1189,9 +1189,15 @@ function exSort(L){var a=L.filter(exIsFlag),r=L.filter(function(x){return !exIsF
 function exOfZone(k){return exSort((EX.items||[]).filter(function(x){return x.prov===k}))}
 var EX_TILE_MAX=10;
 /* sotto-pagine del riquadro: una zona per volta, al massimo 10 mostre per zona (5 per pagina) */
-function exPages(){var P=[];exZones().forEach(function(k){var L=exOfZone(k),now=L.filter(function(x){return !x.upcoming}),up=L.filter(function(x){return x.upcoming});
-    var fl=L.filter(exIsFlag),rest=function(A){return A.filter(function(x){return !exIsFlag(x)})};
-    var pick=fl.concat(rest(now).slice(0,Math.max(0,EX_TILE_MAX-fl.length-Math.min(2,rest(up).length))),rest(up).slice(0,2)).slice(0,Math.max(EX_TILE_MAX,fl.length));
+/* sotto-pagine del riquadro: una zona per volta, al massimo 10 mostre per zona (5 per pagina).
+   Sempre presenti: segnate ♥, sedi preferite ★, le 3 mostre più vicine alla chiusura; i posti rimasti girano ogni ora
+   su tutte le altre mostre della zona, così nel corso della giornata compaiono tutte. */
+function exPages(){var P=[],hour=Math.floor(Date.now()/3600000);exZones().forEach(function(k){var L=exOfZone(k);
+    var mine=L.filter(function(x){return exIsFlag(x)||exFav(x)}),closing=L.filter(function(x){return mine.indexOf(x)<0&&exClosing(x)}).slice(0,3); /* in chiusura: al massimo 3 fisse */
+    var fixed=mine.concat(closing),rest=L.filter(function(x){return fixed.indexOf(x)<0});
+    var room=Math.max(0,EX_TILE_MAX-fixed.length),pick=fixed.slice();
+    if(room&&rest.length){var off=(hour*room)%rest.length;for(var j=0;j<Math.min(room,rest.length);j++)pick.push(rest[(off+j)%rest.length])}
+    pick.sort(function(a,b){return L.indexOf(a)-L.indexOf(b)}); /* stesso ordine dell'elenco: ♥, ★, in corso per chiusura, in arrivo */
     chunk(pick,5).forEach(function(g,i,all){P.push({zone:k,items:g,n:L.length,page:i+1,of:all.length})})});return P}
 function exBadge(x){return x.upcoming?'<span class="exb up">in arrivo</span>':(exClosing(x)?'<span class="exb end">in chiusura</span>':'')}
 function exMarks(x){return (exIsFlag(x)?'<span class="exheart">♥</span> ':'')+(exFav(x)?'<span class="fstar">★</span> ':'')}
